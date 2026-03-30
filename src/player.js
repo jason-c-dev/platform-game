@@ -883,7 +883,12 @@ const Player = {
         this.invincibleTimer = INVINCIBILITY_TIME;
         this.onGround = false;
         this.height = PLAYER_HEIGHT;
-        this._changeState('idle');
+        // Directly set state — bypass _changeState's dead-state guard
+        this.state = 'idle';
+        this.prevState = 'dead';
+        this.animFrame = 0;
+        this.animTimer = 0;
+        this.stateTimer = 0;
     },
 
     // =============================================
