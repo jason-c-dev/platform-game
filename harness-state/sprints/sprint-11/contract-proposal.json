@@ -1,0 +1,363 @@
+{
+  "sprint": 11,
+  "name": "Visual Effects & Polish",
+  "theme": "Particles, screen shake, hit flash, death animation, boss defeat slow-mo, iris-wipe transitions, world ambient particles",
+  "features": ["F23: Visual Effects & Screen Polish"],
+  "dependsOn": [9],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "screen-shake",
+      "description": "Camera screen shake system exists with configurable intensity and duration. Camera object exposes a `shake(intensity, duration)` method that offsets rendering.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Open browser devtools console",
+        "Verify Camera has a `shake` method: typeof Camera.shake === 'function'",
+        "Verify Camera has shakeX and shakeY properties",
+        "Call Camera.shake(10, 0.5) and observe non-zero shakeX/shakeY values during the next frames"
+      ],
+      "threshold": "Camera.shake(intensity, duration) method exists and produces non-zero shakeX/shakeY offsets that decay to 0 over the given duration"
+    },
+    {
+      "id": "C-02",
+      "category": "screen-shake",
+      "description": "Screen shake is applied to the main render pass. All game rendering (tiles, entities, particles) is offset by Camera.shakeX/shakeY when shake is active.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Search the rendering code for references to Camera.shakeX / Camera.shakeY or equivalent shake offset",
+        "Verify the offset is applied to the canvas context (e.g., ctx.translate or offset added to Camera.x/Camera.y during rendering)",
+        "Confirm the offset does NOT persist after shake ends (resets to 0)"
+      ],
+      "threshold": "The render pass applies shake offsets so all rendered content visibly shifts during screen shake"
+    },
+    {
+      "id": "C-03",
+      "category": "screen-shake",
+      "description": "Screen shake triggers on boss hit (when player damages a boss).",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Start a boss fight (e.g., stage 1-1 boss Elder Shroomba)",
+        "Hit the boss with an attack",
+        "Observe screen shake effect on impact"
+      ],
+      "threshold": "Visible screen shake occurs each time the player successfully damages a boss"
+    },
+    {
+      "id": "C-04",
+      "category": "screen-shake",
+      "description": "Screen shake triggers when the player takes damage.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any stage with enemies",
+        "Allow an enemy to hit the player",
+        "Observe screen shake on damage"
+      ],
+      "threshold": "Visible screen shake occurs when the player takes damage (smaller intensity than boss hit)"
+    },
+    {
+      "id": "C-05",
+      "category": "hit-flash",
+      "description": "Player sprite flashes white for a brief moment (2-4 frames) when taking damage, in addition to existing invincibility blinking.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any stage and take damage from an enemy or hazard",
+        "Observe the player sprite on the exact frame of damage",
+        "The sprite should briefly turn fully white before entering the invincibility blink cycle"
+      ],
+      "threshold": "Player sprite renders as white/bright flash on the frame of damage for 2-4 frames"
+    },
+    {
+      "id": "C-06",
+      "category": "hit-flash",
+      "description": "Enemy and boss sprites flash white when hit (already partially implemented via hitFlash). Verify all enemy types across all 4 worlds + citadel flash white on hit.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Search enemies.js for hitFlash usage in render functions",
+        "Verify every enemy render function and boss render function checks hitFlash and renders white when active",
+        "Confirm hitFlash is set to a non-zero value whenever an enemy/boss takes damage"
+      ],
+      "threshold": "All enemy types and all boss types flash white when damaged (hitFlash > 0 triggers white fill)"
+    },
+    {
+      "id": "C-07",
+      "category": "ambient-particles",
+      "description": "Forest world (World 1) has drifting leaf ambient particles during gameplay. Leaves drift downward with gentle horizontal sway.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any Forest stage (1-1, 1-2, or 1-3)",
+        "Observe the foreground for small leaf-shaped or colored particles drifting down",
+        "Leaves should drift slowly with a gentle sinusoidal horizontal sway"
+      ],
+      "threshold": "At least 20 visible leaf particles drift across the screen in Forest stages"
+    },
+    {
+      "id": "C-08",
+      "category": "ambient-particles",
+      "description": "Desert world (World 2) has drifting sand/dust ambient particles. Small sand grains drift horizontally with slight vertical variation.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any Desert stage (2-1, 2-2, or 2-3)",
+        "Observe the foreground for small sand-colored particles drifting horizontally",
+        "Sand particles should move primarily horizontally (windblown) with slight downward drift"
+      ],
+      "threshold": "At least 20 visible sand/dust particles drift across the screen in Desert stages"
+    },
+    {
+      "id": "C-09",
+      "category": "ambient-particles",
+      "description": "Tundra world (World 3) has falling snow ambient particles (already implemented). Verify snow particles are visible and animate properly.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any Tundra stage (3-1, 3-2, or 3-3)",
+        "Observe snowflake particles falling from the top of the screen",
+        "Snow should drift down with slight horizontal wobble"
+      ],
+      "threshold": "Snow particles are clearly visible and animate continuously in all Tundra stages"
+    },
+    {
+      "id": "C-10",
+      "category": "ambient-particles",
+      "description": "Volcano world (World 4) has rising ember ambient particles (already implemented). Verify embers are visible and animate properly.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any Volcano stage (4-1, 4-2, or 4-3)",
+        "Observe glowing ember particles rising from the bottom of the screen",
+        "Embers should glow in orange/yellow/red and rise with slight wobble"
+      ],
+      "threshold": "Ember particles are clearly visible and animate continuously in all Volcano stages"
+    },
+    {
+      "id": "C-11",
+      "category": "ambient-particles",
+      "description": "World-specific ambient particles only appear in their respective world. Forest leaves don't appear in Desert, etc.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Inspect the ambient particle rendering code",
+        "Verify each world's particle system checks the current world/stage ID before rendering",
+        "Confirm that switching between worlds (via world map) resets/changes the ambient particles"
+      ],
+      "threshold": "Each world's ambient particles are gated by world ID check and do not bleed into other worlds"
+    },
+    {
+      "id": "C-12",
+      "category": "death-animation",
+      "description": "Player death animation shows the sprite breaking apart into multiple pieces (at least 4) that fall with gravity, rather than just disappearing.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Enter any stage and let the player die (lose all HP or fall into hazard)",
+        "Observe the death animation",
+        "The player sprite should visually break into colored rectangular/geometric pieces",
+        "The pieces should fly outward and fall with gravity"
+      ],
+      "threshold": "At least 4 colored pieces (matching player colors) burst outward from the player position and fall with gravity on death"
+    },
+    {
+      "id": "C-13",
+      "category": "death-animation",
+      "description": "Death particles use player-appropriate colors (blue body, skin tone, dark accents) matching the player sprite palette.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Inspect Particles.spawnDeathParticles or equivalent death particle code",
+        "Verify the particle colors include player blue (COLORS.playerBlue), darker blue, skin tone, and accent colors",
+        "Verify at least 4 distinct colors are used"
+      ],
+      "threshold": "Death particles use at least 3 colors from the player's sprite palette (blue, skin, dark accent)"
+    },
+    {
+      "id": "C-14",
+      "category": "boss-defeat",
+      "description": "Boss defeat triggers a slow-motion effect where game speed reduces to approximately 0.3x for about 1 second.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Search for slow-motion / time-scale logic in game.js, enemies.js, or states.js",
+        "Verify a time scale variable exists (e.g., Game.timeScale or similar) that can be set to ~0.3",
+        "Verify boss defeat code sets this time scale when a boss is killed",
+        "Verify the time scale returns to 1.0 after ~1 second"
+      ],
+      "threshold": "Boss defeat sets a time scale factor to ~0.3 (range 0.2-0.4) for approximately 1 second (0.7-1.5s) before restoring normal speed"
+    },
+    {
+      "id": "C-15",
+      "category": "boss-defeat",
+      "description": "Boss defeat triggers a large particle explosion (significantly more particles than a normal enemy death).",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Fight and defeat any boss",
+        "Observe the defeat effect — a burst of particles should erupt from the boss position",
+        "The particle count should be significantly larger than standard enemy death effects"
+      ],
+      "threshold": "Boss defeat spawns at least 20 particles in an explosion pattern from the boss position"
+    },
+    {
+      "id": "C-16",
+      "category": "boss-defeat",
+      "description": "Boss defeat particle explosion uses colors appropriate to the boss/world theme.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Inspect the boss defeat particle spawning code",
+        "Verify the particle colors vary by world (e.g., green for Forest bosses, sand for Desert, blue/white for Tundra, red/orange for Volcano)",
+        "Verify the final boss (Architect) has a multi-colored explosion"
+      ],
+      "threshold": "Boss defeat particles use world-appropriate color palettes rather than generic colors"
+    },
+    {
+      "id": "C-17",
+      "category": "boss-defeat",
+      "description": "Screen shake accompanies the boss defeat explosion (stronger than normal hit shake).",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Defeat any boss",
+        "Observe that a strong screen shake occurs simultaneously with the particle explosion",
+        "The shake should be noticeably stronger than the per-hit shake"
+      ],
+      "threshold": "Boss defeat triggers screen shake with higher intensity than per-hit shake (at least 2x intensity)"
+    },
+    {
+      "id": "C-18",
+      "category": "iris-wipe",
+      "description": "Iris-wipe transitions are used for screen transitions (already implemented). The circle closes centered on the player (in gameplay) or screen center (in menus).",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "From world map, enter a stage and observe the iris-wipe open",
+        "Complete a stage or die and observe the iris-wipe close",
+        "Verify the circle center is at the player position during gameplay transitions",
+        "Verify the circle center is at screen center during menu transitions"
+      ],
+      "threshold": "Iris-wipe uses player-centered circle during gameplay and screen-centered during menus"
+    },
+    {
+      "id": "C-19",
+      "category": "iris-wipe",
+      "description": "Iris-wipe transition timing is smooth: ~250ms close, brief hold at black, ~250ms open. Total ~500ms.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Inspect Transition object in transition.js",
+        "Verify duration is set to ~0.25 seconds per phase (close and open)",
+        "Verify there is a hold phase between close and open",
+        "Verify easing functions are applied (quadratic ease-in for close, ease-out for open)"
+      ],
+      "threshold": "Transition uses ~250ms close + hold + ~250ms open with easing curves"
+    },
+    {
+      "id": "C-20",
+      "category": "dust-particles",
+      "description": "Landing dust particles spawn when the player lands on the ground after falling. Already implemented — verify it works across all worlds.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "In any stage, jump and land",
+        "Observe small dust puffs at the player's feet on landing",
+        "Test in at least 2 different worlds to verify it works everywhere"
+      ],
+      "threshold": "Dust particles visibly spawn at the player's feet on every landing in all worlds"
+    },
+    {
+      "id": "C-21",
+      "category": "dust-particles",
+      "description": "Wall slide sparks appear when the player wall-slides (already implemented). Sparks spray from the wall contact point.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Find a wall in any stage",
+        "Jump toward it and press into the wall to wall-slide",
+        "Observe white/yellow spark particles spraying from the contact point"
+      ],
+      "threshold": "Spark particles visibly emit from the wall contact point during wall sliding"
+    },
+    {
+      "id": "C-22",
+      "category": "dust-particles",
+      "description": "Running dust particles appear behind the player while running at full speed.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "In any stage, hold Shift to run",
+        "Observe small dust particles trailing behind the player",
+        "Particles should appear periodically (not every frame, but on footstep intervals)"
+      ],
+      "threshold": "Dust particles visibly trail behind the player while running"
+    },
+    {
+      "id": "C-23",
+      "category": "time-scale",
+      "description": "Game.timeScale property exists and is used by the game loop to scale update speed. When set to a value < 1.0, all game updates slow down proportionally.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Inspect game.js for a timeScale property",
+        "Verify the fixed-timestep loop uses timeScale to adjust update frequency or speed",
+        "Verify timeScale defaults to 1.0",
+        "Call Game.timeScale = 0.3 from console and verify gameplay visibly slows"
+      ],
+      "threshold": "Game.timeScale exists, defaults to 1.0, and values < 1.0 produce visible slow-motion in gameplay"
+    },
+    {
+      "id": "C-24",
+      "category": "explosion-effects",
+      "description": "Large explosions spawn on breakable block destruction, with block-colored debris particles (already partially implemented). Verify particles spawn and use appropriate colors.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Find a breakable block in any stage",
+        "Use charge attack to break it",
+        "Observe debris particles flying from the broken block"
+      ],
+      "threshold": "At least 6 debris particles spawn from a destroyed breakable block"
+    },
+    {
+      "id": "C-25",
+      "category": "integration",
+      "description": "All visual effects work without causing frame rate drops. The game maintains smooth performance with screen shake, particles, and slow-motion active simultaneously.",
+      "testMethod": "gameplay",
+      "testSteps": [
+        "Play through a boss fight with all effects active (screen shake, particles, hit flash)",
+        "Defeat the boss to trigger slow-motion + explosion simultaneously",
+        "Verify no noticeable stutter or frame drops during the combined effects"
+      ],
+      "threshold": "Game runs at 50+ FPS during boss defeat sequence with all effects active"
+    },
+    {
+      "id": "C-26",
+      "category": "integration",
+      "description": "No JavaScript console errors are thrown during normal gameplay with all visual effects active.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Open browser console, clear it",
+        "Play through a full stage with enemies and a boss",
+        "Check console for errors related to visual effects (particles, shake, slow-mo, transitions)"
+      ],
+      "threshold": "Zero uncaught JavaScript errors in console during a full stage playthrough"
+    },
+    {
+      "id": "C-27",
+      "category": "integration",
+      "description": "The game loads without errors. index.html loads all script files correctly and Game.init() completes without throwing.",
+      "testMethod": "automation",
+      "testSteps": [
+        "Start dev server (python3 -m http.server 8080)",
+        "Navigate to http://localhost:8080",
+        "Verify the canvas is visible and the title screen renders",
+        "Check console for load errors"
+      ],
+      "threshold": "Game loads, canvas is visible, title screen renders, no console errors on load"
+    },
+    {
+      "id": "C-28",
+      "category": "screen-shake",
+      "description": "Screen shake decays smoothly over its duration rather than stopping abruptly. The intensity reduces each frame.",
+      "testMethod": "code-inspection",
+      "testSteps": [
+        "Inspect Camera.shake implementation",
+        "Verify the shake offset decreases over time (e.g., intensity *= decay factor, or linear reduction)",
+        "Verify shake doesn't cut off abruptly but fades to zero"
+      ],
+      "threshold": "Shake intensity decays each frame (multiplicative or linear decay) reaching ~0 by the end of the duration"
+    }
+  ],
+  "outOfScope": [
+    "New gameplay mechanics or level design changes",
+    "Audio system changes (handled in Sprint 10)",
+    "Bug fixes unrelated to visual effects",
+    "Performance optimization beyond maintaining current frame rate",
+    "New enemy types or boss mechanics",
+    "Save system changes",
+    "World map visual changes",
+    "Menu redesign"
+  ],
+  "regressionSprints": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+}
