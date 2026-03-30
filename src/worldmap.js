@@ -248,15 +248,18 @@ const WorldMap = {
         // Navigation with arrow keys
         if (Input.isJustPressed('ArrowRight') || Input.isJustPressed('ArrowDown')) {
             this._navigateNext();
+            AudioManager.playMenuSelect();
         }
         if (Input.isJustPressed('ArrowLeft') || Input.isJustPressed('ArrowUp')) {
             this._navigatePrev();
+            AudioManager.playMenuSelect();
         }
 
         // Enter to start stage
         if (Input.isJustPressed('Enter')) {
             const node = this.nodes[this.selectedNode];
             if (node.unlocked) {
+                AudioManager.playMenuConfirm();
                 this._startStage(node);
             }
         }
