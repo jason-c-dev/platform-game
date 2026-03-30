@@ -47,7 +47,15 @@ const Camera = {
         const stageId = GameState.currentStageId || '1-1';
         const world = parseInt(stageId.charAt(0)) - 1;
 
-        if (world === 3) {
+        if (world === 4) {
+            // Citadel parallax — blend of all world themes
+            this.layers = [
+                { speed: 0.05, color1: '#1A1A2E', color2: '#2D2D44', elements: this._generateMountains() },
+                { speed: 0.15, color1: '#2D2D44', color2: '#3A2A1A', elements: this._generateFarTrees() },
+                { speed: 0.3, color1: '#2D5A27', color2: '#C4943A', elements: this._generateMidTrees() },
+                { speed: 0.5, color1: '#6B9CB8', color2: '#FF6A2A', elements: this._generateForegroundLeaves() }
+            ];
+        } else if (world === 3) {
             // Volcano parallax
             this.layers = [
                 { speed: 0.05, color1: COLORS.volcano.darkStone, color2: COLORS.volcano.shadow, elements: this._generateMountains() },

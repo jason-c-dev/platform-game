@@ -12,6 +12,7 @@ const GameState = {
     PAUSED: 'PAUSED',
     GAME_OVER: 'GAME_OVER',
     STAGE_COMPLETE: 'STAGE_COMPLETE',
+    VICTORY: 'VICTORY',
 
     // Current state
     current: 'TITLE',
@@ -23,6 +24,14 @@ const GameState = {
     stageTime: 0,            // seconds elapsed in current stage
     coinsCollected: 0,
 
+    // Death tracking (persists across stages for victory screen)
+    totalDeaths: 0,
+    deathCount: 0,
+
+    // Accumulated stats for victory screen
+    totalTime: 0,
+    totalCoins: 0,
+
     // Transition lock — blocks input during iris-wipe
     transitioning: false,
 
@@ -33,6 +42,10 @@ const GameState = {
         this.currentStageId = '1-1';
         this.stageTime = 0;
         this.coinsCollected = 0;
+        this.totalDeaths = 0;
+        this.deathCount = 0;
+        this.totalTime = 0;
+        this.totalCoins = 0;
         this.transitioning = false;
     },
 
@@ -178,6 +191,9 @@ const GameState = {
             case this.STAGE_COMPLETE:
                 this._updateStageComplete();
                 break;
+            case this.VICTORY:
+                this._updateVictory();
+                break;
         }
     },
 
@@ -209,6 +225,9 @@ const GameState = {
             case this.STAGE_COMPLETE:
                 this._renderStage(ctx);
                 Menu.renderStageComplete(ctx);
+                break;
+            case this.VICTORY:
+                Menu.renderVictory(ctx);
                 break;
         }
 
@@ -370,6 +389,39 @@ const GameState = {
         if (this.transitioning) return;
         Input.update();
         Menu.updateStageComplete();
+    },
+
+    setupVictory() {
+        // Record stage completion in save system (same as stage complete)
+        const stageInfo = WorldMap.STAGES.find(s => s.id === this.currentStageId);
+        const totalCoins = stageInfo ? stageInfo.totalCoins : Collectibles.totalCoins;
+        WorldMap.completeStage(this.currentStageId, this.stageTime, this.coinsCollected);
+
+        // Calculate total stats from save data
+        const saveData = SaveSystem.load();
+        let accTime = 0;
+        let accCoins = 0;
+        for (const sid of saveData.completedStages) {
+            if (saveData.bestTimes[sid]) accTime += saveData.bestTimes[sid];
+            if (saveData.coinRecords[sid]) accCoins += saveData.coinRecords[sid];
+        }
+        this.totalTime = accTime;
+        this.totalCoins = accCoins;
+
+        // Initialize victory screen
+        Menu.initVictory(this.totalTime, this.totalCoins, this.totalDeaths);
+    },
+
+    _updateVictory() {
+        if (this.transitioning) return;
+        Input.update();
+        Menu.updateVictory();
+    },
+
+    // Public helper for player death callback
+    _onPlayerDeath() {
+        this.totalDeaths = (this.totalDeaths || 0) + 1;
+        this.deathCount = (this.deathCount || 0) + 1;
     },
 
     // =============================================

@@ -63,6 +63,8 @@ const Player = {
 
     // Death/respawn
     deathTimer: 0,
+    deathCount: 0,
+    totalDeaths: 0,
 
     // Desert mechanics
     inQuicksand: false,
@@ -879,11 +881,25 @@ const Player = {
         }
     },
 
+    // Public alias for death (used by evaluator tests)
+    die() {
+        this._die();
+    },
+
     _die() {
         // CRITICAL FIX: Guard against multiple death calls
         if (this.state === 'dead') return;
 
         this.lives--;
+
+        // Track deaths globally
+        this.deathCount++;
+        this.totalDeaths++;
+        if (typeof GameState !== 'undefined') {
+            GameState.totalDeaths = (GameState.totalDeaths || 0) + 1;
+            GameState.deathCount = (GameState.deathCount || 0) + 1;
+        }
+
         this._changeState('dead');
         this.deathTimer = RESPAWN_DELAY;
         this.vx = 0;
