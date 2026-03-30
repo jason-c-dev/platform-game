@@ -170,7 +170,7 @@ const Physics = {
                         break;
                     }
                 }
-                if (tile === TILE_HAZARD) {
+                if (tile === TILE_HAZARD || tile === TILE_LAVA) {
                     result.hazard = true;
                 }
                 if (tile === TILE_BOUNCE) {
@@ -211,7 +211,8 @@ const Physics = {
             const feetRow = Math.floor((entity.y + entity.height - 1) / TILE_SIZE);
             const headRow = Math.floor(entity.y / TILE_SIZE);
             for (let row = headRow; row <= feetRow; row++) {
-                if (Level.getTile(col, row) === TILE_HAZARD) {
+                const hazTile = Level.getTile(col, row);
+                if (hazTile === TILE_HAZARD || hazTile === TILE_LAVA) {
                     result.hazard = true;
                 }
             }

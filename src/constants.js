@@ -25,6 +25,7 @@ const TILE_WATER_SURFACE = 11;
 const TILE_PRESSURE_PLATE = 12;
 const TILE_GATE = 13;
 const TILE_ICE = 14;
+const TILE_LAVA = 15;
 
 // TILES convenience object for test access
 const TILES = {
@@ -42,7 +43,8 @@ const TILES = {
     WATER_SURFACE: 11,
     PRESSURE_PLATE: 12,
     GATE: 13,
-    ICE: 14
+    ICE: 14,
+    LAVA: 15
 };
 
 // Physics
