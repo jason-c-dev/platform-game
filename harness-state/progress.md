@@ -47,3 +47,11 @@
 - **Time**: 2026-03-30T09:08:20Z
 - **Merge commit**: b343b5ba48a22760d412f5731f1cabd3034adcda
 
+
+## Sprint 05: Enemy & Boss Framework + World 1: Whispering Forest
+
+- **Status**: PASS
+- **Attempt**: 1
+- **Time**: 2026-03-30T10:01:12Z
+- **Merge commit**: 5864a269d6f5eda55cb9a16600695abe07df0f06
+
