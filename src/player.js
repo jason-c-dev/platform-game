@@ -29,6 +29,10 @@ const Player = {
     lives: PLAYER_START_LIVES,
     gameOver: false,
 
+    // Health alias (for test compatibility)
+    get health() { return this.hp; },
+    set health(v) { this.hp = v; },
+
     // Animation
     animFrame: 0,
     animTimer: 0,
