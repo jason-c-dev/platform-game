@@ -1,0 +1,419 @@
+{
+  "sprintNumber": 10,
+  "name": "Audio System",
+  "features": ["F22: Synthesized Audio System"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "Audio Engine",
+      "description": "An AudioManager module (global object) exists and is loaded via a <script> tag in index.html (src/audio.js). It initializes a Web Audio API AudioContext. The module exposes an 'init()' method and stores a reference to the AudioContext.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load the game page",
+        "page.evaluate(() => typeof AudioManager !== 'undefined')",
+        "Verify AudioManager exists as a global object",
+        "page.evaluate(() => typeof AudioManager.init === 'function')",
+        "Verify init method exists",
+        "page.evaluate(() => { AudioManager.init(); return AudioManager.ctx instanceof AudioContext || AudioManager.ctx instanceof webkitAudioContext; })",
+        "Verify AudioContext is created after init"
+      ],
+      "threshold": "AudioManager global exists with init() that creates a Web Audio API AudioContext"
+    },
+    {
+      "id": "C-02",
+      "category": "Audio Engine",
+      "description": "AudioManager uses only Web Audio API oscillators and nodes (OscillatorNode, GainNode, BiquadFilterNode) for sound synthesis. No external audio files (.mp3, .wav, .ogg) are loaded or referenced anywhere in the codebase.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Grep codebase for .mp3, .wav, .ogg, .aac references — verify zero results",
+        "page.evaluate(() => { AudioManager.init(); const testSound = AudioManager.playJump ? AudioManager.playJump() : null; return typeof OscillatorNode !== 'undefined' && typeof GainNode !== 'undefined'; })",
+        "Verify Web Audio API types are available and used",
+        "Check src/audio.js source for OscillatorNode or createOscillator usage"
+      ],
+      "threshold": "Zero external audio files; all sounds synthesized via Web Audio API oscillators and nodes"
+    },
+    {
+      "id": "C-03",
+      "category": "Audio Engine",
+      "description": "AudioManager has a masterVolume property (0.0 to 1.0) and a muted boolean property. When muted is true, no sounds play (gain is 0). Setting masterVolume adjusts the master GainNode that all sounds route through.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasMasterVolume: typeof AudioManager.masterVolume === 'number', hasMuted: typeof AudioManager.muted === 'boolean', volume: AudioManager.masterVolume, muted: AudioManager.muted }; })",
+        "Verify masterVolume is a number between 0 and 1",
+        "Verify muted is a boolean, default false",
+        "page.evaluate(() => { AudioManager.masterVolume = 0.5; return AudioManager.masterVolume === 0.5; })",
+        "Verify masterVolume is settable",
+        "page.evaluate(() => { AudioManager.muted = true; return AudioManager.muted === true; })",
+        "Verify muted is settable"
+      ],
+      "threshold": "masterVolume (0-1 number) and muted (boolean) properties exist and are settable"
+    },
+    {
+      "id": "C-04",
+      "category": "Player Sounds",
+      "description": "AudioManager has a playJump() method that synthesizes a jump sound effect. Calling it does not throw an error. The method creates at least one OscillatorNode or uses the Web Audio API to produce sound.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return typeof AudioManager.playJump === 'function'; })",
+        "Verify playJump method exists",
+        "page.evaluate(() => { try { AudioManager.playJump(); return true; } catch(e) { return e.message; } })",
+        "Verify calling playJump() does not throw"
+      ],
+      "threshold": "playJump() method exists and executes without error"
+    },
+    {
+      "id": "C-05",
+      "category": "Player Sounds",
+      "description": "AudioManager has a playLand() method for landing, a playWallSlide() method for wall sliding, and a playAttack() method for melee attacks. All execute without errors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasLand: typeof AudioManager.playLand === 'function', hasWallSlide: typeof AudioManager.playWallSlide === 'function', hasAttack: typeof AudioManager.playAttack === 'function' }; })",
+        "Verify all three methods exist",
+        "page.evaluate(() => { try { AudioManager.playLand(); AudioManager.playWallSlide(); AudioManager.playAttack(); return true; } catch(e) { return e.message; } })",
+        "Verify all three execute without error"
+      ],
+      "threshold": "playLand(), playWallSlide(), playAttack() methods exist and execute without error"
+    },
+    {
+      "id": "C-06",
+      "category": "Player Sounds",
+      "description": "AudioManager has a playHurt() method for player damage and a playDeath() method for player death. Both execute without errors and produce distinct sound characteristics.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasHurt: typeof AudioManager.playHurt === 'function', hasDeath: typeof AudioManager.playDeath === 'function' }; })",
+        "Verify both methods exist",
+        "page.evaluate(() => { try { AudioManager.playHurt(); AudioManager.playDeath(); return true; } catch(e) { return e.message; } })",
+        "Verify both execute without error"
+      ],
+      "threshold": "playHurt() and playDeath() methods exist and execute without error"
+    },
+    {
+      "id": "C-07",
+      "category": "Player Sound Integration",
+      "description": "Player jump triggers AudioManager.playJump(). When the player jumps (vy becomes negative from jump input), the jump sound is invoked. The integration is in the player or states update code.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); let called = false; const orig = AudioManager.playJump; AudioManager.playJump = () => { called = true; if (orig) orig.call(AudioManager); }; return { ready: true }; })",
+        "Enter a stage, place player on ground",
+        "page.evaluate(() => { Player.onGround = true; Player.vy = 0; Player.hp = 3; Input._keys = {}; Input._justPressed = { 'z': true, 'Z': true }; Player.update(1/60); const result = called; AudioManager.playJump = orig; return result; })",
+        "Verify called === true (jump sound was triggered)"
+      ],
+      "threshold": "Player jump action triggers AudioManager.playJump()"
+    },
+    {
+      "id": "C-08",
+      "category": "Player Sound Integration",
+      "description": "Player taking damage triggers AudioManager.playHurt(). When the player loses HP (hit by enemy or hazard), the hurt sound plays.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); let called = false; const orig = AudioManager.playHurt; AudioManager.playHurt = () => { called = true; }; Player.hp = 3; Player.invincible = false; Player.invincibleTimer = 0; if (typeof Player.takeDamage === 'function') Player.takeDamage(1); else if (typeof Player.hurt === 'function') Player.hurt(); else { Player.hp = 2; } const result = called; AudioManager.playHurt = orig; return result; })",
+        "Verify called === true (hurt sound was triggered on damage)"
+      ],
+      "threshold": "Player damage triggers AudioManager.playHurt()"
+    },
+    {
+      "id": "C-09",
+      "category": "Enemy Sounds",
+      "description": "AudioManager has playEnemyHit() and playEnemyDefeat() methods for enemy damage and death sound effects. Both execute without errors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasEnemyHit: typeof AudioManager.playEnemyHit === 'function', hasEnemyDefeat: typeof AudioManager.playEnemyDefeat === 'function' }; })",
+        "Verify both methods exist",
+        "page.evaluate(() => { try { AudioManager.playEnemyHit(); AudioManager.playEnemyDefeat(); return true; } catch(e) { return e.message; } })",
+        "Verify both execute without error"
+      ],
+      "threshold": "playEnemyHit() and playEnemyDefeat() methods exist and execute without error"
+    },
+    {
+      "id": "C-10",
+      "category": "Boss Sounds",
+      "description": "AudioManager has boss-specific sound methods: playBossEntrance(), playBossHit(), playBossDefeat(), and playBossPhaseTransition(). All execute without errors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasBossEntrance: typeof AudioManager.playBossEntrance === 'function', hasBossHit: typeof AudioManager.playBossHit === 'function', hasBossDefeat: typeof AudioManager.playBossDefeat === 'function', hasBossPhase: typeof AudioManager.playBossPhaseTransition === 'function' }; })",
+        "Verify all four boss sound methods exist",
+        "page.evaluate(() => { try { AudioManager.playBossEntrance(); AudioManager.playBossHit(); AudioManager.playBossDefeat(); AudioManager.playBossPhaseTransition(); return true; } catch(e) { return e.message; } })",
+        "Verify all four execute without error"
+      ],
+      "threshold": "playBossEntrance(), playBossHit(), playBossDefeat(), playBossPhaseTransition() all exist and execute without error"
+    },
+    {
+      "id": "C-11",
+      "category": "UI Sounds",
+      "description": "AudioManager has UI sound methods: playCoinCollect(), playHealthPickup(), playExtraLife(), playMenuSelect(), playMenuConfirm(). All execute without errors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasCoin: typeof AudioManager.playCoinCollect === 'function', hasHealth: typeof AudioManager.playHealthPickup === 'function', hasExtraLife: typeof AudioManager.playExtraLife === 'function', hasMenuSelect: typeof AudioManager.playMenuSelect === 'function', hasMenuConfirm: typeof AudioManager.playMenuConfirm === 'function' }; })",
+        "Verify all five UI sound methods exist",
+        "page.evaluate(() => { try { AudioManager.playCoinCollect(); AudioManager.playHealthPickup(); AudioManager.playExtraLife(); AudioManager.playMenuSelect(); AudioManager.playMenuConfirm(); return true; } catch(e) { return e.message; } })",
+        "Verify all five execute without error"
+      ],
+      "threshold": "All 5 UI sound methods exist and execute without error"
+    },
+    {
+      "id": "C-12",
+      "category": "UI Sounds",
+      "description": "AudioManager has playStageClear() for stage completion and playGameOver() for game over. Both execute without errors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasStageClear: typeof AudioManager.playStageClear === 'function', hasGameOver: typeof AudioManager.playGameOver === 'function' }; })",
+        "Verify both methods exist",
+        "page.evaluate(() => { try { AudioManager.playStageClear(); AudioManager.playGameOver(); return true; } catch(e) { return e.message; } })",
+        "Verify both execute without error"
+      ],
+      "threshold": "playStageClear() and playGameOver() methods exist and execute without error"
+    },
+    {
+      "id": "C-13",
+      "category": "UI Sound Integration",
+      "description": "Collecting a coin triggers AudioManager.playCoinCollect(). The collectible system calls the coin sound when a coin is picked up by the player.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage with coins",
+        "page.evaluate(() => { AudioManager.init(); let called = false; const orig = AudioManager.playCoinCollect; AudioManager.playCoinCollect = () => { called = true; }; if (Collectibles.coins && Collectibles.coins.length > 0) { const coin = Collectibles.coins[0]; Player.x = coin.x; Player.y = coin.y; Collectibles.update(1/60); } const result = called; AudioManager.playCoinCollect = orig; return result; })",
+        "Verify called === true (coin collect sound was triggered)"
+      ],
+      "threshold": "Coin collection triggers AudioManager.playCoinCollect()"
+    },
+    {
+      "id": "C-14",
+      "category": "UI Sound Integration",
+      "description": "Menu navigation triggers AudioManager.playMenuSelect() when moving between options, and AudioManager.playMenuConfirm() when selecting an option. Integrated into the Menu update functions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); let selectCalled = false; let confirmCalled = false; const origS = AudioManager.playMenuSelect; const origC = AudioManager.playMenuConfirm; AudioManager.playMenuSelect = () => { selectCalled = true; }; AudioManager.playMenuConfirm = () => { confirmCalled = true; }; return { ready: true }; })",
+        "Navigate to title screen, press ArrowDown then Enter",
+        "page.evaluate(() => { const result = { selectCalled, confirmCalled }; AudioManager.playMenuSelect = origS; AudioManager.playMenuConfirm = origC; return result; })",
+        "Verify selectCalled === true and confirmCalled === true"
+      ],
+      "threshold": "Menu navigation triggers playMenuSelect(); menu confirmation triggers playMenuConfirm()"
+    },
+    {
+      "id": "C-15",
+      "category": "World Ambient",
+      "description": "AudioManager has a startAmbient(worldId) method that begins a looping ambient audio track for the given world. It also has a stopAmbient() method. Calling startAmbient('forest') does not throw.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasStartAmbient: typeof AudioManager.startAmbient === 'function', hasStopAmbient: typeof AudioManager.stopAmbient === 'function' }; })",
+        "Verify both methods exist",
+        "page.evaluate(() => { try { AudioManager.startAmbient('forest'); AudioManager.stopAmbient(); return true; } catch(e) { return e.message; } })",
+        "Verify startAmbient('forest') and stopAmbient() execute without error"
+      ],
+      "threshold": "startAmbient(worldId) and stopAmbient() methods exist and execute without error"
+    },
+    {
+      "id": "C-16",
+      "category": "World Ambient",
+      "description": "AudioManager supports ambient audio for all 4 world themes. Calling startAmbient with 'forest', 'desert', 'tundra', and 'volcano' each executes without error and produces distinct ambient loops.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); const results = {}; ['forest', 'desert', 'tundra', 'volcano'].forEach(world => { try { AudioManager.startAmbient(world); results[world] = true; AudioManager.stopAmbient(); } catch(e) { results[world] = e.message; } }); return results; })",
+        "Verify all 4 world ambients return true (no errors)",
+        "Verify forest, desert, tundra, and volcano are all supported"
+      ],
+      "threshold": "startAmbient works for all 4 worlds: forest, desert, tundra, volcano"
+    },
+    {
+      "id": "C-17",
+      "category": "World Ambient Integration",
+      "description": "When entering a stage, the appropriate world ambient starts automatically. Entering a World 1 (Forest) stage triggers startAmbient with the forest theme. Exiting to the world map stops the ambient.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); let lastAmbient = null; let stopped = false; const origStart = AudioManager.startAmbient; const origStop = AudioManager.stopAmbient; AudioManager.startAmbient = (w) => { lastAmbient = w; }; AudioManager.stopAmbient = () => { stopped = true; }; return { ready: true }; })",
+        "Enter stage 1-1 (Forest world)",
+        "page.evaluate(() => { const result = { lastAmbient, stopped }; AudioManager.startAmbient = origStart; AudioManager.stopAmbient = origStop; return result; })",
+        "Verify lastAmbient is 'forest' or equivalent (world 1 theme)",
+        "Verify ambient starts when stage loads"
+      ],
+      "threshold": "Entering a stage auto-starts the correct world ambient; exiting stops it"
+    },
+    {
+      "id": "C-18",
+      "category": "Boss Music",
+      "description": "AudioManager has a startBossMusic() method that begins a procedural percussion loop and a stopBossMusic() method that stops it. Both execute without errors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); return { hasStartBoss: typeof AudioManager.startBossMusic === 'function', hasStopBoss: typeof AudioManager.stopBossMusic === 'function' }; })",
+        "Verify both methods exist",
+        "page.evaluate(() => { try { AudioManager.startBossMusic(); AudioManager.stopBossMusic(); return true; } catch(e) { return e.message; } })",
+        "Verify both execute without error"
+      ],
+      "threshold": "startBossMusic() and stopBossMusic() methods exist and execute without error"
+    },
+    {
+      "id": "C-19",
+      "category": "Boss Music",
+      "description": "Boss music tempo increases as boss health decreases. AudioManager has an updateBossMusic(healthRatio) method (or equivalent) that adjusts tempo. When healthRatio is low (e.g. 0.2), the tempo is faster than when healthRatio is high (e.g. 1.0).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); const hasUpdate = typeof AudioManager.updateBossMusic === 'function' || typeof AudioManager.setBossMusicTempo === 'function'; return { hasUpdate }; })",
+        "Verify tempo update method exists",
+        "page.evaluate(() => { AudioManager.startBossMusic(); let tempoAtFull, tempoAtLow; if (typeof AudioManager.updateBossMusic === 'function') { AudioManager.updateBossMusic(1.0); tempoAtFull = AudioManager.bossMusictempo || AudioManager._bossInterval || AudioManager._bossTempo || 'called'; AudioManager.updateBossMusic(0.2); tempoAtLow = AudioManager.bossMusictempo || AudioManager._bossInterval || AudioManager._bossTempo || 'called'; } else if (typeof AudioManager.setBossMusicTempo === 'function') { AudioManager.setBossMusicTempo(1.0); tempoAtFull = AudioManager._bossInterval || AudioManager._bossTempo; AudioManager.setBossMusicTempo(0.2); tempoAtLow = AudioManager._bossInterval || AudioManager._bossTempo; } AudioManager.stopBossMusic(); return { tempoAtFull, tempoAtLow }; })",
+        "Verify tempo values differ (faster at low health)"
+      ],
+      "threshold": "Boss music tempo adjusts based on health ratio — faster at low health"
+    },
+    {
+      "id": "C-20",
+      "category": "Boss Music Integration",
+      "description": "Boss music starts automatically when a boss fight begins (boss spawns) and stops when the boss is defeated. The enemy/boss system calls AudioManager.startBossMusic() on boss activation.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); let musicStarted = false; let musicStopped = false; const origStart = AudioManager.startBossMusic; const origStop = AudioManager.stopBossMusic; AudioManager.startBossMusic = () => { musicStarted = true; }; AudioManager.stopBossMusic = () => { musicStopped = true; }; return { ready: true }; })",
+        "Enter stage 1-3 (has Stag King boss), trigger boss arena",
+        "page.evaluate(() => { const result = { musicStarted, musicStopped }; AudioManager.startBossMusic = origStart; AudioManager.stopBossMusic = origStop; return result; })",
+        "Verify musicStarted === true (boss music auto-starts with boss)"
+      ],
+      "threshold": "Boss music starts when boss fight begins and stops on boss defeat"
+    },
+    {
+      "id": "C-21",
+      "category": "Pause Menu Volume",
+      "description": "The pause menu includes a volume control option. The pause menu options list includes an item for adjusting volume (e.g., 'Volume: XX%' or 'Volume' with left/right adjustment). Pressing left/right on the volume option changes AudioManager.masterVolume.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage and pause the game",
+        "page.evaluate(() => { const options = Menu._pauseOptions; const hasVolume = options.some(o => typeof o === 'string' ? o.toLowerCase().includes('volume') : (o.label && o.label.toLowerCase().includes('volume'))); return { options, hasVolume }; })",
+        "Verify pause menu has a volume-related option",
+        "Navigate to volume option, press left/right arrows",
+        "page.evaluate(() => AudioManager.masterVolume)",
+        "Verify volume changed from default"
+      ],
+      "threshold": "Pause menu has volume control that adjusts AudioManager.masterVolume via left/right"
+    },
+    {
+      "id": "C-22",
+      "category": "Pause Menu Mute",
+      "description": "The pause menu includes a mute toggle option. Selecting the mute option (or toggling via a dedicated control) sets AudioManager.muted to true/false. The mute state is visually reflected in the menu (e.g., 'Mute: ON/OFF' or speaker icon).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage and pause the game",
+        "page.evaluate(() => { const options = Menu._pauseOptions; const hasMute = options.some(o => typeof o === 'string' ? o.toLowerCase().includes('mute') || o.toLowerCase().includes('sound') : (o.label && (o.label.toLowerCase().includes('mute') || o.label.toLowerCase().includes('sound')))); return { options, hasMute }; })",
+        "Verify pause menu has a mute-related option",
+        "page.evaluate(() => { AudioManager.init(); AudioManager.muted = false; return AudioManager.muted; })",
+        "Toggle mute via menu interaction",
+        "page.evaluate(() => AudioManager.muted)",
+        "Verify muted state toggled to true"
+      ],
+      "threshold": "Pause menu has mute toggle that sets AudioManager.muted"
+    },
+    {
+      "id": "C-23",
+      "category": "Script Loading",
+      "description": "index.html includes a <script> tag loading src/audio.js. The script is loaded before src/states.js and src/game.js (since those modules may reference AudioManager). The AudioManager global is accessible after page load.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Read index.html source, verify <script src='src/audio.js'></script> is present",
+        "page.evaluate(() => typeof AudioManager !== 'undefined')",
+        "Verify AudioManager is defined on page load",
+        "Verify audio.js script tag appears before states.js and game.js in the HTML"
+      ],
+      "threshold": "src/audio.js loaded via script tag in index.html before states.js and game.js"
+    },
+    {
+      "id": "C-24",
+      "category": "Audio Init Integration",
+      "description": "AudioManager.init() is called during game startup (in Game.init() or on first user interaction). The AudioContext is created and ready for sound playback. AudioContext handles the browser autoplay policy (resumes on user gesture).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { return { hasCtx: AudioManager.ctx !== null && AudioManager.ctx !== undefined, ctxState: AudioManager.ctx ? AudioManager.ctx.state : 'no context' }; })",
+        "Verify AudioContext exists after game init",
+        "Click the canvas or press a key to satisfy autoplay policy",
+        "page.evaluate(() => AudioManager.ctx.state)",
+        "Verify AudioContext state is 'running' or 'suspended' (created successfully)"
+      ],
+      "threshold": "AudioManager initializes AudioContext during game startup; handles autoplay policy"
+    },
+    {
+      "id": "C-25",
+      "category": "Sound Variety",
+      "description": "Each sound effect method produces a sonically distinct sound. At minimum, jump, attack, hurt, coin, and boss hit use different base frequencies, waveforms, or envelope parameters. The audio module contains at least 15 distinct sound synthesis routines.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Read src/audio.js source code",
+        "Count distinct play* methods (playJump, playLand, playAttack, playHurt, playDeath, playEnemyHit, playEnemyDefeat, playBossEntrance, playBossHit, playBossDefeat, playBossPhaseTransition, playCoinCollect, playHealthPickup, playExtraLife, playMenuSelect, playMenuConfirm, playStageClear, playGameOver)",
+        "Verify at least 15 distinct play* methods exist",
+        "page.evaluate(() => { const methods = Object.getOwnPropertyNames(AudioManager).filter(k => k.startsWith('play') && typeof AudioManager[k] === 'function'); return { count: methods.length, methods }; })",
+        "Verify count >= 15"
+      ],
+      "threshold": "AudioManager has at least 15 distinct play* sound effect methods"
+    },
+    {
+      "id": "C-26",
+      "category": "Mute Behavior",
+      "description": "When AudioManager.muted is true, calling any play* method does not produce audio output. The master gain node is set to 0 when muted. Unmuting restores the previous volume level.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { AudioManager.init(); AudioManager.masterVolume = 0.7; AudioManager.muted = true; const mutedGain = AudioManager._masterGain ? AudioManager._masterGain.gain.value : null; AudioManager.muted = false; const unmutedGain = AudioManager._masterGain ? AudioManager._masterGain.gain.value : null; return { mutedGain, unmutedGain, volumeRestored: unmutedGain > 0 }; })",
+        "Verify mutedGain is 0 (or near 0)",
+        "Verify unmutedGain is > 0 (volume restored after unmute)",
+        "Verify no errors thrown when playing sounds while muted"
+      ],
+      "threshold": "Muting sets master gain to 0; unmuting restores previous volume"
+    },
+    {
+      "id": "C-27",
+      "category": "Regression",
+      "description": "All 12 stages (1-1 through 4-3) still load correctly. Adding the audio system has not broken any stage loading. Each stage loads with correct width, enemies, and tile data.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "For each stage ID in ['1-1','1-2','1-3','2-1','2-2','2-3','3-1','3-2','3-3','4-1','4-2','4-3']:",
+        "page.evaluate((id) => { Level.loadStage(id); return { id, width: Level.width, hasEnemies: Enemies.enemies.length > 0 }; }, id)",
+        "Verify all 12 stages load with width > 0 and at least 1 enemy"
+      ],
+      "threshold": "All 12 world stages load correctly with audio system integrated"
+    },
+    {
+      "id": "C-28",
+      "category": "Regression",
+      "description": "The Citadel stage (5-1) and The Architect boss still load and function correctly. Audio additions do not break the final boss or victory flow.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { Level.loadStage('5-1'); return { width: Level.width, hasBoss: Level.bossData !== null && Level.bossData !== undefined }; })",
+        "Verify Citadel loads with width >= 200 and boss data",
+        "Trigger boss fight, verify boss spawns with 19 HP",
+        "Verify VICTORY state still exists and is reachable"
+      ],
+      "threshold": "Citadel stage and Architect boss work correctly with audio system"
+    },
+    {
+      "id": "C-29",
+      "category": "Regression",
+      "description": "Player movement, combat, and all game states function correctly. Adding audio hooks has not broken player controls, state transitions, or the pause menu's existing functionality (Resume, Restart Stage, Return to World Map, Quit to Title).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage, verify player can move (vx changes with arrow input)",
+        "Verify player can jump (vy < 0 with Z key)",
+        "Verify player can attack (state becomes 'attack' with X key)",
+        "Verify pause menu opens with Escape",
+        "Verify pause menu still has Resume, Restart Stage, Return to World Map, Quit to Title options",
+        "Verify Resume returns to gameplay"
+      ],
+      "threshold": "Player movement, combat, and state machine function correctly with audio integrated"
+    },
+    {
+      "id": "C-30",
+      "category": "Regression",
+      "description": "The game loads without JavaScript errors. No console errors on page load or during gameplay with the audio system active. All script tags resolve. The game runs at stable framerate.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.on('pageerror') to capture JS errors",
+        "Load the game page",
+        "Navigate to world map, enter a stage, play for 5 seconds",
+        "Pause the game, resume, return to world map",
+        "Verify zero unhandled JS errors throughout"
+      ],
+      "threshold": "Zero JS errors on load and during gameplay with audio system active"
+    }
+  ],
+  "outOfScope": [
+    "Visual effects — screen shake, hit flash, slow-mo, particles (Sprint 11)",
+    "Performance optimization pass (Sprint 12)",
+    "Spatial audio or 3D panning (not in spec)",
+    "Background music for non-boss gameplay (spec only calls for ambient + boss percussion)",
+    "Audio visualization or waveform display",
+    "Modifying any world content, levels, enemies, or bosses beyond adding audio hooks",
+    "Save system changes for audio preferences (volume/mute are session-only per spec)"
+  ],
+  "regressionSprints": [1, 2, 3, 4, 5, 6, 7, 8, 9]
+}
