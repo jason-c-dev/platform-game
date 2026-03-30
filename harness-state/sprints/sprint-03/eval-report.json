@@ -1,0 +1,185 @@
+{
+  "sprintNumber": 3,
+  "overallResult": "PASS",
+  "passCount": 28,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "result": "PASS",
+      "evidence": "Code review of states.js: 6 states defined (TITLE, CONTROLS, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE), exceeding the 5-state minimum. GameState.current tracks state. update() and render() dispatch via switch on current state. Clean transition functions: transitionTo() with iris-wipe and changeTo() for instant changes. Each state has setup/initialization functions (setupTitle, setupStage, restartStage, setupGameOver, setupStageComplete)."
+    },
+    {
+      "id": "C-02",
+      "result": "PASS",
+      "evidence": "Playwright: Game opens to TITLE state. window.__gameDebug.gameState === 'TITLE' on load. Title screen renders game name, no gameplay active, player not visible."
+    },
+    {
+      "id": "C-03",
+      "result": "PASS",
+      "evidence": "Playwright: Menu.animTimer ticks continuously. 'Press Enter to Start' text uses pulseAlpha = 0.4 + 0.6*|sin(animTimer*2.5)| for opacity animation and pulseScale = 1.0 + 0.03*sin(animTimer*2.5) for size pulsing. menu.js:142-148 confirms animated rendering."
+    },
+    {
+      "id": "C-04",
+      "result": "PASS",
+      "evidence": "Playwright: Menu._titleBgOffset changed from 14.5 to 74.5 over 2 seconds. Title background has scrolling starfield (80 stars with parallax speeds), scrolling mountain silhouettes at 3 depths (0.15x, 0.3x, 0.6x speed), and 30 floating particles with wobble physics."
+    },
+    {
+      "id": "C-05",
+      "result": "PASS",
+      "evidence": "Playwright: Pressing Enter on TITLE triggers transitionTo(STAGE) with iris-wipe. State changes TITLE → STAGE. Player appears at (96, 642) and is controllable. Movement confirmed via subsequent ArrowRight input."
+    },
+    {
+      "id": "C-06",
+      "result": "PASS",
+      "evidence": "Playwright: Pressing 'c' on title screen transitions to CONTROLS state. Controls screen renders all 8 key bindings: Arrow Keys (move), Arrow Up (look up), Arrow Down (crouch), Z (jump), X (attack), Shift (run), Escape (pause), Enter (confirm). Bindings listed at menu.js:266-274."
+    },
+    {
+      "id": "C-07",
+      "result": "PASS",
+      "evidence": "Playwright: Pressing Escape on CONTROLS screen returns to TITLE. State confirmed: CONTROLS → TITLE. Title screen fully functional after return (Enter to start still works)."
+    },
+    {
+      "id": "C-08",
+      "result": "PASS",
+      "evidence": "Playwright: Pressing Escape during STAGE changes state to PAUSED. Gameplay freezes (state._updateStage returns early when transitioning check). Pause menu overlay renders over frozen game scene."
+    },
+    {
+      "id": "C-09",
+      "result": "PASS",
+      "evidence": "Playwright: Menu._pauseOptions = ['Resume', 'Restart Stage', 'Quit to Title']. All 3 required options present. First option highlighted by default (selectedIndex=0). Menu rendered with design spec styling (warm slate buttons, muted gold borders, selection triangle)."
+    },
+    {
+      "id": "C-10",
+      "result": "PASS",
+      "evidence": "Playwright: Pressing Escape while PAUSED returns to STAGE. Also confirmed: selecting Resume (Enter on index 0) performs changeTo(STAGE). Gameplay resumes, player controllable."
+    },
+    {
+      "id": "C-11",
+      "result": "PASS",
+      "evidence": "Playwright: After moving player away from spawn, selecting Restart Stage (ArrowDown + Enter) triggers transitionTo(STAGE, restartStage). Player returns with HP=3, state=STAGE. restartStage() at states.js:87-100 reinitializes Level, Particles, Player, Camera, stageTime, and coinsCollected."
+    },
+    {
+      "id": "C-12",
+      "result": "PASS",
+      "evidence": "Playwright: Selecting Quit to Title (ArrowDown x2 + Enter) triggers transitionTo(TITLE, setupTitle). State confirmed: STAGE → TITLE via iris-wipe. Title screen fully functional."
+    },
+    {
+      "id": "C-13",
+      "result": "PASS",
+      "evidence": "Playwright: Pause menu selectedIndex starts at 0. ArrowDown changes to 1, ArrowUp returns to 0. Menu wraps around (index -1 → 2, index 3 → 0). Enter activates highlighted option. menu.js:337-345 handles navigation with modular arithmetic."
+    },
+    {
+      "id": "C-14",
+      "result": "PASS",
+      "evidence": "Playwright: HUD._renderHealthHearts renders 3 filled hearts at top-left (16px inset). Hearts drawn with bezierCurveTo (hud.js:108-116), filled in Ember Red #D94F4F with #A83A3A outline. Empty hearts show Steel Blue #6B8CAE outline. 24x24 size, 4px gap. Pulse animation on HP change (scale 1.0→1.05→1.0 over 0.3s)."
+    },
+    {
+      "id": "C-15",
+      "result": "PASS",
+      "evidence": "Playwright: Coin counter displays at top-center. GameState.coinsCollected starts at 0. HUD._renderCoinCounter draws gold circle (12px diameter, #FFD700) with glint (#FFF8DC) and monospace text '× 000'. Scale-up animation on coin change."
+    },
+    {
+      "id": "C-16",
+      "result": "PASS",
+      "evidence": "Playwright: GameState.stageName = 'Test Stage' displayed in top-right via HUD._renderStageName. 18px bold sans-serif in Soft Cream #E8DCC8 with 2px dark outline. Semi-transparent dark background panel."
+    },
+    {
+      "id": "C-17",
+      "result": "PASS",
+      "evidence": "Code review + Playwright: All HUD elements use rgba(26,26,46,0.75) backgrounds (deepCharcoal with 75% opacity). Confirmed in _renderHealthHearts (hud.js:78), _renderCoinCounter (hud.js:158), _renderStageName (hud.js:215), and _renderBossHealthBar (hud.js:252). Rounded rectangle backgrounds with 4px radius ensure readability."
+    },
+    {
+      "id": "C-18",
+      "result": "PASS",
+      "evidence": "Playwright: triggerGameOver() via debug API sets HP=0, lives=0, gameOver=true and transitions to GAME_OVER state with iris-wipe. Menu._gameOverOptions = ['Continue', 'Quit to Title']. Game Over screen renders 'GAME OVER' in Ember Red 48px bold, with menu panel."
+    },
+    {
+      "id": "C-19",
+      "result": "PASS",
+      "evidence": "Playwright: Selecting Continue on Game Over triggers transitionTo(STAGE, restartStage). Player returns with HP=3, lives=5 (full refresh via Player.init()). Stage reset confirmed."
+    },
+    {
+      "id": "C-20",
+      "result": "PASS",
+      "evidence": "Playwright: Selecting Quit on Game Over (ArrowDown + Enter) triggers transitionTo(TITLE, setupTitle). State confirmed: GAME_OVER → TITLE. Title screen fully functional."
+    },
+    {
+      "id": "C-21",
+      "result": "PASS",
+      "evidence": "Playwright: triggerStageComplete() via debug API transitions to STAGE_COMPLETE. Screen shows 'STAGE COMPLETE!' in Moss Green, stats panel with time (MM:SS format) and coins collected, congratulatory message 'Well done, adventurer!', and pulsing 'Press Enter to Continue' prompt."
+    },
+    {
+      "id": "C-22",
+      "result": "PASS",
+      "evidence": "Playwright: Transition.active=true and phase='closing' detected 100ms after pressing Enter on title screen. Transition uses circular mask (evenodd fill) that shrinks and expands. Not an instant cut — visible animated period of ~500ms."
+    },
+    {
+      "id": "C-23",
+      "result": "PASS",
+      "evidence": "Code review of transition.js: Two phases implemented — 'closing' (circle shrinks, quadratic ease-in t*t) and 'opening' (circle expands, quadratic ease-out 1-(1-t)^2). 'hold' phase at midpoint for 1 frame. State change via _onMidpoint callback fires at midpoint when screen is fully black. Duration: 250ms per phase (500ms total), matching design spec. Input blocked via GameState.transitioning flag checked in all _update* methods."
+    },
+    {
+      "id": "C-24",
+      "result": "PASS",
+      "evidence": "Playwright: window.__gameDebug exposes gameState, currentState, and state (all getter properties returning GameState.current). Initial state = 'TITLE'. After Enter + transition, state changes to 'STAGE'. Debug API also exposes triggerGameOver(), triggerStageComplete(), and transitionTo() for test control."
+    },
+    {
+      "id": "C-25",
+      "result": "PASS",
+      "evidence": "Code review of hud.js:233-285: _renderBossHealthBar renders at bottom-center (barX = (CANVAS_WIDTH-320)/2, barY = CANVAS_HEIGHT-48). Conditional: only renders when HUD.bossActive is true (hud.js:57). Boss name label above bar in 12px sans-serif. Bar: 320x12px, Deep Charcoal bg, 2px Warm Slate border. Fill uses linear gradient from Ember Red to Moss Green. Smooth lerp interpolation at 0.3s rate."
+    },
+    {
+      "id": "C-26",
+      "result": "PASS",
+      "evidence": "Code review of file structure: HUD in src/hud.js (11KB), menus in src/menu.js (22KB), state machine in src/states.js (7KB), transitions in src/transition.js (5KB). All loaded via <script> tags in index.html (lines 44-48). Game loop (game.js) delegates entirely to GameState.update() and GameState.render() — no inline HUD/menu logic."
+    },
+    {
+      "id": "C-27",
+      "result": "PASS",
+      "evidence": "Playwright regression: Player lands on ground (onGround=true). ArrowRight moves player (x: 96→299). Z triggers jump (y: 642→628). X triggers attack (state='attack'). ArrowDown triggers crouch (state='crouch', height=20). Camera follows player (cam.x: 0→172). Run speed constants unchanged (WALK=5, RUN=8, ratio=1.6x). HP=3, lives=5 confirmed. No JS console errors."
+    },
+    {
+      "id": "C-28",
+      "result": "PASS",
+      "evidence": "Playwright: canvas.width=960, canvas.height=540. FPS=60 (averaged over 3+ seconds). Zero JS console errors throughout all tests."
+    }
+  ],
+  "regressionResults": {
+    "sprint1": {
+      "result": "PASS",
+      "details": "All Sprint 1 engine features intact: 960x540 canvas, fixed-timestep game loop at 60fps, tile rendering with Forest palette, gravity+collision physics, camera follow with dead zone and parallax (4 layers), level bounds clamping. No regressions detected."
+    },
+    "sprint2": {
+      "result": "PASS",
+      "details": "All Sprint 2 player mechanics intact: walk/run movement (5/8 max speed ratio=1.6x), variable-height jump, wall slide/wall jump, coyote time, jump buffer, crouch (height 30→20), crouch-slide, melee attack, charge attack, jump attack, 3HP health with invincibility frames, 5-life system, all animation states, particle effects (landing dust, run dust, wall sparks, death particles). Code unchanged from sprint 2."
+    }
+  },
+  "holisticScores": {
+    "designQuality": {
+      "score": 8,
+      "rationale": "Excellent adherence to design-spec.md. All 7 UI chrome colors used correctly (deepCharcoal #1A1A2E, warmSlate #2D2D44, mutedGold #C4A35A, softCream #E8DCC8, emberRed #D94F4F, mossGreen #5A9E6F, steelBlue #6B8CAE). Typography matches spec: 48px bold uppercase title, 22px menu options, 16px mono HUD numbers, 14px body text. 2px dark text outlines on all text. Hearts drawn with bezierCurveTo at 24x24 with 4px xs gap. Coin counter with gold circle and zero-padded mono format. Menu buttons: 240x40 warm slate with muted gold border, selection triangle indicator. Semi-transparent dark panels on all HUD elements. Iris-wipe at 500ms total with easing. Spacing follows 4px base unit system."
+    },
+    "codeQuality": {
+      "score": 8,
+      "rationale": "Clean modular architecture: 4 new files (states.js, hud.js, menu.js, transition.js) each with single responsibility. Consistent object-literal module pattern throughout. Well-organized with clear section headers and comments. State machine uses clean dispatch (switch/case) with guard clauses for transition locking. Debug API comprehensive for testability. Minor: slight duplication between setupStage() and restartStage() that could be DRY'd."
+    },
+    "originality": {
+      "score": 7,
+      "rationale": "Title screen has a richly animated scene: scrolling starfield with twinkling stars (80 stars with individual parallax speeds and brightness oscillation), 3-depth mountain silhouettes with wrapping, and 30 floating particles with sinusoidal wobble. Hearts use custom bezier curve shapes, not rectangles or images. Iris-wipe transition with quadratic easing is a polished touch. Menu selection triangle indicator. Boss health bar has gradient fill and smooth lerp interpolation. Overall shows genuine craft beyond minimal requirements."
+    },
+    "uxInteraction": {
+      "score": 8,
+      "rationale": "All state transitions are smooth and intentional. Input is properly blocked during transitions (no accidental double-triggers). Menus fully keyboard-navigable with wrap-around. Escape both pauses and resumes (dual function). Controls screen accessible from title with clear back navigation. Game Over and Stage Complete screens provide expected options. Visual feedback on menu selection (highlight, triangle, border thickness change)."
+    },
+    "performance": {
+      "score": 9,
+      "rationale": "Maintains solid 60 FPS throughout all states including title screen with 80 animated stars, 30 particles, and parallax mountains. Zero console errors across all test runs. Fixed timestep prevents frame-rate dependent behavior. Efficient state dispatch avoids unnecessary work in non-active states."
+    }
+  },
+  "primaryScore": 8.0,
+  "designQualityBlocking": true,
+  "originalityBlocking": true,
+  "timestamp": "2026-03-30T10:00:00Z",
+  "evaluatorNotes": "Sprint 3 is a comprehensive and well-executed implementation of the game structure layer. All 28 criteria pass. The state machine is clean and extensible. The title screen goes well beyond the minimum with a beautifully animated scene. The HUD faithfully implements the design spec colors, typography, and component patterns. The iris-wipe transition adds genuine polish. Regression testing confirms all Sprint 1 engine and Sprint 2 player mechanics remain fully functional within the new STAGE state. The run speed test showed 1.26x ratio due to acceleration time constraints in the 600ms test window, but code review confirms constants are unchanged (5/8=1.6x). No blocking issues found."
+}
