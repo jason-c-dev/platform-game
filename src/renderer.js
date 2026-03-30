@@ -16,10 +16,27 @@ const Renderer = {
         this.frameTime = 0;
     },
 
+    // Dark mode rendering: spotlight for dark rooms
+    darkMode: false,
+    drawDarkOverlay(ctx) { this.renderDarkOverlay(ctx); },
+    _heatShimmerTimer: 0,
+
     clear() {
-        // Deep forest background
-        this.ctx.fillStyle = '#0D1B0E';
-        this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        const world = this._getCurrentWorld();
+        if (world === 1) {
+            // Desert background
+            this.ctx.fillStyle = '#2A1A0A';
+            this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        } else {
+            // Forest / default background
+            this.ctx.fillStyle = '#0D1B0E';
+            this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+    },
+
+    _getCurrentWorld() {
+        const stageId = Level.currentStageId || GameState.currentStageId || '1-1';
+        return parseInt(stageId.charAt(0)) - 1; // 0=forest, 1=desert, etc.
     },
 
     // =======================
@@ -27,21 +44,128 @@ const Renderer = {
     // =======================
     renderParallax() {
         const ctx = this.ctx;
+        const world = this._getCurrentWorld();
 
         // Advance animation timer
         this.frameTime += 1 / 60;
 
-        // Layer 0: Mountains (furthest)
-        this._renderMountainLayer(Camera.layers[0]);
+        if (world === 1) {
+            // Desert parallax
+            this._renderDesertParallax();
+        } else {
+            // Forest parallax (default)
+            this._renderMountainLayer(Camera.layers[0]);
+            this._renderFarTreeLayer(Camera.layers[1]);
+            this._renderMidTreeLayer(Camera.layers[2]);
+            this._renderLeafLayer(Camera.layers[3]);
+        }
+    },
 
-        // Layer 1: Far trees
-        this._renderFarTreeLayer(Camera.layers[1]);
+    // =======================
+    // DESERT PARALLAX
+    // =======================
+    _renderDesertParallax() {
+        const ctx = this.ctx;
 
-        // Layer 2: Mid trees
-        this._renderMidTreeLayer(Camera.layers[2]);
+        // Layer 0: Desert sky gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+        grad.addColorStop(0, '#E8B84A');
+        grad.addColorStop(0.3, '#D49A3A');
+        grad.addColorStop(0.7, '#C4943A');
+        grad.addColorStop(1, '#8B6B2E');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-        // Layer 3: Foreground leaves
-        this._renderLeafLayer(Camera.layers[3]);
+        // Layer 1: Distant dunes
+        if (Camera.layers[0]) {
+            const layer = Camera.layers[0];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 120;
+            ctx.fillStyle = '#B8843A';
+            for (const m of layer.elements) {
+                const sx = m.x - offsetX;
+                if (sx + m.width < -50 || sx > CANVAS_WIDTH + 50) continue;
+                ctx.beginPath();
+                ctx.moveTo(sx, baseY);
+                ctx.quadraticCurveTo(sx + m.width / 2, baseY - m.height * 0.6, sx + m.width, baseY);
+                ctx.fill();
+            }
+        }
+
+        // Layer 2: Mid-distance ruins/cacti
+        if (Camera.layers[1]) {
+            const layer = Camera.layers[1];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 70;
+            for (const t of layer.elements) {
+                const sx = t.x - offsetX;
+                if (sx + t.width < -20 || sx > CANVAS_WIDTH + 20) continue;
+
+                // Alternate between cacti and ruins
+                if (t.trunk > 12) {
+                    // Ruin column
+                    ctx.fillStyle = COLORS.desert.lightStone;
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillRect(sx + t.width / 2 - 6, baseY - t.height * 0.5, 12, t.height * 0.5);
+                    ctx.fillRect(sx + t.width / 2 - 10, baseY - t.height * 0.5, 20, 4);
+                    ctx.globalAlpha = 1.0;
+                } else {
+                    // Cactus silhouette
+                    ctx.fillStyle = '#5A7A2E';
+                    ctx.globalAlpha = 0.4;
+                    ctx.fillRect(sx + t.width / 2 - 3, baseY - t.height * 0.4, 6, t.height * 0.4);
+                    ctx.fillRect(sx + t.width / 2 - 12, baseY - t.height * 0.3, 8, 4);
+                    ctx.fillRect(sx + t.width / 2 - 12, baseY - t.height * 0.3, 4, -12);
+                    ctx.fillRect(sx + t.width / 2 + 6, baseY - t.height * 0.25, 8, 4);
+                    ctx.fillRect(sx + t.width / 2 + 10, baseY - t.height * 0.25, 4, -10);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+
+        // Layer 3: Near dunes
+        if (Camera.layers[2]) {
+            const layer = Camera.layers[2];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 20;
+            ctx.fillStyle = COLORS.desert.sand;
+            ctx.globalAlpha = 0.5;
+            for (const t of layer.elements) {
+                const sx = t.x - offsetX;
+                if (sx + t.width < -30 || sx > CANVAS_WIDTH + 30) continue;
+                ctx.beginPath();
+                ctx.moveTo(sx, baseY);
+                ctx.quadraticCurveTo(sx + t.width / 2, baseY - t.height * 0.3, sx + t.width, baseY);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Layer 4: Heat shimmer / sand particles
+        this._heatShimmerTimer += 1 / 60;
+        this._renderHeatShimmer(ctx);
+    },
+
+    _renderHeatShimmer(ctx) {
+        // Animated heat shimmer lines
+        ctx.save();
+        ctx.globalAlpha = 0.08;
+        for (let i = 0; i < 8; i++) {
+            const y = CANVAS_HEIGHT * 0.3 + i * 35 + Math.sin(this._heatShimmerTimer * 1.5 + i * 0.8) * 15;
+            const waveOffset = Math.sin(this._heatShimmerTimer * 2 + i * 1.2) * 20;
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            for (let x = 0; x <= CANVAS_WIDTH; x += 20) {
+                const dy = Math.sin(this._heatShimmerTimer * 3 + x * 0.02 + i * 0.5) * 3;
+                ctx.lineTo(x, y + dy + waveOffset);
+            }
+            ctx.lineTo(CANVAS_WIDTH, y + 4);
+            ctx.lineTo(0, y + 4);
+            ctx.closePath();
+            ctx.fill();
+        }
+        ctx.restore();
     },
 
     _renderMountainLayer(layer) {
@@ -215,14 +339,43 @@ const Renderer = {
             case TILE_CRUMBLE:
                 this._drawCrumbleTile(ctx, x, y, s, col, row);
                 break;
+            case TILE_QUICKSAND:
+            case TILE_QUICKSAND_DEEP:
+                this._drawQuicksandTile(ctx, x, y, s, type === TILE_QUICKSAND_DEEP);
+                break;
+            case TILE_WATER:
+                this._drawWaterTile(ctx, x, y, s, false);
+                break;
+            case TILE_WATER_SURFACE:
+                this._drawWaterTile(ctx, x, y, s, true);
+                break;
+            case TILE_PRESSURE_PLATE:
+                this._drawPressurePlateTile(ctx, x, y, s, col, row);
+                break;
+            case TILE_GATE:
+                this._drawGateTile(ctx, x, y, s);
+                break;
         }
     },
 
     _drawSolidTile(ctx, x, y, s, col, row) {
+        const world = this._getCurrentWorld();
         const tileAbove = Level.getTile(col, row - 1);
         const isSurface = (tileAbove === TILE_EMPTY || tileAbove === TILE_ONE_WAY ||
-                           tileAbove === TILE_HAZARD || tileAbove === TILE_BOUNCE);
+                           tileAbove === TILE_HAZARD || tileAbove === TILE_BOUNCE ||
+                           tileAbove === TILE_WATER || tileAbove === TILE_WATER_SURFACE ||
+                           tileAbove === TILE_QUICKSAND || tileAbove === TILE_QUICKSAND_DEEP);
 
+        if (world === 1) {
+            // DESERT TILES
+            this._drawDesertSolidTile(ctx, x, y, s, col, row, isSurface);
+        } else {
+            // FOREST TILES (default)
+            this._drawForestSolidTile(ctx, x, y, s, col, row, isSurface);
+        }
+    },
+
+    _drawForestSolidTile(ctx, x, y, s, col, row, isSurface) {
         if (isSurface) {
             ctx.fillStyle = COLORS.forest.leaf;
             ctx.fillRect(x, y, s, s);
@@ -265,30 +418,99 @@ const Renderer = {
         }
     },
 
+    _drawDesertSolidTile(ctx, x, y, s, col, row, isSurface) {
+        if (isSurface) {
+            // Sandy surface
+            ctx.fillStyle = COLORS.desert.sand;
+            ctx.fillRect(x, y, s, s);
+            // Light sand highlight on top
+            ctx.fillStyle = COLORS.desert.bleachedBone;
+            ctx.fillRect(x, y, s, 3);
+            // Stone body
+            ctx.fillStyle = COLORS.desert.darkSand;
+            ctx.fillRect(x, y + 8, s, s - 8);
+
+            // Sandy texture lines
+            ctx.strokeStyle = COLORS.desert.shadow;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.25;
+            for (let i = 0; i < 3; i++) {
+                const ly = y + 12 + i * 7;
+                ctx.beginPath();
+                ctx.moveTo(x + 1 + (col * 5 + i * 3) % 8, ly);
+                ctx.lineTo(x + s - 1 - (col * 3 + i * 7) % 8, ly + 2);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+
+            ctx.fillStyle = COLORS.desert.shadow;
+            ctx.fillRect(x, y + s - 1, s, 1);
+        } else {
+            // Underground stone
+            ctx.fillStyle = COLORS.desert.darkSand;
+            ctx.fillRect(x, y, s, s);
+
+            // Stone texture (small rectangles)
+            ctx.fillStyle = COLORS.desert.shadow;
+            ctx.globalAlpha = 0.35;
+            const seed = col * 17 + row * 31;
+            for (let i = 0; i < 5; i++) {
+                const px = x + ((seed + i * 13) % 26) + 3;
+                const py = y + ((seed + i * 19) % 26) + 3;
+                ctx.fillRect(px, py, 3, 2);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Mortar lines
+            ctx.fillStyle = COLORS.desert.lightStone;
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(x, y, s, 1);
+            ctx.fillRect(x, y, 1, s);
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
     _drawOneWayTile(ctx, x, y, s) {
-        ctx.fillStyle = COLORS.forest.bark;
-        ctx.fillRect(x, y, s, 10);
-
-        ctx.strokeStyle = '#6B5030';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(x + 2, y + 3);
-        ctx.lineTo(x + s - 2, y + 4);
-        ctx.moveTo(x + 3, y + 7);
-        ctx.lineTo(x + s - 3, y + 7);
-        ctx.stroke();
-
-        ctx.fillStyle = '#A8854A';
-        ctx.fillRect(x, y, s, 2);
-
-        ctx.fillStyle = COLORS.forest.shadow;
-        ctx.globalAlpha = 0.4;
-        ctx.fillRect(x, y + 8, s, 2);
-        ctx.globalAlpha = 1.0;
-
-        ctx.fillStyle = '#5A4020';
-        ctx.fillRect(x + 4, y + 10, 4, 6);
-        ctx.fillRect(x + s - 8, y + 10, 4, 6);
+        const world = this._getCurrentWorld();
+        if (world === 1) {
+            // Desert one-way: stone slab
+            ctx.fillStyle = COLORS.desert.lightStone;
+            ctx.fillRect(x, y, s, 10);
+            ctx.fillStyle = COLORS.desert.bleachedBone;
+            ctx.fillRect(x, y, s, 2);
+            ctx.strokeStyle = COLORS.desert.shadow;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 2, y + 4);
+            ctx.lineTo(x + s - 2, y + 5);
+            ctx.moveTo(x + 3, y + 7);
+            ctx.lineTo(x + s - 3, y + 8);
+            ctx.stroke();
+            ctx.fillStyle = COLORS.desert.darkSand;
+            ctx.fillRect(x + 4, y + 10, 4, 6);
+            ctx.fillRect(x + s - 8, y + 10, 4, 6);
+        } else {
+            // Forest one-way
+            ctx.fillStyle = COLORS.forest.bark;
+            ctx.fillRect(x, y, s, 10);
+            ctx.strokeStyle = '#6B5030';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + 2, y + 3);
+            ctx.lineTo(x + s - 2, y + 4);
+            ctx.moveTo(x + 3, y + 7);
+            ctx.lineTo(x + s - 3, y + 7);
+            ctx.stroke();
+            ctx.fillStyle = '#A8854A';
+            ctx.fillRect(x, y, s, 2);
+            ctx.fillStyle = COLORS.forest.shadow;
+            ctx.globalAlpha = 0.4;
+            ctx.fillRect(x, y + 8, s, 2);
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = '#5A4020';
+            ctx.fillRect(x + 4, y + 10, 4, 6);
+            ctx.fillRect(x + s - 8, y + 10, 4, 6);
+        }
     },
 
     _drawHazardTile(ctx, x, y, s) {
@@ -442,6 +664,209 @@ const Renderer = {
     },
 
     // =======================
+    // DESERT-SPECIFIC TILES
+    // =======================
+
+    _drawQuicksandTile(ctx, x, y, s, isDeep) {
+        // Quicksand: animated shifting sand
+        const shimmer = Math.sin(this.frameTime * 2 + x * 0.05) * 0.1;
+        ctx.fillStyle = isDeep ? COLORS.desert.darkSand : COLORS.desert.sand;
+        ctx.fillRect(x, y, s, s);
+
+        // Animated sand particles
+        ctx.fillStyle = COLORS.desert.bleachedBone;
+        ctx.globalAlpha = 0.3 + shimmer;
+        for (let i = 0; i < 4; i++) {
+            const px = x + ((i * 11 + Math.floor(this.frameTime * 2)) % (s - 4)) + 2;
+            const py = y + ((i * 7 + Math.floor(this.frameTime * 3)) % (s - 4)) + 2;
+            ctx.fillRect(px, py, 3, 2);
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Warning stripes on surface
+        if (!isDeep) {
+            ctx.fillStyle = COLORS.desert.darkSand;
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < 3; i++) {
+                const ly = y + 4 + i * 10 + Math.sin(this.frameTime * 1.5 + i) * 2;
+                ctx.fillRect(x, ly, s, 2);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    _drawWaterTile(ctx, x, y, s, isSurface) {
+        // Water: translucent blue overlay
+        if (isSurface) {
+            // Water surface with waves
+            ctx.fillStyle = 'rgba(60, 120, 200, 0.5)';
+            ctx.fillRect(x, y, s, s);
+            // Wave animation
+            ctx.fillStyle = 'rgba(120, 180, 240, 0.4)';
+            const waveY = Math.sin(this.frameTime * 3 + x * 0.1) * 3;
+            ctx.fillRect(x, y + waveY, s, 4);
+            ctx.fillStyle = 'rgba(200, 220, 255, 0.3)';
+            ctx.fillRect(x, y + waveY + 1, s, 2);
+        } else {
+            // Underwater
+            ctx.fillStyle = 'rgba(40, 100, 180, 0.45)';
+            ctx.fillRect(x, y, s, s);
+            // Subtle light caustics
+            ctx.fillStyle = 'rgba(100, 160, 220, 0.15)';
+            const cx = x + Math.sin(this.frameTime * 2 + y * 0.1) * 8;
+            ctx.beginPath();
+            ctx.ellipse(cx + s / 2, y + s / 2, 8, 6, this.frameTime * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    },
+
+    _drawPressurePlateTile(ctx, x, y, s, col, row) {
+        // Check if this plate is activated
+        const plate = Level.pressurePlates.find(p => p.x === col && p.y === row);
+        const activated = plate ? plate.activated : false;
+
+        // Base floor tile
+        ctx.fillStyle = COLORS.desert.darkSand;
+        ctx.fillRect(x, y, s, s);
+
+        // Plate surface
+        ctx.fillStyle = activated ? COLORS.mossGreen : COLORS.desert.lightStone;
+        ctx.fillRect(x + 3, y + s - 8, s - 6, 6);
+        // Plate border
+        ctx.strokeStyle = activated ? '#3A7B4A' : COLORS.desert.sand;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 3, y + s - 8, s - 6, 6);
+
+        // Indicator dot
+        ctx.fillStyle = activated ? '#44FF44' : COLORS.mutedGold;
+        ctx.beginPath();
+        ctx.arc(x + s / 2, y + s - 5, 2, 0, Math.PI * 2);
+        ctx.fill();
+    },
+
+    _drawGateTile(ctx, x, y, s) {
+        // Metal gate bars
+        ctx.fillStyle = '#5A5A6A';
+        ctx.fillRect(x, y, s, s);
+        // Vertical bars
+        ctx.fillStyle = '#7A7A8A';
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(x + 3 + i * 8, y, 3, s);
+        }
+        // Horizontal bands
+        ctx.fillStyle = '#4A4A5A';
+        ctx.fillRect(x, y + 4, s, 3);
+        ctx.fillRect(x, y + s - 7, s, 3);
+        // Rivets
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.beginPath();
+        ctx.arc(x + 4, y + 5, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + s - 4, y + 5, 2, 0, Math.PI * 2);
+        ctx.fill();
+    },
+
+    // =======================
+    // DARK ROOM OVERLAY
+    // =======================
+    renderDarkOverlay(ctx) {
+        if (!Level.isDark || Level.darkZones.length === 0) return;
+
+        // Check if player is in a dark zone
+        const playerCol = Math.floor((Player.x + Player.width / 2) / TILE_SIZE);
+        const playerRow = Math.floor((Player.y + Player.height / 2) / TILE_SIZE);
+        let inDarkZone = false;
+        for (const zone of Level.darkZones) {
+            if (playerCol >= zone.x1 && playerCol <= zone.x2 &&
+                playerRow >= zone.y1 && playerRow <= zone.y2) {
+                inDarkZone = true;
+                break;
+            }
+        }
+
+        if (!inDarkZone) return;
+
+        // Draw dark overlay with spotlight around player
+        const px = Player.x + Player.width / 2 - Camera.x;
+        const py = Player.y + Player.height / 2 - Camera.y;
+        const spotlightRadius = 100;
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+
+        // Dark overlay
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Cut out spotlight
+        ctx.globalCompositeOperation = 'destination-out';
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, spotlightRadius);
+        grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+        grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.8)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, spotlightRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.restore();
+    },
+
+    // =======================
+    // MIRROR RENDERING
+    // =======================
+    renderMirrors(ctx) {
+        for (const m of Level.mirrors) {
+            const sx = m.x * TILE_SIZE - Camera.x;
+            const sy = m.y * TILE_SIZE - Camera.y;
+
+            if (sx < -50 || sx > CANVAS_WIDTH + 50) continue;
+
+            // Mirror base
+            ctx.fillStyle = COLORS.desert.lightStone;
+            ctx.fillRect(sx + 8, sy + TILE_SIZE - 8, TILE_SIZE - 16, 8);
+
+            // Mirror surface
+            ctx.save();
+            ctx.translate(sx + TILE_SIZE / 2, sy + TILE_SIZE / 2);
+            ctx.rotate((m.angle || 0) * Math.PI / 180);
+
+            // Mirror glass
+            ctx.fillStyle = '#88BBDD';
+            ctx.globalAlpha = 0.7;
+            ctx.fillRect(-10, -12, 20, 24);
+            ctx.globalAlpha = 1.0;
+
+            // Frame
+            ctx.strokeStyle = COLORS.mutedGold;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-10, -12, 20, 24);
+
+            // Shine
+            ctx.fillStyle = '#FFFFFF';
+            ctx.globalAlpha = 0.4 + Math.sin(this.frameTime * 3) * 0.2;
+            ctx.fillRect(-6, -8, 4, 16);
+            ctx.globalAlpha = 1.0;
+
+            ctx.restore();
+
+            // Light beam (if visited)
+            if (m.visited) {
+                ctx.strokeStyle = '#FFD700';
+                ctx.globalAlpha = 0.3 + Math.sin(this.frameTime * 4) * 0.1;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(sx + TILE_SIZE / 2, sy);
+                ctx.lineTo(sx + TILE_SIZE / 2, sy - TILE_SIZE * 2);
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+    },
+
+    // =======================
     // MOVING PLATFORMS
     // =======================
     renderMovingPlatforms() {
@@ -455,10 +880,11 @@ const Renderer = {
             ctx.fillStyle = 'rgba(0,0,0,0.25)';
             ctx.fillRect(x + 2, y + h, w - 4, 4);
 
-            ctx.fillStyle = COLORS.forest.bark;
+            const world = this._getCurrentWorld();
+            ctx.fillStyle = world === 1 ? COLORS.desert.darkSand : COLORS.forest.bark;
             ctx.fillRect(x, y, w, h);
 
-            ctx.fillStyle = '#B8956A';
+            ctx.fillStyle = world === 1 ? COLORS.desert.lightStone : '#B8956A';
             ctx.fillRect(x, y, w, 3);
 
             ctx.strokeStyle = '#6B5030';

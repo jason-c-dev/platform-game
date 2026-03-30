@@ -18,6 +18,12 @@ const TILE_BREAKABLE = 4;
 const TILE_BOUNCE = 5;
 const TILE_LADDER = 6;
 const TILE_CRUMBLE = 7;
+const TILE_QUICKSAND = 8;
+const TILE_QUICKSAND_DEEP = 9;
+const TILE_WATER = 10;
+const TILE_WATER_SURFACE = 11;
+const TILE_PRESSURE_PLATE = 12;
+const TILE_GATE = 13;
 
 // TILES convenience object for test access
 const TILES = {
@@ -28,7 +34,13 @@ const TILES = {
     BREAKABLE: 4,
     BOUNCE: 5,
     LADDER: 6,
-    CRUMBLE: 7
+    CRUMBLE: 7,
+    QUICKSAND: 8,
+    QUICKSAND_DEEP: 9,
+    WATER: 10,
+    WATER_SURFACE: 11,
+    PRESSURE_PLATE: 12,
+    GATE: 13
 };
 
 // Physics

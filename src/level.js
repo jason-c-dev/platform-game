@@ -27,6 +27,15 @@ const Level = {
         this.loadStage(stageId);
     },
 
+    // Desert-specific data
+    quicksandTiles: [],
+    waterTiles: [],
+    pressurePlates: [],
+    gates: [],
+    mirrors: [],
+    darkZones: [],
+    isDark: false,
+
     loadStage(stageId) {
         this.currentStageId = stageId;
         this.movingPlatforms = [];
@@ -37,11 +46,21 @@ const Level = {
         this.bossArenaX = 0;
         this.bossTriggered = false;
         this.crumblingTiles = [];
+        this.quicksandTiles = [];
+        this.waterTiles = [];
+        this.pressurePlates = [];
+        this.gates = [];
+        this.mirrors = [];
+        this.darkZones = [];
+        this.isDark = false;
 
         switch (stageId) {
             case '1-1': this._buildStage1_1(); break;
             case '1-2': this._buildStage1_2(); break;
             case '1-3': this._buildStage1_3(); break;
+            case '2-1': this._buildStage2_1(); break;
+            case '2-2': this._buildStage2_2(); break;
+            case '2-3': this._buildStage2_3(); break;
             default: this._buildStage1_1(); break;
         }
     },
@@ -524,6 +543,645 @@ const Level = {
     },
 
     // =============================================
+    // STAGE 2-1: DUNE SEA (Quicksand, 110 tiles wide)
+    // =============================================
+    _buildStage2_1() {
+        const W = 110;
+        const H = 20;
+        this._initGrid(W, H);
+
+        // Ground floor (rows 17-19) - sandy terrain
+        this._fill(0, W - 1, 17, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 5, 16, TILE_SOLID);
+
+        // SECTION A: Starting area (cols 1-12)
+        // Flat desert ground, intro
+
+        // SECTION B: First quicksand pit (cols 13-17)
+        this._fill(13, 17, 17, 17, TILE_QUICKSAND);
+        this._fill(14, 16, 18, 18, TILE_QUICKSAND);
+        this._fill(15, 15, 19, 19, TILE_QUICKSAND_DEEP);
+        // Add to tracking
+        for (let c = 13; c <= 17; c++) this.quicksandTiles.push({ x: c, y: 17 });
+        for (let c = 14; c <= 16; c++) this.quicksandTiles.push({ x: c, y: 18 });
+        this.quicksandTiles.push({ x: 15, y: 19 });
+
+        // Platform over quicksand
+        this._fill(14, 16, 14, 14, TILE_ONE_WAY);
+
+        // SECTION C: Elevated terrain (cols 18-28)
+        this._fill(18, 22, 15, 15, TILE_SOLID);
+        this._fill(24, 28, 13, 13, TILE_SOLID);
+        // Gap
+        this._fill(23, 23, 17, H - 1, TILE_EMPTY);
+
+        // Pressure plate puzzle area (cols 29-36)
+        this.tiles[16][30] = TILE_PRESSURE_PLATE;
+        this.pressurePlates.push({
+            x: 30, y: 16, activated: false,
+            targetGate: { x: 34, yStart: 14, yEnd: 16 }
+        });
+        // Gate blocks the path
+        this._fill(34, 34, 14, 16, TILE_GATE);
+        this.gates.push({ x: 34, yStart: 14, yEnd: 16, open: false });
+
+        // Platform above gate
+        this._fill(35, 39, 14, 14, TILE_SOLID);
+
+        // SECTION D: More quicksand (cols 37-42)
+        this._fill(37, 42, 17, 17, TILE_QUICKSAND);
+        this._fill(38, 41, 18, 18, TILE_QUICKSAND);
+        this._fill(39, 40, 19, 19, TILE_QUICKSAND_DEEP);
+        for (let c = 37; c <= 42; c++) this.quicksandTiles.push({ x: c, y: 17 });
+        for (let c = 38; c <= 41; c++) this.quicksandTiles.push({ x: c, y: 18 });
+        for (let c = 39; c <= 40; c++) this.quicksandTiles.push({ x: c, y: 19 });
+
+        // Stepping stones over quicksand
+        this._fill(38, 38, 15, 15, TILE_ONE_WAY);
+        this._fill(41, 41, 15, 15, TILE_ONE_WAY);
+
+        // SECTION E: Ruins section (cols 43-55)
+        this._fill(43, 47, 15, 15, TILE_SOLID);
+        this._fill(49, 53, 12, 12, TILE_SOLID);
+        this._fill(55, 58, 15, 15, TILE_SOLID);
+        // Hazards
+        this.tiles[16][48] = TILE_HAZARD;
+
+        // SECTION F: Large plateau (cols 59-68)
+        this._fill(59, 68, 14, 14, TILE_SOLID);
+        this._fill(62, 65, 10, 10, TILE_ONE_WAY);
+
+        // SECTION G: Quicksand gauntlet (cols 69-78)
+        this._fill(69, 78, 17, 17, TILE_QUICKSAND);
+        this._fill(70, 77, 18, 18, TILE_QUICKSAND);
+        this._fill(71, 76, 19, 19, TILE_QUICKSAND_DEEP);
+        for (let c = 69; c <= 78; c++) this.quicksandTiles.push({ x: c, y: 17 });
+        for (let c = 70; c <= 77; c++) this.quicksandTiles.push({ x: c, y: 18 });
+        for (let c = 71; c <= 76; c++) this.quicksandTiles.push({ x: c, y: 19 });
+        // Platforms across
+        this._fill(71, 71, 14, 14, TILE_ONE_WAY);
+        this._fill(74, 74, 14, 14, TILE_ONE_WAY);
+        this._fill(77, 77, 14, 14, TILE_ONE_WAY);
+
+        // SECTION H: Pre-boss area (cols 79-89)
+        this._fill(79, 89, 15, 15, TILE_SOLID);
+        this._fill(82, 85, 11, 11, TILE_ONE_WAY);
+
+        // =====================
+        // BOSS ARENA (cols 90-109)
+        // =====================
+        this.bossArenaX = 90 * TILE_SIZE;
+        this._fill(90, 90, 5, 16, TILE_SOLID);
+        this._fill(109, 109, 5, 16, TILE_SOLID);
+        this._fill(90, 109, 5, 5, TILE_SOLID);
+        this._fill(90, 109, 17, H - 1, TILE_SOLID);
+
+        this.bossData = {
+            type: 'sand_wyrm',
+            spawnX: 99 * TILE_SIZE,
+            spawnY: 13 * TILE_SIZE,
+        };
+
+        this.exitX = 107 * TILE_SIZE;
+        this.exitY = 15 * TILE_SIZE;
+
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 15 * TILE_SIZE;
+
+        // Enemy spawns
+        this.enemySpawns = [
+            { type: 'sand_skitter', x: 10 * TILE_SIZE, y: 15 * TILE_SIZE },
+            { type: 'sand_skitter', x: 26 * TILE_SIZE, y: 11 * TILE_SIZE },
+            { type: 'dust_devil', x: 45 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'sand_skitter', x: 55 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'sand_skitter', x: 63 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'dust_devil', x: 73 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'sand_skitter', x: 83 * TILE_SIZE, y: 13 * TILE_SIZE },
+        ];
+
+        // Coins (18 total)
+        this.coinPositions = [];
+        const coinSpots = [
+            [3, 15], [5, 15], [7, 15],
+            [15, 12], [20, 13],
+            [25, 11], [27, 11],
+            [31, 14], [36, 12],
+            [44, 13], [50, 10],
+            [60, 12], [64, 8],
+            [72, 12], [75, 12],
+            [81, 13], [84, 9],
+            [87, 13],
+        ];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups
+        this.healthPositions = [
+            { x: 40 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+            { x: 68 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 2-2: BURIED TEMPLE (Dark rooms, mirrors, 135 tiles)
+    // =============================================
+    _buildStage2_2() {
+        const W = 135;
+        const H = 22;
+        this._initGrid(W, H);
+
+        // This is an interior temple level
+        this.isDark = true;
+
+        // Base ground (rows 19-21)
+        this._fill(0, W - 1, 19, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 3, 18, TILE_SOLID);
+
+        // Ceiling
+        this._fill(0, W - 1, 3, 3, TILE_SOLID);
+
+        // SECTION A: Temple entrance (cols 1-12)
+        // Regular ground with some pillars
+        this._fill(6, 7, 10, 18, TILE_SOLID);  // Pillar
+        this._fill(10, 11, 12, 18, TILE_SOLID); // Pillar
+
+        // SECTION B: First dark room (cols 13-25)
+        this.darkZones.push({ x1: 13, y1: 4, x2: 25, y2: 18 });
+        this._fill(13, 25, 16, 16, TILE_ONE_WAY);
+        this._fill(16, 18, 12, 12, TILE_SOLID);
+        this._fill(21, 23, 10, 10, TILE_SOLID);
+        // Hazards hidden in dark
+        this.tiles[18][17] = TILE_HAZARD;
+        this.tiles[18][22] = TILE_HAZARD;
+
+        // SECTION C: Mirror puzzle area (cols 26-40)
+        this._fill(26, 27, 8, 18, TILE_SOLID); // Wall
+        // Mirror puzzle elements
+        this.mirrors.push(
+            { x: 30, y: 14, angle: 45, active: true },
+            { x: 34, y: 10, angle: 135, active: true },
+            { x: 38, y: 14, angle: 45, active: true }
+        );
+        // Light beam source
+        this._fill(29, 31, 16, 16, TILE_SOLID);
+        this._fill(33, 35, 12, 12, TILE_SOLID);
+        this._fill(37, 39, 16, 16, TILE_SOLID);
+        // Gate locked by mirror puzzle
+        this._fill(40, 40, 10, 18, TILE_GATE);
+        this.gates.push({ x: 40, yStart: 10, yEnd: 18, open: false, mirrorPuzzle: true });
+
+        // SECTION D: Temple chambers (cols 41-55)
+        this._fill(43, 46, 15, 15, TILE_SOLID);
+        this._fill(48, 51, 12, 12, TILE_SOLID);
+        this._fill(53, 56, 16, 16, TILE_SOLID);
+        // Pressure plate
+        this.tiles[18][45] = TILE_PRESSURE_PLATE;
+        this.pressurePlates.push({
+            x: 45, y: 18, activated: false,
+            targetGate: { x: 57, yStart: 10, yEnd: 18 }
+        });
+        this._fill(57, 57, 10, 18, TILE_GATE);
+        this.gates.push({ x: 57, yStart: 10, yEnd: 18, open: false });
+
+        // SECTION E: Large dark room (cols 58-75)
+        this.darkZones.push({ x1: 58, y1: 4, x2: 75, y2: 18 });
+        this._fill(60, 63, 15, 15, TILE_SOLID);
+        this._fill(65, 68, 12, 12, TILE_SOLID);
+        this._fill(70, 73, 15, 15, TILE_SOLID);
+        // Breakable blocks
+        this._fill(64, 64, 15, 17, TILE_BREAKABLE);
+        // Hidden platforms
+        this._fill(66, 67, 8, 8, TILE_ONE_WAY);
+        // Hazards in dark
+        this.tiles[18][62] = TILE_HAZARD;
+        this.tiles[18][71] = TILE_HAZARD;
+
+        // SECTION F: Elevated temple (cols 76-90)
+        this._fill(76, 80, 14, 14, TILE_SOLID);
+        this._fill(82, 86, 11, 11, TILE_SOLID);
+        this._fill(88, 92, 14, 14, TILE_SOLID);
+        // Pillar
+        this._fill(84, 85, 12, 18, TILE_SOLID);
+
+        // SECTION G: Quicksand trap (cols 91-100)
+        this._fill(93, 97, 19, 19, TILE_QUICKSAND);
+        this._fill(94, 96, 20, 20, TILE_QUICKSAND_DEEP);
+        for (let c = 93; c <= 97; c++) this.quicksandTiles.push({ x: c, y: 19 });
+        for (let c = 94; c <= 96; c++) this.quicksandTiles.push({ x: c, y: 20 });
+        this._fill(94, 96, 16, 16, TILE_ONE_WAY);
+        this._fill(99, 102, 15, 15, TILE_SOLID);
+
+        // SECTION H: Pre-boss (cols 103-114)
+        this._fill(103, 114, 16, 16, TILE_SOLID);
+        this._fill(106, 110, 12, 12, TILE_ONE_WAY);
+
+        // =====================
+        // BOSS ARENA (cols 115-134)
+        // =====================
+        this.bossArenaX = 115 * TILE_SIZE;
+        this._fill(115, 115, 4, 18, TILE_SOLID);
+        this._fill(134, 134, 4, 18, TILE_SOLID);
+        this._fill(115, 134, 4, 4, TILE_SOLID);
+        this._fill(115, 134, 19, H - 1, TILE_SOLID);
+
+        // Boss arena platforms
+        this._fill(120, 122, 14, 14, TILE_ONE_WAY);
+        this._fill(127, 129, 14, 14, TILE_ONE_WAY);
+
+        this.bossData = {
+            type: 'pharaoh_specter',
+            spawnX: 124 * TILE_SIZE,
+            spawnY: 10 * TILE_SIZE,
+        };
+
+        this.exitX = 132 * TILE_SIZE;
+        this.exitY = 17 * TILE_SIZE;
+
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 17 * TILE_SIZE;
+
+        // Enemy spawns
+        this.enemySpawns = [
+            { type: 'mummy', x: 8 * TILE_SIZE, y: 17 * TILE_SIZE },
+            { type: 'sand_skitter', x: 20 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'dust_devil', x: 35 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'mummy', x: 50 * TILE_SIZE, y: 17 * TILE_SIZE },
+            { type: 'sand_skitter', x: 62 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'mummy', x: 78 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'dust_devil', x: 88 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'sand_skitter', x: 100 * TILE_SIZE, y: 13 * TILE_SIZE },
+        ];
+
+        // Coins (22 total)
+        this.coinPositions = [];
+        const coinSpots = [
+            [3, 17], [5, 17],
+            [9, 14], [14, 14],
+            [17, 10], [22, 8],
+            [30, 12], [34, 8],
+            [44, 13], [49, 10],
+            [54, 14], [61, 13],
+            [66, 6], [67, 6],
+            [72, 13], [77, 12],
+            [83, 9], [89, 12],
+            [95, 14], [101, 13],
+            [107, 10], [112, 14],
+        ];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups
+        this.healthPositions = [
+            { x: 38 * TILE_SIZE + 8, y: 14 * TILE_SIZE },
+            { x: 75 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+            { x: 110 * TILE_SIZE + 8, y: 14 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 2-3: OASIS MIRAGE (Water/swimming, 145 tiles)
+    // =============================================
+    _buildStage2_3() {
+        const W = 145;
+        const H = 22;
+        this._initGrid(W, H);
+
+        // Ground floor (rows 18-21) - desert/oasis
+        this._fill(0, W - 1, 18, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 4, 17, TILE_SOLID);
+
+        // SECTION A: Desert start (cols 1-12)
+        // Dry desert terrain
+        this._fill(8, 11, 14, 14, TILE_SOLID);
+
+        // SECTION B: First oasis pool (cols 13-22)
+        // Dig out pool
+        this._fill(13, 22, 18, 18, TILE_EMPTY);
+        this._fill(14, 21, 19, 19, TILE_EMPTY);
+        this._fill(15, 20, 20, 20, TILE_EMPTY);
+        // Fill with water
+        this._fill(13, 22, 15, 15, TILE_WATER_SURFACE);
+        this._fill(13, 22, 16, 17, TILE_WATER);
+        this._fill(14, 21, 18, 19, TILE_WATER);
+        this._fill(15, 20, 20, 20, TILE_WATER);
+        // Track water tiles
+        for (let c = 13; c <= 22; c++) {
+            this.waterTiles.push({ x: c, y: 15 });
+            this.waterTiles.push({ x: c, y: 16 });
+            this.waterTiles.push({ x: c, y: 17 });
+        }
+        for (let c = 14; c <= 21; c++) {
+            this.waterTiles.push({ x: c, y: 18 });
+            this.waterTiles.push({ x: c, y: 19 });
+        }
+        for (let c = 15; c <= 20; c++) {
+            this.waterTiles.push({ x: c, y: 20 });
+        }
+
+        // Underwater platforms
+        this._fill(16, 18, 18, 18, TILE_ONE_WAY);
+
+        // SECTION C: Desert bridge (cols 23-32)
+        this._fill(23, 32, 16, 16, TILE_SOLID);
+        this._fill(26, 29, 12, 12, TILE_ONE_WAY);
+
+        // SECTION D: Deep oasis (cols 33-48)
+        this._fill(33, 48, 18, H - 1, TILE_EMPTY);
+        this._fill(34, 47, 19, H - 1, TILE_EMPTY);
+        // Water fill
+        this._fill(33, 48, 13, 17, TILE_WATER);
+        this._fill(33, 48, 12, 12, TILE_WATER_SURFACE);
+        this._fill(33, 48, 18, 18, TILE_WATER);
+        this._fill(34, 47, 19, H - 1, TILE_WATER);
+        for (let c = 33; c <= 48; c++) {
+            for (let r = 12; r <= 18; r++) this.waterTiles.push({ x: c, y: r });
+        }
+        for (let c = 34; c <= 47; c++) {
+            for (let r = 19; r <= H - 1; r++) this.waterTiles.push({ x: c, y: r });
+        }
+
+        // Underwater terrain
+        this._fill(36, 38, 16, 16, TILE_SOLID);
+        this._fill(42, 44, 14, 14, TILE_SOLID);
+        this._fill(39, 41, 18, 18, TILE_SOLID);
+
+        // SECTION E: Island section (cols 49-58)
+        this._fill(51, 55, 14, 14, TILE_SOLID);
+        this._fill(53, 56, 10, 10, TILE_ONE_WAY);
+
+        // SECTION F: Quicksand + water mix (cols 59-72)
+        this._fill(59, 64, 17, 17, TILE_QUICKSAND);
+        for (let c = 59; c <= 64; c++) this.quicksandTiles.push({ x: c, y: 17 });
+        this._fill(66, 72, 14, 17, TILE_WATER);
+        this._fill(66, 72, 13, 13, TILE_WATER_SURFACE);
+        for (let c = 66; c <= 72; c++) {
+            for (let r = 13; r <= 17; r++) this.waterTiles.push({ x: c, y: r });
+        }
+        this._fill(68, 70, 16, 16, TILE_SOLID);
+
+        // SECTION G: Desert platforms (cols 73-86)
+        this._fill(73, 77, 15, 15, TILE_SOLID);
+        this._fill(79, 83, 12, 12, TILE_SOLID);
+        this._fill(85, 89, 15, 15, TILE_SOLID);
+        this._fill(80, 82, 16, 17, TILE_SOLID);  // Pillar
+
+        // SECTION H: Large water area (cols 87-102)
+        this._fill(90, 102, 18, H - 1, TILE_EMPTY);
+        this._fill(90, 102, 14, 17, TILE_WATER);
+        this._fill(90, 102, 13, 13, TILE_WATER_SURFACE);
+        this._fill(90, 102, 18, H - 1, TILE_WATER);
+        for (let c = 90; c <= 102; c++) {
+            for (let r = 13; r <= H - 1; r++) this.waterTiles.push({ x: c, y: r });
+        }
+        // Underwater platforms
+        this._fill(93, 95, 17, 17, TILE_SOLID);
+        this._fill(98, 100, 16, 16, TILE_SOLID);
+
+        // SECTION I: Pre-boss dry land (cols 103-124)
+        this._fill(103, 110, 15, 15, TILE_SOLID);
+        this._fill(112, 118, 13, 13, TILE_SOLID);
+        this._fill(120, 124, 15, 15, TILE_SOLID);
+
+        // =====================
+        // BOSS ARENA (cols 125-144)
+        // =====================
+        this.bossArenaX = 125 * TILE_SIZE;
+        this._fill(125, 125, 4, 17, TILE_SOLID);
+        this._fill(144, 144, 4, 17, TILE_SOLID);
+        this._fill(125, 144, 4, 4, TILE_SOLID);
+        this._fill(125, 144, 18, H - 1, TILE_SOLID);
+
+        // Boss arena water pool
+        this._fill(130, 139, 17, 17, TILE_WATER);
+        this._fill(130, 139, 16, 16, TILE_WATER_SURFACE);
+        for (let c = 130; c <= 139; c++) {
+            this.waterTiles.push({ x: c, y: 16 });
+            this.waterTiles.push({ x: c, y: 17 });
+        }
+
+        this.bossData = {
+            type: 'hydra_cactus',
+            spawnX: 134 * TILE_SIZE,
+            spawnY: 16 * TILE_SIZE - 56,  // Position so bottom sits near ground
+        };
+
+        this.exitX = 142 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 16 * TILE_SIZE;
+
+        // Moving platforms
+        this.movingPlatforms = [
+            {
+                x: 60 * TILE_SIZE, y: 13 * TILE_SIZE,
+                width: TILE_SIZE * 3, height: 12,
+                startX: 59 * TILE_SIZE, endX: 64 * TILE_SIZE,
+                startY: 13 * TILE_SIZE, endY: 13 * TILE_SIZE,
+                speed: 0.8, axis: 'x', direction: 1,
+                prevX: 60 * TILE_SIZE, prevY: 13 * TILE_SIZE
+            },
+        ];
+
+        // Enemy spawns
+        this.enemySpawns = [
+            { type: 'sand_skitter', x: 9 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'dust_devil', x: 28 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'mummy', x: 52 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'sand_skitter', x: 62 * TILE_SIZE, y: 15 * TILE_SIZE },
+            { type: 'dust_devil', x: 75 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'mummy', x: 87 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'sand_skitter', x: 105 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'sand_skitter', x: 115 * TILE_SIZE, y: 11 * TILE_SIZE },
+        ];
+
+        // Coins (28 total)
+        this.coinPositions = [];
+        const coinSpots = [
+            [3, 16], [5, 16], [9, 12],
+            [16, 13], [18, 17], [20, 17],
+            [25, 14], [27, 10],
+            [36, 14], [40, 16], [43, 12],
+            [52, 12], [54, 8],
+            [61, 15], [68, 14], [71, 12],
+            [74, 13], [80, 10], [86, 13],
+            [93, 15], [96, 14], [100, 14],
+            [105, 13], [109, 13],
+            [113, 11], [117, 11],
+            [121, 13], [123, 13],
+        ];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups
+        this.healthPositions = [
+            { x: 30 * TILE_SIZE + 8, y: 14 * TILE_SIZE },
+            { x: 70 * TILE_SIZE + 8, y: 14 * TILE_SIZE },
+            { x: 110 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // DESERT MECHANICS UPDATE
+    // =============================================
+
+    updateQuicksand() {
+        if (Player.state === 'dead') return;
+        const footRow = Math.floor((Player.y + Player.height) / TILE_SIZE);
+        const midRow = Math.floor((Player.y + Player.height / 2) / TILE_SIZE);
+        const leftCol = Math.floor(Player.x / TILE_SIZE);
+        const rightCol = Math.floor((Player.x + Player.width - 1) / TILE_SIZE);
+
+        let inQuicksand = false;
+        for (let c = leftCol; c <= rightCol; c++) {
+            const t = this.getTile(c, footRow);
+            const tMid = this.getTile(c, midRow);
+            if (t === TILE_QUICKSAND || t === TILE_QUICKSAND_DEEP ||
+                tMid === TILE_QUICKSAND || tMid === TILE_QUICKSAND_DEEP) {
+                inQuicksand = true;
+                break;
+            }
+        }
+
+        if (inQuicksand) {
+            // Slowly sink
+            Player.vy = Math.min(Player.vy + 0.02, 0.8);
+            Player.y += 0.3;
+            // Hinder horizontal movement
+            Player.vx *= 0.7;
+            // Allow jump to escape (but weakened)
+            Player.inQuicksand = true;
+
+            // Check if fully submerged in deep quicksand → damage
+            const deepRow = Math.floor((Player.y + Player.height + 4) / TILE_SIZE);
+            for (let c = leftCol; c <= rightCol; c++) {
+                if (this.getTile(c, deepRow) === TILE_QUICKSAND_DEEP) {
+                    if (!Player.invincible && Player.state !== 'hurt') {
+                        Player.takeDamage();
+                    }
+                    break;
+                }
+            }
+        } else {
+            Player.inQuicksand = false;
+        }
+    },
+
+    updateWater() {
+        if (Player.state === 'dead') return;
+        const headRow = Math.floor(Player.y / TILE_SIZE);
+        const footRow = Math.floor((Player.y + Player.height) / TILE_SIZE);
+        const leftCol = Math.floor(Player.x / TILE_SIZE);
+        const rightCol = Math.floor((Player.x + Player.width - 1) / TILE_SIZE);
+
+        let inWater = false;
+        for (let c = leftCol; c <= rightCol; c++) {
+            for (let r = headRow; r <= footRow; r++) {
+                const t = this.getTile(c, r);
+                if (t === TILE_WATER || t === TILE_WATER_SURFACE) {
+                    inWater = true;
+                    break;
+                }
+            }
+            if (inWater) break;
+        }
+
+        if (inWater) {
+            Player.inWater = true;
+            // Reduced gravity
+            Player.vy *= 0.85;
+            if (Player.vy > 2) Player.vy = 2;
+            // Slow horizontal movement
+            Player.vx *= 0.9;
+            // Allow swimming up with jump key
+            if (Input.isDown('z') || Input.isDown('Z') || Input.isDown('ArrowUp')) {
+                Player.vy -= 0.4;
+                if (Player.vy < -3) Player.vy = -3;
+            }
+        } else {
+            Player.inWater = false;
+        }
+    },
+
+    updatePressurePlates() {
+        if (Player.state === 'dead') return;
+        const footRow = Math.floor((Player.y + Player.height) / TILE_SIZE);
+        const leftCol = Math.floor(Player.x / TILE_SIZE);
+        const rightCol = Math.floor((Player.x + Player.width - 1) / TILE_SIZE);
+
+        for (const plate of this.pressurePlates) {
+            if (plate.activated) continue;
+
+            // Check if player stands on the plate
+            let onPlate = false;
+            for (let c = leftCol; c <= rightCol; c++) {
+                if (c === plate.x && footRow === plate.y) {
+                    onPlate = true;
+                    break;
+                }
+            }
+
+            if (onPlate) {
+                plate.activated = true;
+                // Open the linked gate
+                const g = plate.targetGate;
+                for (let r = g.yStart; r <= g.yEnd; r++) {
+                    this.setTile(g.x, r, TILE_EMPTY);
+                }
+                // Update gate state
+                for (const gate of this.gates) {
+                    if (gate.x === g.x) {
+                        gate.open = true;
+                    }
+                }
+                // Visual feedback - particles
+                Particles.spawnBlockBreak(plate.x, plate.y);
+            }
+        }
+    },
+
+    updateMirrors() {
+        // Check if all mirrors are activated and open mirror-puzzle gates
+        if (this.mirrors.length === 0) return;
+        // For simplicity, all mirrors are always "active" and reflect light
+        // The puzzle is solved when the player interacts with all mirror areas
+        // Auto-solve: if player has visited near all mirrors, open the gate
+        let allVisited = true;
+        for (const m of this.mirrors) {
+            const dx = Math.abs(Player.x - m.x * TILE_SIZE);
+            const dy = Math.abs(Player.y - m.y * TILE_SIZE);
+            if (dx < TILE_SIZE * 3 && dy < TILE_SIZE * 3) {
+                m.visited = true;
+            }
+            if (!m.visited) allVisited = false;
+        }
+
+        if (allVisited) {
+            for (const gate of this.gates) {
+                if (gate.mirrorPuzzle && !gate.open) {
+                    gate.open = true;
+                    for (let r = gate.yStart; r <= gate.yEnd; r++) {
+                        this.setTile(gate.x, r, TILE_EMPTY);
+                    }
+                    // Particles
+                    for (let r = gate.yStart; r <= gate.yEnd; r++) {
+                        Particles.spawnBlockBreak(gate.x, r);
+                    }
+                }
+            }
+        }
+    },
+
+    // =============================================
     // TILE ACCESS
     // =============================================
 
@@ -549,7 +1207,7 @@ const Level = {
 
     isSolid(col, row) {
         const t = this.getTile(col, row);
-        return t === TILE_SOLID || t === TILE_BREAKABLE || t === TILE_CRUMBLE;
+        return t === TILE_SOLID || t === TILE_BREAKABLE || t === TILE_CRUMBLE || t === TILE_GATE;
     },
 
     // =============================================

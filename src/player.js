@@ -55,6 +55,10 @@ const Player = {
     // Death/respawn
     deathTimer: 0,
 
+    // Desert mechanics
+    inQuicksand: false,
+    inWater: false,
+
     init() {
         this.x = Level.spawnX;
         this.y = Level.spawnY;
@@ -87,6 +91,8 @@ const Player = {
         this.wallDir = 0;
         this.slideVx = 0;
         this.deathTimer = 0;
+        this.inQuicksand = false;
+        this.inWater = false;
     },
 
     // =============================================
