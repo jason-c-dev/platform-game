@@ -358,6 +358,10 @@ const GameState = {
     _renderStage(ctx) {
         Renderer.renderParallax();
         Renderer.renderTiles();
+        // Tundra-specific renders
+        if (Level.iceBlocks && Level.iceBlocks.length > 0) Renderer.renderIceBlocks(ctx);
+        if (Level.fireSources && Level.fireSources.length > 0) Renderer.renderFireSources(ctx);
+        if (Level.meltableBlocks && Level.meltableBlocks.length > 0) Renderer.renderMeltableBlocks(ctx);
         Renderer.renderMovingPlatforms();
         // Desert-specific renders
         if (Level.mirrors.length > 0) Renderer.renderMirrors(ctx);
@@ -365,6 +369,8 @@ const GameState = {
         Enemies.render(ctx);
         Renderer.renderPlayer(Player);
         Renderer.renderParticles();
+        // Snow overlay for tundra (above everything except HUD)
+        Renderer.updateAndRenderSnow();
         // Dark room overlay (after everything else, before HUD)
         if (Level.isDark) Renderer.renderDarkOverlay(ctx);
         HUD.render(ctx);
