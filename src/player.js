@@ -602,18 +602,19 @@ const Player = {
     },
 
     _updateAttack(inputDir) {
-        this.attackTimer--;
         this.stateTimer++;
 
-        // Track charge time
-        if (Input.isAttackHeld()) {
+        // Track charge time — if still holding X, keep charging (don't decrement attackTimer)
+        if (Input.isAttackHeld() && this.isCharging) {
             this.chargeTimer++;
             if (this.chargeTimer >= CHARGE_TIME) {
                 this._releaseChargeAttack();
                 return;
             }
+            // Don't decrement attack timer while charging
         } else {
             this.isCharging = false;
+            this.attackTimer--;
         }
 
         // Apply physics (reduced movement during attack)
@@ -722,6 +723,9 @@ const Player = {
         this.vy += GRAVITY * 1.2;
         if (this.vy > TERMINAL_VELOCITY) this.vy = TERMINAL_VELOCITY;
 
+        // Save vy before collision to detect impact
+        const preCollisionVy = this.vy;
+
         Physics.applyMovement(this, inputDir, WALK_MAX_SPEED);
         const collisions = Physics.resolveCollisions(this);
 
@@ -730,21 +734,22 @@ const Player = {
             return;
         }
 
-        // Check for breakable blocks below
+        // Check for breakable blocks below (triggers bounce internally)
+        if (this.state !== 'jumpAttack') return; // _checkJumpAttackBlocks may change state
         this._checkJumpAttackBlocks();
+        if (this.state !== 'jumpAttack') return; // Bounced off breakable block
 
-        // Landing ends jump attack
-        if (this.onGround) {
-            Particles.spawnLandingDust(this.x + this.width / 2, this.y + this.height);
-            this._changeState('idle');
-            return;
-        }
-
-        // Bounce off solid tiles if hitting from above
-        if (collisions.hitBottom && !this.onGround) {
+        // Landing — bounce off ground/solid tiles (jump attack bounces off everything)
+        if (this.onGround && preCollisionVy > 1) {
             this.vy = JUMP_ATTACK_BOUNCE;
+            this.onGround = false;
+            Particles.spawnLandingDust(this.x + this.width / 2, this.y + this.height);
             Particles.spawnAttackSparks(this.x + this.width / 2, this.y + this.height);
             this._changeState('jump');
+            return;
+        } else if (this.onGround) {
+            Particles.spawnLandingDust(this.x + this.width / 2, this.y + this.height);
+            this._changeState('idle');
             return;
         }
 
