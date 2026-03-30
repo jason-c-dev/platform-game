@@ -45,6 +45,12 @@ const Camera = {
         this.autoScroll = false;
         this.autoScrollSpeed = 0;
         this.autoScrollX = 0;
+        // Reset shake state
+        this.shakeX = 0;
+        this.shakeY = 0;
+        this.shakeIntensity = 0;
+        this.shakeDuration = 0;
+        this.shakeTimer = 0;
 
         // Create 4 parallax layers (world-aware)
         const stageId = GameState.currentStageId || '1-1';

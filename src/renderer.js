@@ -1258,7 +1258,8 @@ const Renderer = {
         }
 
         // Invincibility flash — alternate visible/invisible
-        if (player.invincible && Math.floor(player.invincibleTimer * 8) % 2 === 0) {
+        // hitFlash overrides invincibility blink (C-05: always show white flash first)
+        if (player.invincible && player.hitFlash <= 0 && Math.floor(player.invincibleTimer * 8) % 2 === 0) {
             return;
         }
 
@@ -1319,10 +1320,10 @@ const Renderer = {
 
         // Player hit flash — white overlay on damage frame (C-05)
         if (player.hitFlash > 0) {
-            ctx.globalCompositeOperation = 'source-atop';
             ctx.fillStyle = '#FFFFFF';
+            ctx.globalAlpha = 0.85;
             ctx.fillRect(0, 0, w, h);
-            ctx.globalCompositeOperation = 'source-over';
+            ctx.globalAlpha = 1.0;
         }
 
         ctx.restore();
