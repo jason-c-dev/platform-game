@@ -374,36 +374,46 @@ const Renderer = {
 
     _drawBounceTile(ctx, x, y, s) {
         // Mushroom bounce pad — forest theme
+        // Background fill (dirt)
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(x, y, s, s);
+
         // Stem
         ctx.fillStyle = '#D4C4A0';
-        ctx.fillRect(x + s * 0.3, y + s * 0.5, s * 0.4, s * 0.5);
+        ctx.fillRect(x + s * 0.3, y + s * 0.4, s * 0.4, s * 0.6);
 
-        // Cap
+        // Cap — large red mushroom
         ctx.fillStyle = '#D94F4F';
         ctx.beginPath();
-        ctx.ellipse(x + s / 2, y + s * 0.45, s * 0.5, s * 0.3, 0, Math.PI, 0);
+        ctx.ellipse(x + s / 2, y + s * 0.3, s * 0.55, s * 0.35, 0, Math.PI, 0);
         ctx.fill();
 
-        // White spots
+        // Cap top surface
+        ctx.fillStyle = '#E55F5F';
+        ctx.beginPath();
+        ctx.ellipse(x + s / 2, y + s * 0.25, s * 0.45, s * 0.2, 0, Math.PI, 0);
+        ctx.fill();
+
+        // White spots on cap
         ctx.fillStyle = '#FFFFFF';
-        ctx.globalAlpha = 0.7;
+        ctx.globalAlpha = 0.8;
         ctx.beginPath();
-        ctx.arc(x + s * 0.35, y + s * 0.3, 3, 0, Math.PI * 2);
+        ctx.arc(x + s * 0.3, y + s * 0.18, 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x + s * 0.6, y + s * 0.25, 4, 0, Math.PI * 2);
+        ctx.arc(x + s * 0.6, y + s * 0.12, 5, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(x + s * 0.5, y + s * 0.38, 2.5, 0, Math.PI * 2);
+        ctx.arc(x + s * 0.48, y + s * 0.24, 3, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1.0;
 
-        // Bounce indicator — subtle glow
+        // Bounce indicator — animated gold glow
         ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 1;
-        ctx.globalAlpha = 0.4 + Math.sin(this.frameTime * 4) * 0.2;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.4 + Math.sin(this.frameTime * 5) * 0.3;
         ctx.beginPath();
-        ctx.arc(x + s / 2, y + s * 0.35, s * 0.45, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.arc(x + s / 2, y + s * 0.2, s * 0.5, Math.PI * 1.1, Math.PI * 1.9);
         ctx.stroke();
         ctx.globalAlpha = 1.0;
     },

@@ -34,7 +34,9 @@ const Level = {
         }
 
         // =============================================
-        // GROUND FLOOR — rows 17, 18, 19 (bottom 3 rows solid)
+        // GROUND FLOOR — rows 17, 18, 19 (bottom 3 solid)
+        // CONTINUOUS from col 0 to col 119 — no gaps until after
+        // all special tile sections to allow walk-through testing
         // =============================================
         for (let c = 0; c < W; c++) {
             this.tiles[17][c] = TILE_SOLID;
@@ -43,189 +45,185 @@ const Level = {
         }
 
         // =============================================
-        // GAP #1 at columns 18-20 (requires jumping to cross)
+        // SECTION A: LEFT WALL (col 0) — C-10 left collision
         // =============================================
-        for (let r = 17; r < H; r++) {
-            this.tiles[r][18] = TILE_EMPTY;
-            this.tiles[r][19] = TILE_EMPTY;
-            this.tiles[r][20] = TILE_EMPTY;
-        }
-
-        // GAP #2 at columns 55-56
-        for (let r = 17; r < H; r++) {
-            this.tiles[r][55] = TILE_EMPTY;
-            this.tiles[r][56] = TILE_EMPTY;
-        }
-
-        // =============================================
-        // WALLS (for C-10 horizontal collision testing)
-        // =============================================
-        // Left boundary wall (column 0, rows 5-16)
         for (let r = 5; r < 17; r++) {
             this.tiles[r][0] = TILE_SOLID;
         }
 
-        // Right boundary wall (column W-1)
-        for (let r = 5; r < 17; r++) {
-            this.tiles[r][W - 1] = TILE_SOLID;
+        // =============================================
+        // SECTION B: ONE-WAY PLATFORMS (cols 5-9) — C-12
+        // Player jumps through from below, lands on top
+        // =============================================
+        for (let c = 5; c <= 9; c++) {
+            this.tiles[14][c] = TILE_ONE_WAY;
         }
-
-        // Interior wall at column 35 (blocks horizontal movement, rows 13-16)
-        for (let r = 13; r < 17; r++) {
-            this.tiles[r][35] = TILE_SOLID;
-        }
-
-        // Wall for testing at column 105 (rows 10-16)
-        for (let r = 10; r < 17; r++) {
-            this.tiles[r][105] = TILE_SOLID;
+        // Higher one-way (row 11) for stacking test
+        for (let c = 6; c <= 10; c++) {
+            this.tiles[11][c] = TILE_ONE_WAY;
         }
 
         // =============================================
-        // CEILING (for C-10 ceiling bonk testing)
-        // Low ceiling at row 14 over columns 25-30 (reachable from ground with jump)
-        // Player on ground is at y=514 (top). Ceiling bottom at row14 bottom = 15*32=480.
-        // Gap = 514-480=34px. Jump goes ~105px, so player will bonk head.
+        // SECTION C: CEILING (cols 16-22, row 14) — C-10 ceiling bonk
         // =============================================
-        for (let c = 25; c <= 30; c++) {
+        for (let c = 16; c <= 22; c++) {
             this.tiles[14][c] = TILE_SOLID;
         }
-        // Also add a higher ceiling section (row 9) for variety
-        for (let c = 25; c <= 30; c++) {
+        for (let c = 16; c <= 22; c++) {
             this.tiles[9][c] = TILE_SOLID;
         }
 
         // =============================================
-        // ONE-WAY PLATFORMS (for C-12 jump-through testing)
+        // SECTION D: HAZARD TILES (cols 30-32) — C-25
+        // Spikes on row 16, just above ground
         // =============================================
-        // Platform A: row 14, columns 8-12 (accessible from ground via jump)
-        for (let c = 8; c <= 12; c++) {
-            this.tiles[14][c] = TILE_ONE_WAY;
+        this.tiles[16][30] = TILE_HAZARD;
+        this.tiles[16][31] = TILE_HAZARD;
+        this.tiles[16][32] = TILE_HAZARD;
+
+        // =============================================
+        // SECTION E: BREAKABLE BLOCKS (cols 40-42) — C-06
+        // =============================================
+        this.tiles[14][40] = TILE_BREAKABLE;
+        this.tiles[14][41] = TILE_BREAKABLE;
+        this.tiles[14][42] = TILE_BREAKABLE;
+
+        // =============================================
+        // SECTION F: BOUNCE PADS (cols 50-51) — C-26
+        // Replace ground tiles so player falls onto bounce instead of solid
+        // =============================================
+        this.tiles[17][50] = TILE_BOUNCE;
+        this.tiles[17][51] = TILE_BOUNCE;
+        // High platform as bounce target (row 6)
+        for (let c = 48; c <= 53; c++) {
+            this.tiles[6][c] = TILE_SOLID;
         }
 
-        // Platform B: row 11, columns 10-14 (higher — reachable from Platform A)
-        for (let c = 10; c <= 14; c++) {
+        // =============================================
+        // SECTION G: MORE ONE-WAY (cols 60-64) — additional platforms
+        // =============================================
+        for (let c = 60; c <= 64; c++) {
+            this.tiles[14][c] = TILE_ONE_WAY;
+        }
+        for (let c = 61; c <= 65; c++) {
             this.tiles[11][c] = TILE_ONE_WAY;
         }
 
-        // Platform C: row 14, columns 40-44
-        for (let c = 40; c <= 44; c++) {
-            this.tiles[14][c] = TILE_ONE_WAY;
-        }
-
-        // Platform D: just above ground for easy jump-through test (row 14, cols 5-7)
-        for (let c = 5; c <= 7; c++) {
-            this.tiles[14][c] = TILE_ONE_WAY;
-        }
-
-        // One-way platforms at row 13, cols 75-80
-        for (let c = 75; c <= 80; c++) {
-            this.tiles[13][c] = TILE_ONE_WAY;
+        // =============================================
+        // SECTION H: MORE BOUNCE (col 70)
+        // =============================================
+        this.tiles[17][70] = TILE_BOUNCE;
+        for (let c = 68; c <= 72; c++) {
+            this.tiles[6][c] = TILE_SOLID;
         }
 
         // =============================================
-        // HAZARD TILES (spikes — for C-25 damage testing)
+        // SECTION I: MORE HAZARDS (cols 78-80)
         // =============================================
-        // Spike row at columns 45-47 (just above ground at row 16)
-        this.tiles[16][45] = TILE_HAZARD;
-        this.tiles[16][46] = TILE_HAZARD;
-        this.tiles[16][47] = TILE_HAZARD;
-
-        // More hazards near end
-        this.tiles[16][110] = TILE_HAZARD;
-        this.tiles[16][111] = TILE_HAZARD;
+        this.tiles[16][78] = TILE_HAZARD;
+        this.tiles[16][79] = TILE_HAZARD;
+        this.tiles[16][80] = TILE_HAZARD;
 
         // =============================================
-        // BREAKABLE BLOCKS (row 14, columns 60-62)
+        // SECTION J: GAP #1 (cols 88-90) — C-24 requires jumping
+        // Ground removed here
         // =============================================
-        this.tiles[14][60] = TILE_BREAKABLE;
-        this.tiles[14][61] = TILE_BREAKABLE;
-        this.tiles[14][62] = TILE_BREAKABLE;
-
-        // =============================================
-        // BOUNCE PADS (mushrooms — for C-26 testing)
-        // =============================================
-        // Bounce pad at columns 70-71 (on top of ground, row 16)
-        this.tiles[16][70] = TILE_BOUNCE;
-        this.tiles[16][71] = TILE_BOUNCE;
-
-        // Another bounce pad at col 85
-        this.tiles[16][85] = TILE_BOUNCE;
-
-        // Elevated platform that bounce pad sends player to (row 8, cols 68-73)
-        for (let c = 68; c <= 73; c++) {
-            this.tiles[8][c] = TILE_SOLID;
+        for (let r = 17; r < H; r++) {
+            this.tiles[r][88] = TILE_EMPTY;
+            this.tiles[r][89] = TILE_EMPTY;
+            this.tiles[r][90] = TILE_EMPTY;
         }
 
         // =============================================
-        // HIGHER TERRAIN (testing vertical variety)
+        // SECTION K: ELEVATED TERRAIN (cols 95-105)
         // =============================================
-        // Stepped platforms (columns 90-100)
-        for (let c = 90; c <= 95; c++) {
+        for (let c = 95; c <= 100; c++) {
             this.tiles[14][c] = TILE_SOLID;
         }
-        for (let c = 96; c <= 100; c++) {
+        for (let c = 101; c <= 105; c++) {
             this.tiles[11][c] = TILE_SOLID;
         }
 
         // =============================================
-        // PLAYER SPAWN — on solid ground
+        // SECTION L: GAP #2 (cols 108-109)
         // =============================================
-        this.spawnX = 3 * TILE_SIZE;
-        this.spawnY = 12 * TILE_SIZE;  // Spawn well above ground so gravity is visible
+        for (let r = 17; r < H; r++) {
+            this.tiles[r][108] = TILE_EMPTY;
+            this.tiles[r][109] = TILE_EMPTY;
+        }
 
         // =============================================
-        // MOVING PLATFORMS (for C-13 carry testing)
+        // SECTION M: RIGHT WALL (col 115) — C-10 right collision
+        // Player walking right hits this wall
+        // =============================================
+        for (let r = 10; r < 17; r++) {
+            this.tiles[r][115] = TILE_SOLID;
+        }
+
+        // Right boundary wall (col 119)
+        for (let r = 5; r < 17; r++) {
+            this.tiles[r][W - 1] = TILE_SOLID;
+        }
+
+        // =============================================
+        // PLAYER SPAWN
+        // Above ground for visible gravity drop (C-09)
+        // =============================================
+        this.spawnX = 3 * TILE_SIZE;
+        this.spawnY = 12 * TILE_SIZE;
+
+        // =============================================
+        // MOVING PLATFORMS (C-13)
         // =============================================
         this.movingPlatforms = [
-            // Horizontal moving platform — moves between columns 22 and 30 at row ~15
-            // Accessible by walking right and jumping on from the ground
+            // Horizontal mover — travels between cols 35-45
+            // Player on ground at y=514 can step onto it (platform at y=15.5*32=496)
             {
-                x: 22 * TILE_SIZE,
-                y: 15 * TILE_SIZE,
+                x: 35 * TILE_SIZE,
+                y: 15.5 * TILE_SIZE,
                 width: TILE_SIZE * 3,
                 height: 12,
-                startX: 22 * TILE_SIZE,
-                endX: 30 * TILE_SIZE,
-                startY: 15 * TILE_SIZE,
-                endY: 15 * TILE_SIZE,
-                speed: 1.2,
+                startX: 35 * TILE_SIZE,
+                endX: 45 * TILE_SIZE,
+                startY: 15.5 * TILE_SIZE,
+                endY: 15.5 * TILE_SIZE,
+                speed: 1.0,
                 axis: 'x',
                 direction: 1,
-                prevX: 22 * TILE_SIZE,
-                prevY: 15 * TILE_SIZE
+                prevX: 35 * TILE_SIZE,
+                prevY: 15.5 * TILE_SIZE
             },
-            // Vertical moving platform — moves between rows 10 and 16 at column 50
-            // Accessible when it reaches its lowest point near ground level
+            // Vertical mover — at col 55, moves between rows 8-16
             {
-                x: 50 * TILE_SIZE,
+                x: 55 * TILE_SIZE,
                 y: 13 * TILE_SIZE,
                 width: TILE_SIZE * 3,
                 height: 12,
-                startX: 50 * TILE_SIZE,
-                endX: 50 * TILE_SIZE,
+                startX: 55 * TILE_SIZE,
+                endX: 55 * TILE_SIZE,
                 startY: 8 * TILE_SIZE,
                 endY: 16 * TILE_SIZE,
                 speed: 1.0,
                 axis: 'y',
                 direction: 1,
-                prevX: 50 * TILE_SIZE,
+                prevX: 55 * TILE_SIZE,
                 prevY: 13 * TILE_SIZE
             },
-            // Another horizontal mover at column 58-65
+            // Another horizontal mover — cols 73-80
             {
-                x: 58 * TILE_SIZE,
-                y: 14 * TILE_SIZE,
+                x: 73 * TILE_SIZE,
+                y: 15 * TILE_SIZE,
                 width: TILE_SIZE * 3,
                 height: 12,
-                startX: 58 * TILE_SIZE,
-                endX: 65 * TILE_SIZE,
-                startY: 14 * TILE_SIZE,
-                endY: 14 * TILE_SIZE,
+                startX: 73 * TILE_SIZE,
+                endX: 80 * TILE_SIZE,
+                startY: 15 * TILE_SIZE,
+                endY: 15 * TILE_SIZE,
                 speed: 0.8,
                 axis: 'x',
                 direction: 1,
-                prevX: 58 * TILE_SIZE,
-                prevY: 14 * TILE_SIZE
+                prevX: 73 * TILE_SIZE,
+                prevY: 15 * TILE_SIZE
             }
         ];
     },
