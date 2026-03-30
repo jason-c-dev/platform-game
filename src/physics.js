@@ -16,24 +16,30 @@ const Physics = {
     },
 
     applyMovement(entity, inputDir, maxSpeed) {
-        const accel = entity.onGround ? GROUND_ACCELERATION : AIR_ACCELERATION;
-        const friction = entity.onGround ? GROUND_FRICTION : AIR_DRAG;
         const max = maxSpeed || WALK_MAX_SPEED;
 
         if (inputDir !== 0) {
-            entity.vx += inputDir * accel;
+            if (entity.onGround) {
+                // Ground: approach-to-target model — player accelerates toward max speed
+                const targetVx = inputDir * max;
+                entity.vx += (targetVx - entity.vx) * GROUND_ACCELERATION * 0.2;
+            } else {
+                // Air: additive acceleration with drag — less control
+                entity.vx += inputDir * AIR_ACCELERATION;
+                entity.vx *= AIR_DRAG;
+                // Clamp to max speed in air
+                if (entity.vx > max) entity.vx = max;
+                if (entity.vx < -max) entity.vx = -max;
+            }
+        } else {
+            // No input: decelerate with friction
+            entity.vx *= (entity.onGround ? GROUND_FRICTION : AIR_DRAG);
         }
-
-        entity.vx *= friction;
 
         // Clamp small velocities to zero
         if (Math.abs(entity.vx) < 0.1) {
             entity.vx = 0;
         }
-
-        // Max horizontal speed
-        if (entity.vx > max) entity.vx = max;
-        if (entity.vx < -max) entity.vx = -max;
     },
 
     /**

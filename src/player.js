@@ -43,6 +43,9 @@ const Player = {
     chargeTimer: 0,
     isCharging: false,
 
+    // Variable jump
+    _jumpCut: false,
+
     // Wall slide
     wallDir: 0, // -1 = wall on left, 1 = wall on right
 
@@ -80,6 +83,7 @@ const Player = {
         this.attackTimer = 0;
         this.chargeTimer = 0;
         this.isCharging = false;
+        this._jumpCut = false;
         this.wallDir = 0;
         this.slideVx = 0;
         this.deathTimer = 0;
@@ -200,11 +204,6 @@ const Player = {
             this.facing = inputDir;
         }
 
-        // Variable jump release — cut velocity short
-        if (Input.isJumpReleased() && this.vy < 0) {
-            this.vy *= VARIABLE_JUMP_MULTIPLIER;
-        }
-
         // Attack input
         if (Input.isAttack()) {
             this._startAttack();
@@ -304,9 +303,19 @@ const Player = {
             this.facing = inputDir;
         }
 
-        // Variable jump — cut velocity when Z released early
-        if (Input.isJumpReleased() && this.vy < 0) {
+        // Variable jump — if Z not held while ascending, cut velocity (once)
+        if (!Input.isJumpHeld() && this.vy < 0 && !this._jumpCut) {
             this.vy *= VARIABLE_JUMP_MULTIPLIER;
+            this._jumpCut = true;
+        }
+
+        // ---- Coyote time jump — allows jumping briefly after walking off a ledge ----
+        if (this.coyoteTimer > 0 && this.jumpBufferTimer > 0) {
+            this.vy = JUMP_FORCE;
+            this.coyoteTimer = 0;
+            this.jumpBufferTimer = 0;
+            this._changeState('jump');
+            return;
         }
 
         // Attack in air triggers jump attack
@@ -905,6 +914,11 @@ const Player = {
         this.animFrame = 0;
         this.animTimer = 0;
         this.stateTimer = 0;
+
+        // Reset jump cut flag on new jump
+        if (newState === 'jump') {
+            this._jumpCut = false;
+        }
     },
 
     // =============================================
