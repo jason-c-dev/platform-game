@@ -263,6 +263,9 @@ const GameState = {
         if (Level.waterTiles.length > 0) Level.updateWater();
         if (Level.pressurePlates.length > 0) Level.updatePressurePlates();
         if (Level.mirrors.length > 0) Level.updateMirrors();
+        // Tundra mechanics
+        if (Level.iceBlocks.length > 0) Level.updateIceBlocks();
+        if (Level.meltableBlocks.length > 0) Level.updateMeltableBlocks();
         Player.update();
         Enemies.update();
         Enemies.checkPlayerAttackCollisions();
