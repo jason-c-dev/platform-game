@@ -1,0 +1,415 @@
+{
+  "sprintNumber": 9,
+  "name": "The Citadel & Final Boss",
+  "features": ["F19: The Citadel & Final Boss"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "Citadel Stage",
+      "description": "Stage '5-1' (The Citadel) loads via the loadStage switch statement. Level.loadStage('5-1') produces a playable level at least 200 tiles wide with a valid spawn point, exit point, and boss arena. The Citadel is the single longest stage in the game.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map, unlock all stages via save data (stages 1-1 through 4-3 completed), select The Citadel (5-1), enter it",
+        "page.evaluate(() => ({ width: Level.width, height: Level.height, spawnX: Level.spawnX, spawnY: Level.spawnY, hasExit: typeof Level.exitX === 'number', hasBoss: Level.bossData !== null && Level.bossData !== undefined, stageId: Level.currentStageId }))",
+        "Verify Level.width >= 200",
+        "Verify spawn point, exit, and boss data exist",
+        "Verify stageId === '5-1'"
+      ],
+      "threshold": "Stage 5-1 loads with width >= 200 tiles, has spawn, exit, and boss arena"
+    },
+    {
+      "id": "C-02",
+      "category": "Citadel Stage",
+      "description": "The Citadel stage contains 4 distinct world-themed sections: a Forest section, a Desert section, a Tundra section, and a Volcano section. Each section uses that world's tile palette and hazards. Sections are laid out sequentially as the player progresses left to right.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1 (The Citadel)",
+        "page.evaluate(() => { const sections = Level.citadelSections || Level.worldSections || Level.sections; if (sections) return { count: sections.length, themes: sections.map(s => s.theme || s.world || s.type) }; return null; })",
+        "Verify 4 sections exist with themes corresponding to Forest, Desert, Tundra, Volcano",
+        "Take screenshot at beginning of stage — verify forest-themed tiles (green/brown)",
+        "Take screenshot further into the level — verify different world theme tiles appear"
+      ],
+      "threshold": "Citadel has 4 distinct world-themed sections (Forest, Desert, Tundra, Volcano) in sequence"
+    },
+    {
+      "id": "C-03",
+      "category": "Citadel Stage",
+      "description": "The Forest section of the Citadel contains at least 1 Bark Beetle enemy (ceiling walker). Forest-appropriate tiles are used in this section (green/brown palette).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => { const enemies = Enemies.enemies.filter(e => e.type === 'bark_beetle' || e.type === 'barkbeetle'); return { count: enemies.length, firstEnemy: enemies.length > 0 ? { type: enemies[0].type, x: enemies[0].x, y: enemies[0].y } : null }; })",
+        "Verify at least 1 Bark Beetle enemy exists in the Citadel stage"
+      ],
+      "threshold": "Citadel Forest section contains Bark Beetle enemies"
+    },
+    {
+      "id": "C-04",
+      "category": "Citadel Stage",
+      "description": "The Desert section of the Citadel includes quicksand tiles and at least 1 Dust Devil enemy. Quicksand mechanic functions in the Citadel the same as in World 2.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => { const dustDevils = Enemies.enemies.filter(e => e.type === 'dust_devil' || e.type === 'dustdevil'); const hasQuicksand = Level.quicksandTiles && Level.quicksandTiles.length > 0; return { dustDevilCount: dustDevils.length, hasQuicksand, quicksandCount: Level.quicksandTiles ? Level.quicksandTiles.length : 0 }; })",
+        "Verify at least 1 Dust Devil enemy and quicksand tiles present"
+      ],
+      "threshold": "Citadel Desert section has Dust Devil enemies and quicksand tiles"
+    },
+    {
+      "id": "C-05",
+      "category": "Citadel Stage",
+      "description": "The Tundra section of the Citadel includes ice physics zones. At least some tiles in the Citadel have reduced-friction ice physics, consistent with World 3 mechanics.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => { const hasIceZones = Level.iceZones && Level.iceZones.length > 0; const hasIceTiles = Level.iceTiles && Level.iceTiles.length > 0; return { hasIceZones, iceZoneCount: Level.iceZones ? Level.iceZones.length : 0, hasIceTiles, iceTileCount: Level.iceTiles ? Level.iceTiles.length : 0 }; })",
+        "Verify ice zones or ice tiles exist in the Citadel (count > 0)"
+      ],
+      "threshold": "Citadel Tundra section has ice physics zones active"
+    },
+    {
+      "id": "C-06",
+      "category": "Citadel Stage",
+      "description": "The Volcano section of the Citadel includes rising lava. The lava level rises over time, creating timed platforming pressure in the volcano section of the Citadel.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => { return { hasLava: Level.lavaLevel !== null && Level.lavaLevel !== undefined, lavaLevel: Level.lavaLevel, lavaRiseSpeed: Level.lavaRiseSpeed || Level.lavaSpeed || 0 }; })",
+        "Verify lava level is defined (lavaLevel !== null) and lava rise speed > 0"
+      ],
+      "threshold": "Citadel Volcano section has rising lava mechanic active"
+    },
+    {
+      "id": "C-07",
+      "category": "Citadel Stage",
+      "description": "The Citadel stage contains enemies from at least 3 different world types. Multiple world-specific enemy types are mixed throughout the level to create the remix challenge.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => { const types = new Set(Enemies.enemies.map(e => e.type)); const forestTypes = ['shroomba', 'thornvine', 'thorn_vine', 'bark_beetle', 'barkbeetle']; const desertTypes = ['sand_skitter', 'sandskitter', 'dust_devil', 'dustdevil', 'mummy']; const tundraTypes = ['frost_imp', 'frostimp', 'ice_golem', 'icegolem', 'snow_owl', 'snowowl']; const volcanoTypes = ['magma_slime', 'magmaslime', 'fire_bat', 'firebat', 'obsidian_knight', 'obsidianknight']; const allTypes = Array.from(types); const hasForest = forestTypes.some(t => types.has(t)); const hasDesert = desertTypes.some(t => types.has(t)); const hasTundra = tundraTypes.some(t => types.has(t)); const hasVolcano = volcanoTypes.some(t => types.has(t)); const worldCount = [hasForest, hasDesert, hasTundra, hasVolcano].filter(Boolean).length; return { allTypes, worldCount, hasForest, hasDesert, hasTundra, hasVolcano, totalEnemies: Enemies.enemies.length }; })",
+        "Verify worldCount >= 3 (enemies from at least 3 different worlds)",
+        "Verify totalEnemies >= 6"
+      ],
+      "threshold": "Citadel contains enemies from at least 3 world types with 6+ total enemies"
+    },
+    {
+      "id": "C-08",
+      "category": "Final Boss",
+      "description": "The Architect final boss exists with boss type 'architect' (or equivalent). The boss has maxHealth of exactly 19 and spawns when the player reaches the boss arena area of stage 5-1.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, move player to boss arena (past bossArenaX)",
+        "page.evaluate(() => { Player.x = Level.bossArenaX + 64; for (let i = 0; i < 10; i++) Enemies.update(1/60); const boss = Enemies.boss; if (!boss) return null; return { type: boss.type, health: boss.health, maxHealth: boss.maxHealth, name: boss.name || boss.type }; })",
+        "Verify boss type is 'architect' or 'the_architect'",
+        "Verify boss.maxHealth === 19"
+      ],
+      "threshold": "The Architect boss spawns in Citadel with exactly 19 HP"
+    },
+    {
+      "id": "C-09",
+      "category": "Final Boss",
+      "description": "The Architect boss has 5 distinct phases. Phase transitions occur as health decreases. Each phase corresponds to a world theme: Phase 1 = Forest, Phase 2 = Desert, Phase 3 = Tundra, Phase 4 = Volcano, Phase 5 = All combined.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; return { phase: boss.phase, phases: boss.phases || null, maxHealth: boss.maxHealth }; })",
+        "Verify initial phase is 1",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; const results = []; const thresholds = [15, 11, 7, 3]; thresholds.forEach(hp => { boss.health = hp; for (let i = 0; i < 60; i++) { if (typeof Enemies.updateBoss === 'function') Enemies.updateBoss(1/60); else if (typeof Enemies.update === 'function') Enemies.update(1/60); } results.push({ hp, phase: boss.phase }); }); return results; })",
+        "Verify boss transitions through phases as health decreases (phase increases at each threshold)",
+        "Verify boss reaches phase 5 at low health"
+      ],
+      "threshold": "The Architect has 5 phases that activate at health thresholds; phases correspond to world themes"
+    },
+    {
+      "id": "C-10",
+      "category": "Final Boss",
+      "description": "The Architect boss HUD displays correctly. HUD boss health bar activates with the name 'The Architect' and shows a health bar scaled to maxHP of 19.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; return { bossActive: HUD.bossActive || HUD.showBossBar || false, bossName: HUD.bossName || boss.name || null, bossMaxHP: boss ? boss.maxHealth : null }; })",
+        "Verify HUD boss bar is active",
+        "Verify boss name is 'The Architect'",
+        "Verify maxHP shown is 19"
+      ],
+      "threshold": "HUD shows 'The Architect' name and health bar with 19 HP during boss fight"
+    },
+    {
+      "id": "C-11",
+      "category": "Final Boss",
+      "description": "The Architect boss vulnerability windows work correctly. When boss.vulnerable === false, attacks do not reduce health. When boss.vulnerable === true, attacks reduce health by 1. Follows the same framework pattern from previous sprints.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, trigger Architect boss fight",
+        "Test invulnerable: page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.vulnerable = false; const hpBefore = boss.health; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { hpBefore, hpAfter: boss.health }; })",
+        "Verify hpBefore === hpAfter (no damage when invulnerable)",
+        "Test vulnerable: page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.vulnerable = true; const hpBefore = boss.health; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { hpBefore, hpAfter: boss.health }; })",
+        "Verify hpAfter < hpBefore (takes damage when vulnerable)"
+      ],
+      "threshold": "The Architect follows vulnerability window pattern: invulnerable blocks damage, vulnerable allows 1 damage"
+    },
+    {
+      "id": "C-12",
+      "category": "Final Boss",
+      "description": "Defeating The Architect (reducing health to 0) triggers a game completion sequence. The boss enters a dying/dead state, and the game transitions to a VICTORY state (not the regular STAGE_COMPLETE).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.vulnerable = true; boss.health = 1; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { health: boss.health, state: boss.state }; })",
+        "Verify boss health === 0 or boss state is 'dying'/'dead'",
+        "Wait 3 seconds for defeat animation",
+        "page.evaluate(() => GameState.current)",
+        "Verify GameState transitions to 'VICTORY' (a new state distinct from STAGE_COMPLETE)"
+      ],
+      "threshold": "Defeating The Architect transitions to VICTORY state, not STAGE_COMPLETE"
+    },
+    {
+      "id": "C-13",
+      "category": "Victory Screen",
+      "description": "A VICTORY state exists in the GameState machine. The state is recognized in update and render dispatches. It displays a victory/credits screen when active.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => ({ hasVictoryState: typeof GameState.VICTORY !== 'undefined', victoryValue: GameState.VICTORY }))",
+        "Verify GameState.VICTORY is defined as a string constant",
+        "page.evaluate(() => { GameState.current = GameState.VICTORY; GameState.update(); return true; })",
+        "Verify no JS errors when VICTORY state is active"
+      ],
+      "threshold": "VICTORY state constant exists in GameState and is handled in update/render dispatch"
+    },
+    {
+      "id": "C-14",
+      "category": "Victory Screen",
+      "description": "The Victory screen displays game completion stats: total play time, total coins collected, and total deaths (or lives lost). These stats are accumulated across all stages.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Force VICTORY state: page.evaluate(() => { GameState.current = GameState.VICTORY; if (typeof Menu.initVictory === 'function') Menu.initVictory(); else if (typeof GameState.setupVictory === 'function') GameState.setupVictory(); return true; })",
+        "Take screenshot of victory screen",
+        "Verify text on screen includes time display, coin count, and death/lives count",
+        "page.evaluate(() => { return { hasTimeDisplay: typeof GameState.totalTime !== 'undefined' || typeof SaveSystem !== 'undefined', hasCoinDisplay: typeof GameState.totalCoins !== 'undefined' || typeof Player.coins !== 'undefined', hasDeathDisplay: typeof GameState.totalDeaths !== 'undefined' || typeof GameState.deathCount !== 'undefined' || typeof Player.deathCount !== 'undefined' }; })",
+        "Verify stats tracking variables exist"
+      ],
+      "threshold": "Victory screen shows total time, coins, and deaths stats"
+    },
+    {
+      "id": "C-15",
+      "category": "Victory Screen",
+      "description": "The Victory screen has a scrolling credits or congratulatory text effect. Text scrolls vertically or has an animated presentation. Player can return to title screen from the victory screen.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Force VICTORY state and take 2 screenshots 1 second apart",
+        "Verify visual difference between screenshots (animation/scrolling happening)",
+        "page.evaluate(() => { return { hasScrollOffset: typeof Menu.victoryScrollY !== 'undefined' || typeof Menu.creditsY !== 'undefined' || typeof Menu.scrollOffset !== 'undefined' }; })",
+        "Verify scrolling text mechanism exists",
+        "Simulate Enter key press and verify transition back to TITLE state"
+      ],
+      "threshold": "Victory screen has animated/scrolling text and allows return to title"
+    },
+    {
+      "id": "C-16",
+      "category": "Citadel Progression",
+      "description": "The Citadel (stage 5-1) is only accessible after completing all 12 prior stages (1-1 through 4-3). World map enforces this — the Citadel node is locked until all World 4 stages are completed.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear save data, navigate to world map",
+        "page.evaluate(() => { const citadelNode = WorldMap.nodes.find(n => { const stage = WorldMap.STAGES[n.stageIndex]; return stage && stage.id === '5-1'; }); return citadelNode ? { locked: citadelNode.locked, unlocked: citadelNode.unlocked } : null; })",
+        "Verify Citadel node is locked",
+        "Set save data with all stages 1-1 through 4-3 completed",
+        "Refresh world map, verify Citadel node is now unlocked"
+      ],
+      "threshold": "Citadel locked until all 4 worlds complete; unlocks after stage 4-3 completion"
+    },
+    {
+      "id": "C-17",
+      "category": "Citadel Progression",
+      "description": "Selecting The Citadel on the world map and pressing Enter loads stage 5-1 correctly. The stage has a distinct level layout — not any prior world's level. The world map info panel shows 'The Citadel' name and difficulty 3 stars.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map with all stages completed, select Citadel node",
+        "page.evaluate(() => { const node = WorldMap.nodes[WorldMap.selectedNode]; const stage = WorldMap.STAGES[node.stageIndex]; return { id: stage.id, name: stage.name, difficulty: stage.difficulty }; })",
+        "Verify stage id is '5-1', name is 'The Citadel', difficulty is 3",
+        "Press Enter to load stage, verify Level.currentStageId === '5-1' and Level.width >= 200"
+      ],
+      "threshold": "Citadel selectable on world map, shows correct info, loads as stage 5-1 with width >= 200"
+    },
+    {
+      "id": "C-18",
+      "category": "Collectibles",
+      "description": "The Citadel stage has 40 coins (matching WorldMap.STAGES totalCoins definition) and at least 1 health pickup. Coins are distributed across the 4 world-themed sections.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => ({ coins: Collectibles.coins ? Collectibles.coins.length : (Level.coinPositions ? Level.coinPositions.length : 0), health: Collectibles.healthPickups ? Collectibles.healthPickups.length : (Level.healthPositions ? Level.healthPositions.length : 0) }))",
+        "Verify coins === 40",
+        "Verify health >= 1"
+      ],
+      "threshold": "Citadel has 40 coins (matching STAGES definition) and at least 1 health pickup"
+    },
+    {
+      "id": "C-19",
+      "category": "Collectibles",
+      "description": "The Citadel stage has at least 6 enemies properly placed within the level geometry. Enemies from multiple worlds are positioned on appropriate surfaces, not floating in empty space.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => ({ count: Enemies.enemies.length, types: [...new Set(Enemies.enemies.map(e => e.type))] }))",
+        "Verify enemy count >= 6",
+        "Verify multiple enemy types present"
+      ],
+      "threshold": "Citadel has at least 6 enemies with multiple types properly positioned"
+    },
+    {
+      "id": "C-20",
+      "category": "Citadel Parallax",
+      "description": "The Citadel stage has parallax background rendering with at least 3 layers. The background should be visually distinct or blend themes from the 4 worlds. Not a plain/empty background.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "page.evaluate(() => { if (typeof Camera !== 'undefined' && Camera.parallaxLayers) return Camera.parallaxLayers.length; if (typeof Camera !== 'undefined' && Camera.layers) return Camera.layers.length; const debug = window.__gameDebug; if (debug && debug.parallaxLayerCount) return debug.parallaxLayerCount(); return -1; })",
+        "Verify result >= 3",
+        "Take screenshot to verify non-empty parallax background behind Citadel stage"
+      ],
+      "threshold": "Citadel has 3+ parallax layers with themed background"
+    },
+    {
+      "id": "C-21",
+      "category": "Death Tracking",
+      "description": "The game tracks player deaths across the entire playthrough. A deathCount or totalDeaths variable is incremented each time the player dies (health reaches 0). This count persists across stage restarts and is available for the victory screen.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.evaluate(() => { const hasDeathTracking = typeof GameState.totalDeaths !== 'undefined' || typeof GameState.deathCount !== 'undefined' || typeof Player.deathCount !== 'undefined' || typeof Player.totalDeaths !== 'undefined'; return { hasDeathTracking }; })",
+        "Verify death tracking variable exists",
+        "page.evaluate(() => { const getDeaths = () => GameState.totalDeaths || GameState.deathCount || Player.deathCount || Player.totalDeaths || 0; const before = getDeaths(); Player.health = 0; Player.lives = 5; if (typeof Player.die === 'function') Player.die(); else if (typeof GameState._onPlayerDeath === 'function') GameState._onPlayerDeath(); const after = getDeaths(); return { before, after, incremented: after > before }; })",
+        "Verify death counter increments when player dies"
+      ],
+      "threshold": "Death count tracked and incremented on each player death"
+    },
+    {
+      "id": "C-22",
+      "category": "Save System",
+      "description": "Completing The Citadel records the completion in the save system. Save data includes stage 5-1 as completed with best time and coin count, just like any other stage.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Set save data with stages 1-1 through 4-3 completed",
+        "page.evaluate(() => { WorldMap.completeStage('5-1', 300, 35); const save = typeof SaveSystem !== 'undefined' ? SaveSystem.load() : JSON.parse(localStorage.getItem('kingdoms_save') || '{}'); return { completedStages: save.completedStages || save.completed || [], hasCitadel: (save.completedStages || save.completed || []).includes('5-1') }; })",
+        "Verify save data includes '5-1' as a completed stage"
+      ],
+      "threshold": "Save system records Citadel completion with time and coins"
+    },
+    {
+      "id": "C-23",
+      "category": "Final Boss Attacks",
+      "description": "The Architect boss has distinct attack patterns. In each phase, the boss performs attack behaviors (not just standing idle). Boss updates run attack logic and the boss moves, shoots projectiles, or creates hazards during attack cycles.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; const posBefore = { x: boss.x, y: boss.y, state: boss.state, attackTimer: boss.attackTimer }; for (let i = 0; i < 120; i++) { if (typeof Enemies.updateBoss === 'function') Enemies.updateBoss(1/60); else if (typeof Enemies.update === 'function') Enemies.update(1/60); } const posAfter = { x: boss.x, y: boss.y, state: boss.state, attackTimer: boss.attackTimer }; return { posBefore, posAfter, moved: posBefore.x !== posAfter.x || posBefore.y !== posAfter.y, stateChanged: posBefore.state !== posAfter.state || posBefore.attackTimer !== posAfter.attackTimer }; })",
+        "Verify boss moves or changes state during update cycles (not idle)"
+      ],
+      "threshold": "The Architect boss actively attacks and moves during fight; not a stationary target"
+    },
+    {
+      "id": "C-24",
+      "category": "Final Boss Attacks",
+      "description": "The Architect boss deals damage to the player on contact or through projectiles. Boss collision with the player or boss projectiles reduce player HP by 1 (when not invincible).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; Player.invincibleTimer = 0; Player.health = 3; Player.x = boss.x; Player.y = boss.y; if (typeof Enemies.checkBossPlayerCollision === 'function') Enemies.checkBossPlayerCollision(); else { for (let i = 0; i < 5; i++) Enemies.update(1/60); } return { health: Player.health, tookDamage: Player.health < 3 }; })",
+        "Verify player takes damage from boss contact (health < 3)"
+      ],
+      "threshold": "The Architect deals contact damage to the player"
+    },
+    {
+      "id": "C-25",
+      "category": "Regression",
+      "description": "All 3 World 1 Forest stages (1-1, 1-2, 1-3) still load correctly with their original layouts, enemies, and bosses. No Forest content has been broken by Citadel additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1, verify Level.width >= 80 and enemies exist",
+        "Enter stage 1-2, verify Level.width >= 120 and enemies exist",
+        "Enter stage 1-3, verify Level.width >= 150 and enemies exist",
+        "Verify Forest bosses still have correct HP (5, 6, 7)"
+      ],
+      "threshold": "All Forest stages load correctly with original content intact"
+    },
+    {
+      "id": "C-26",
+      "category": "Regression",
+      "description": "All 3 World 2 Desert stages (2-1, 2-2, 2-3) still load correctly with their original layouts, enemies, bosses, and unique mechanics. No Desert content broken by Citadel additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 2-1, verify Level.width >= 100 and enemies exist",
+        "Enter stage 2-2, verify Level.width >= 130 and enemies exist",
+        "Enter stage 2-3, verify Level.width >= 140 and enemies exist",
+        "Verify Desert bosses still have correct HP (6, 8, 12)"
+      ],
+      "threshold": "All Desert stages load correctly with original content intact"
+    },
+    {
+      "id": "C-27",
+      "category": "Regression",
+      "description": "All 3 World 3 Tundra stages (3-1, 3-2, 3-3) still load correctly with their original layouts, enemies, bosses, and unique mechanics. No Tundra content broken by Citadel additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 3-1, verify Level.width >= 115 and enemies exist",
+        "Enter stage 3-2, verify Level.width >= 130 and enemies exist",
+        "Enter stage 3-3, verify Level.width >= 160 and enemies exist",
+        "Verify Tundra bosses still have correct HP (7, 25, 9)"
+      ],
+      "threshold": "All Tundra stages load correctly with original content intact"
+    },
+    {
+      "id": "C-28",
+      "category": "Regression",
+      "description": "All 3 World 4 Volcano stages (4-1, 4-2, 4-3) still load correctly with their original layouts, enemies, bosses, and unique mechanics. No Volcano content broken by Citadel additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, verify Level.width >= 120 and enemies exist",
+        "Enter stage 4-2, verify Level.width >= 140 and enemies exist",
+        "Enter stage 4-3, verify Level.width >= 150 and enemies exist",
+        "Verify Volcano bosses still have correct HP (7, 7, 11)"
+      ],
+      "threshold": "All Volcano stages load correctly with original content intact"
+    },
+    {
+      "id": "C-29",
+      "category": "Regression",
+      "description": "Player movement vocabulary is fully intact: walk, run, jump (variable height), wall slide, wall jump, coyote time, jump buffering, crouch, melee attack, charge attack, jump attack all function in the Citadel stage.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 5-1",
+        "Verify player can walk (press right, vx > 0)",
+        "Verify player can jump (press Z, vy < 0)",
+        "Verify player attack works (press X, state becomes 'attack')",
+        "Verify coyote time constant exists (COYOTE_FRAMES === 6)",
+        "Verify wall slide works near walls"
+      ],
+      "threshold": "All player movement and combat mechanics function correctly in the Citadel"
+    },
+    {
+      "id": "C-30",
+      "category": "Regression",
+      "description": "The game loads without JavaScript errors. No console errors on page load or during Citadel gameplay. The loadStage switch statement handles the '5-1' case. The game runs at stable framerate.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.on('pageerror') to capture JS errors",
+        "Load the game page",
+        "Navigate to world map, enter stage 5-1",
+        "Play for 5 seconds (simulated input)",
+        "Verify zero unhandled JS errors",
+        "page.evaluate(() => typeof Level.loadStage === 'function')",
+        "Verify loadStage function exists and handles '5-1'"
+      ],
+      "threshold": "Zero JS errors on load and during Citadel gameplay; loadStage handles stage 5-1"
+    }
+  ],
+  "outOfScope": [
+    "Audio / Sound effects (Sprint 10)",
+    "Visual effects polish — screen shake, hit flash, slow-mo, particle effects (Sprint 11)",
+    "Performance optimization pass (Sprint 12)",
+    "Power Star cosmetic unlock (decorative only, part of polish)",
+    "Modifying World 1, 2, 3, or 4 content beyond bug fixes",
+    "Save system schema changes beyond adding death tracking and Citadel completion"
+  ],
+  "regressionSprints": [5, 6, 7, 8]
+}
