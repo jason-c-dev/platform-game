@@ -1,0 +1,367 @@
+Build a complete side-scrolling 2D platformer game in the browser using HTML5 Canvas
+  and vanilla JavaScript (no game engine libraries). The game features a Mario-style
+  world map, 4 themed worlds with 3 stages each (12 stages total), boss fights at the
+  end of every stage, collectibles, puzzles, and a final confrontation.
+
+  The game must run at 60fps, handle keyboard input, and be playable entirely in a
+  single browser tab with no server component. All assets should be drawn
+  programmatically (shapes, patterns, procedural sprites) -- no external image files.
+
+  ---
+
+  ## Core Engine Requirements
+
+  ### Rendering & Game Loop
+  - Fixed-timestep game loop (60 updates/sec) with delta-time interpolation for rendering
+  - HTML5 Canvas renderer with a viewport of 960x540 logical pixels, scaled to fit the browser window while preserving aspect ratio
+  - Efficient tile-based rendering: only draw tiles visible in the viewport
+  - Camera that smoothly follows the player horizontally, with vertical tracking that has a dead zone (camera only moves vertically when the
+  player is near the top or bottom 25% of the screen)
+  - Parallax scrolling background with at least 3 layers per world theme
+
+  ### Physics & Collision
+  - Axis-aligned bounding box (AABB) collision detection against the tile map
+  - Gravity with terminal velocity
+  - Player movement: ground acceleration, air acceleration (reduced), ground friction, air drag
+  - One-way platforms the player can jump through from below but land on from above
+  - Moving platforms (horizontal and vertical) that carry the player
+  - Slopes are NOT required -- keep terrain rectangular
+
+  ### Tile System
+  - Levels defined as 2D arrays of tile IDs
+  - Tile size: 32x32 pixels
+  - Tile types: solid, one-way platform, hazard (spikes/lava), breakable block, bounce pad, ladder
+  - Each world theme has a distinct tile palette drawn with different colors and patterns
+
+  ---
+
+  ## Player Character
+
+  ### Movement
+  - Walk and run (hold shift to run, 1.6x speed multiplier)
+  - Jump with variable height (hold jump button for higher jump, release for short hop)
+  - Wall slide: player slides slowly down walls when pressing toward them in the air
+  - Wall jump: player can jump off walls while wall-sliding (kick away at 45-degree angle)
+  - Coyote time: 6-frame grace period to jump after walking off a ledge
+  - Jump buffering: jump input registered up to 8 frames before landing is executed on land
+  - Crouch: reduces hitbox height, allows sliding under low passages
+  - Crouch-slide: if crouching while running, player slides forward with momentum
+
+  ### Combat
+  - Basic attack: short-range melee swing (press attack key)
+  - Charge attack: hold attack key for 1 second, release for a powerful wide swing that breaks certain blocks
+  - Jump attack: pressing attack in the air does a downward strike; bounces off enemies like a pogo
+  - 3-hit health system: player can take 3 hits before death, with 1.5 seconds of invincibility frames (flashing sprite) after each hit
+  - Lives system: start with 5 lives, lose a life on death, game over at 0
+
+  ### Visual
+  - Player sprite drawn as an animated character using Canvas drawing commands (rectangles, arcs, lines)
+  - Distinct animation states: idle (breathing motion), walk cycle (4 frames), run cycle (6 frames), jump (rising), fall, wall slide, crouch,
+  attack swing, hurt, death
+  - Direction facing tracked and sprite flipped accordingly
+  - Dust particles on landing, running, and wall jumping
+
+  ---
+
+  ## World Map
+
+  ### Layout
+  - Top-down world map screen showing all 4 worlds arranged as a path
+  - Each world is a cluster of 3 stage nodes connected by paths
+  - Player icon moves along paths between nodes (arrow keys to select, enter to start a stage)
+  - Completed stages shown with a checkmark; current stage pulses; locked stages are grayed out
+  - Stages unlock linearly: completing stage 1 unlocks stage 2, etc.
+  - Each world cluster has a distinct visual theme on the map (green trees for Forest, orange sand for Desert, blue ice for Tundra, red/black for
+  Volcano)
+  - After completing all 3 stages of a world, the path to the next world unlocks with a brief animation
+  - After all 4 worlds, a final node appears: "The Citadel" (final boss stage)
+
+  ### World Map Info Panel
+  - When a stage is selected, show a panel with: stage name, best completion time, coins collected out of total, and a difficulty rating (1-3
+  stars)
+
+  ---
+
+  ## Worlds and Stages
+
+  ### World 1: Whispering Forest
+  **Theme**: Green canopy, wooden platforms, mushrooms, tree trunks. Background layers: distant mountains, mid-ground trees, foreground leaves.
+
+  **Enemies (used across all 3 Forest stages)**:
+  - *Shroomba*: mushroom that walks back and forth on platforms, reverses at edges. Dies in 1 hit.
+  - *Thorn Vine*: stationary plant that periodically shoots a thorn projectile horizontally. Dies in 2 hits. Thorns are destroyed by player
+  attacks.
+  - *Bark Beetle*: walks on walls and ceilings, drops down when player is directly below. Dies in 1 hit.
+
+  **Stage 1-1: Canopy Trail** (tutorial-paced)
+  - Length: ~80 tiles wide
+  - Introduces: basic movement, jumping, first enemy (Shroomba), coin collecting
+  - Puzzle: Stack breakable blocks to reach a high platform with a bonus collectible
+  - Boss: *Elder Shroomba* -- a large Shroomba (3x size) that jumps and creates shockwaves on landing. Shockwaves travel along the ground. Jump
+  over shockwaves, attack it while it's recovering after a jump. 5 hits to defeat. Arena is a flat area with 2 small platforms.
+
+  **Stage 1-2: Hollow Depths**
+  - Length: ~120 tiles wide
+  - Introduces: wall jumping, ladders, Thorn Vines, bounce pads
+  - Puzzle: Sequence of bounce pads that must be hit in the right order to reach a key that opens a gate blocking progression
+  - Boss: *Vine Mother* -- a large stationary plant at the right side of the arena. Spawns Thorn Vines on platforms around the arena (max 3 at a
+  time). Periodically extends a large vine across the floor that the player must jump over. The boss's weak point is a glowing bulb that is only
+  exposed for 3 seconds after it finishes its vine sweep attack. 6 hits to defeat.
+
+  **Stage 1-3: Treetop Gauntlet**
+  - Length: ~150 tiles wide
+  - Introduces: moving platforms (horizontal), Bark Beetles, one-way platforms
+  - Puzzle: A series of platforms that crumble 1 second after being stepped on, requiring precise timing to cross a gap
+  - Boss: *Stag King* -- a large beetle that charges horizontally across the arena. The player must wall-jump above it as it passes, then attack
+  its back. After taking damage, it climbs to the ceiling and drops rocks (3 falling hazards). 7 hits to defeat.
+
+  ---
+
+  ### World 2: Scorching Desert
+  **Theme**: Sand-colored tiles, cacti, ancient ruins. Background layers: hazy sky with heat shimmer effect (wavy distortion), sand dunes, ruined
+  pillars.
+
+  **Enemies**:
+  - *Sand Skitter*: fast-moving scorpion that charges at the player when within 5 tiles horizontally. Dies in 1 hit.
+  - *Dust Devil*: a small tornado that moves in a sine-wave pattern. Cannot be killed; must be avoided. Pushes the player horizontally on contact
+  (doesn't deal damage but can push into hazards).
+  - *Mummy*: slow-walking enemy that takes 3 hits. After dying, revives once after 3 seconds unless the player is standing on its defeat position.
+
+  **Stage 2-1: Dune Sea**
+  - Length: ~100 tiles wide
+  - Introduces: Sand Skitters, hazard tiles (quicksand that slowly pulls player down -- must jump repeatedly to escape)
+  - Puzzle: Push a stone block across sand to weigh down a pressure plate that opens a door
+  - Boss: *Sand Wyrm* -- emerges from the ground at random positions in the arena. The arena floor is mostly quicksand with 4 solid platforms. The
+   Wyrm's head is vulnerable for 2 seconds when it surfaces. It spits 3 sand projectiles in a fan pattern before diving back down. 6 hits to
+  defeat.
+
+  **Stage 2-2: Buried Temple**
+  - Length: ~130 tiles wide
+  - Introduces: Mummies, breakable walls (charge attack required), dark rooms (limited visibility radius around player)
+  - Puzzle: Reflect a beam of light using rotatable mirror blocks (interact with them to rotate 90 degrees) to illuminate a sun emblem that opens
+  the temple door
+  - Boss: *Pharaoh Specter* -- teleports between 5 fixed positions in the arena. Summons 2 Mummies each time it teleports. Shoots a slow-moving
+  homing orb that can be destroyed with 1 attack. The Specter is only vulnerable for 2 seconds after its orb is destroyed. 8 hits to defeat.
+
+  **Stage 2-3: Oasis Mirage**
+  - Length: ~140 tiles wide
+  - Introduces: Dust Devils, water sections (swimming with different physics -- slower horizontal, no gravity, dedicated swim-up/swim-down), palm
+  tree vine swings
+  - Puzzle: Water level rises and falls on a timer; must navigate between dry-path and water-path sections
+  - Boss: *Hydra Cactus* -- a 3-headed cactus. Each head attacks independently: left head spits needles in a spread, right head extends a thorny
+  vine along the ground, center head does a slam attack. Each head takes 4 hits. Defeated heads stop attacking. After all 3 heads are destroyed,
+  the stump does a final desperate explosion of needles in all directions (must hide behind the arena's 2 destructible cover blocks).
+
+  ---
+
+  ### World 3: Frozen Tundra
+  **Theme**: Ice-blue and white tiles, snow effects, frozen lakes. Background layers: aurora borealis (animated color cycling), snow-capped peaks,
+   falling snow particles.
+
+  **Enemies**:
+  - *Frost Imp*: small creature that throws snowballs in an arc. Snowballs freeze platforms temporarily (making them slippery). Dies in 1 hit.
+  - *Ice Golem*: large slow enemy that slides toward the player on ice. Takes 4 hits. Shatters into 3 ice shards on death that fly outward
+  (avoidable hazard).
+  - *Snow Owl*: flies in a figure-8 patrol pattern. Periodically swoops down at player. Dies in 2 hits.
+
+  **Stage 3-1: Frozen Lake**
+  - Length: ~110 tiles wide
+  - Introduces: ice physics (reduced friction on ice tiles, player slides), Frost Imps, falling icicle hazards (ceiling drips, icicle falls when
+  player walks beneath)
+  - Puzzle: Melt ice blocks by luring a fire hazard's projectile into them to clear a path
+  - Boss: *Frost Bear* -- charges across the icy arena floor (player and boss both slide on ice). Periodically rears up and slams, creating ice
+  pillars that block movement but can be broken with charge attack. Breathes a frost beam that sweeps across the arena floor. Attack it while it's
+   recovering from the frost breath. 7 hits to defeat.
+
+  **Stage 3-2: Crystal Caverns**
+  - Length: ~130 tiles wide
+  - Introduces: Ice Golems, slippery slopes (angled ice surfaces that accelerate the player), crystal formations that reflect player projectiles
+  - Puzzle: Slide ice blocks along frictionless surfaces to fill gaps in the floor, creating a bridge
+  - Boss: *Crystal Witch* -- floats above the arena. Summons a protective crystal shield (ring of 4 crystals orbiting her). Player must break all
+  4 crystals (1 hit each) to make her vulnerable for 3 seconds. She attacks by freezing sections of the floor (indicated by blue glow 1 second
+  before) and summoning Frost Imps (max 2 at a time). 5 hits to her body to defeat (shield regenerates after each hit).
+
+  **Stage 3-3: Avalanche Peak**
+  - Length: ~160 tiles wide
+  - Auto-scrolling section: camera moves right automatically, player must keep up or die at the left edge
+  - Introduces: Snow Owls, collapsing snow bridges, wind gusts that push the player (visual wind lines indicate direction)
+  - Puzzle: During the auto-scroll, choose the correct path at forks (upper or lower) -- one path has collectibles, the other is safer
+  - Boss: *Yeti Monarch* -- the arena is a tiered mountain peak (3 levels of platforms). The Yeti picks up and throws boulders that roll down the
+  tiers. Periodically roars, causing an avalanche of snow from above (safe spots indicated by gaps). Jumps between tiers. Attack it after it
+  throws a boulder (recovery window). 9 hits to defeat.
+
+  ---
+
+  ### World 4: Molten Volcano
+  **Theme**: Dark stone, glowing lava, ember particles. Background layers: volcanic sky with ash clouds, distant lava falls, rising embers.
+
+  **Enemies**:
+  - *Magma Slime*: bounces in place, splits into 2 smaller slimes on death (small slimes die in 1 hit). Original takes 2 hits.
+  - *Fire Bat*: flies in erratic patterns, periodically dive-bombs the player. Dies in 1 hit. Spawns in groups of 3.
+  - *Obsidian Knight*: armored enemy with a shield. Frontal attacks are blocked; must attack from behind or use jump attacks. Takes 3 hits from
+  behind. Walks toward the player slowly, periodically lunges forward.
+
+  **Stage 4-1: Lava Fields**
+  - Length: ~120 tiles wide
+  - Introduces: lava hazard tiles (instant death), rising and falling lava sections (lava level shown by bubbling animation, rises to a line then
+  recedes on a timer), Magma Slimes
+  - Puzzle: Activate 3 valves in sequence to redirect lava flow and reveal a hidden path
+  - Boss: *Lava Serpent* -- swims through the lava at the bottom of the arena. Arena is a series of stone platforms above lava. The serpent leaps
+  out of the lava in an arc between platforms (can damage player mid-flight). Periodically surfaces and spits fireballs at the player's platform.
+  Attack its head when it surfaces. If a platform is hit by 3 fireballs, it sinks into the lava. 7 hits to defeat.
+
+  **Stage 4-2: Forge of Chains**
+  - Length: ~140 tiles wide
+  - Introduces: Obsidian Knights, chain-swinging (horizontal and vertical chains the player can grab and swing from), steam vents (periodic
+  vertical gusts that launch the player upward)
+  - Puzzle: Operate a series of levers that move chain-connected platforms, creating a Rube Goldberg-like sequence to open the exit
+  - Boss: *Iron Warden* -- a large armored construct on a chain-suspended platform. The arena has 3 chains holding the platform up. The Warden
+  attacks with a massive hammer (ground slam with shockwave, horizontal sweep). To damage it, the player must hit the 3 chain anchors (located on
+  walls, reachable by wall-jumping). Breaking a chain tilts the platform. After all 3 chains break, the Warden falls into the lava below, but
+  climbs back up for a final desperate phase: faster attacks, no chains to break, just dodge and attack. Chain phase: 3 hits (one per chain).
+  Final phase: 4 direct hits.
+
+  **Stage 4-3: Caldera**
+  - Length: ~150 tiles wide
+  - Introduces: Fire Bats, rapidly crumbling platforms over lava, geysers of lava that erupt periodically (visual warning: ground glows 1.5
+  seconds before eruption)
+  - All enemy types from World 4 appear in combination
+  - Puzzle: Navigate a maze where paths are periodically blocked by lava geysers on timers -- memorize the safe timing pattern
+  - Boss: *Dragon of the Caldera* -- multi-phase boss. Phase 1: Dragon flies across the arena breathing fire in a sweeping beam; attack it when it
+   lands briefly on one of 3 perches (2 hits per perch visit). Phase 2 (after 6 hits): Dragon lands and fights on the ground, tail swipe (duck to
+  avoid), claw slam (jump to avoid), fire breath straight ahead (run behind it). 5 more hits to defeat. Total: 11 hits.
+
+  ---
+
+  ### Final Stage: The Citadel
+
+  Unlocked after completing all 4 worlds. This is a single long stage (~200 tiles) that remixes elements from all 4 worlds:
+  - Forest section with advanced Bark Beetle patterns
+  - Desert section with quicksand and Dust Devils
+  - Tundra section with ice physics and auto-scrolling
+  - Volcano section with rising lava
+
+  **Final Boss: The Architect**
+  A humanoid figure that wields powers from all 4 worlds. Multi-phase fight:
+  - Phase 1 (Forest): Summons vines from the ground, arena has bounce pads. Attack pattern: vine walls that close in, must find the gap. 4 hits.
+  - Phase 2 (Desert): Teleports and summons sand tornados. Creates quicksand patches. 4 hits.
+  - Phase 3 (Tundra): Freezes the floor, summons ice projectiles in spiral patterns. 4 hits.
+  - Phase 4 (Volcano): Arena floor is lava except shrinking platforms. Throws fireballs and does ground slams. 4 hits.
+  - Final phase: All powers at once, randomized attacks. Arena is stable. 3 hits to end it.
+  Victory screen with stats: total time, total deaths, total coins collected.
+
+  ---
+
+  ## Collectibles
+
+  - **Coins**: scattered throughout every stage. Each stage has a specific total (shown on world map). Collecting all coins in a stage awards a
+  star.
+  - **Health Pickups**: red heart items that restore 1 hit point (only spawns if player has taken damage).
+  - **Extra Lives**: rare green diamond items, 1 per stage, always in a hidden or hard-to-reach location.
+  - **Power Star**: 1 per world (hidden in one of the 3 stages). Collecting all 4 Power Stars unlocks a cosmetic change for the final boss victory
+   screen.
+  - Coin counter displayed in the HUD. Total coin count persists across stages.
+
+  ---
+
+  ## HUD & UI
+
+  ### In-Game HUD
+  - Top-left: health (3 hearts, filled/empty)
+  - Top-center: coin counter with coin icon
+  - Top-right: current stage name
+  - Bottom-center: boss health bar (only visible during boss fights, shows boss name)
+  - All HUD elements have a slight semi-transparent dark background for readability
+
+  ### Menus
+  - **Title Screen**: game title with animated background (scrolling level scenery), "Press Enter to Start", "Controls" option
+  - **Controls Screen**: shows keyboard bindings (Arrow keys: move, Z: jump, X: attack, Shift: run, Down: crouch, Enter: confirm)
+  - **Pause Menu** (press Escape): Resume, Restart Stage, Return to World Map, Quit to Title
+  - **Game Over Screen**: "Game Over" with total coins, "Continue" (restart stage with 5 lives) or "Quit to World Map"
+  - **Stage Complete Screen**: time, coins collected, "Stage Clear!" banner animation, auto-return to world map after 3 seconds
+  - **Victory Screen**: after final boss, scrolling credits with stats
+
+  ---
+
+  ## Audio & Visual Effects
+
+  ### Sound (Web Audio API -- all synthesized, no audio files)
+  - **Player sounds**: jump (short rising tone), double-jump (higher pitch), land (soft thud),
+    wall slide (friction hiss), attack swing (whoosh), charge attack release (heavy whoosh),
+    hurt (dissonant buzz), death (descending tone)
+  - **Enemy sounds**: hit (pop), defeat (crunch + pitch-shifted pop), projectile fire (pew)
+  - **Boss sounds**: boss entrance (ominous rumble), boss hit (heavy impact + screen shake),
+    boss defeat (explosion cascade -- rapid series of pops ascending in pitch),
+    phase transition (rising swell)
+  - **UI sounds**: coin collect (classic ascending two-tone chime), health pickup (warm chord),
+    extra life (fanfare arpeggio), menu select (click), menu confirm (bright ding),
+    stage clear (victory jingle -- short melodic phrase), game over (descending minor phrase)
+  - **Ambient per-world**:
+    - Forest: layered nature loop (wind noise + bird-like chirps at random intervals)
+    - Desert: low wind drone with occasional sand-gust sweeps
+    - Tundra: howling wind with crystalline shimmer tones
+    - Volcano: deep rumble loop with crackling fire pops
+  - **Boss music**: procedurally generated percussion loop (kick + snare pattern via oscillators)
+    that increases in tempo as boss health decreases
+  - All sounds generated via OscillatorNode, GainNode, and BiquadFilterNode -- no decodeAudioData,
+    no fetch, no external files
+  - Master volume control accessible from pause menu (0-100% slider)
+  - Mute toggle on pause menu
+
+  ### Visual Effects
+  - Screen shake on boss hits, player damage, and explosions (offset canvas rendering by random
+    pixels for a few frames)
+  - Hit flash: enemies and player flash white for 2 frames when taking damage
+  - Particle systems: dust on landing, sparks on wall slide, ember particles in volcano, snow in
+    tundra, leaves in forest
+  - Death animation: player sprite breaks into 4 pieces that fly outward with gravity
+  - Boss defeat: slow-motion effect (reduce game speed to 0.3x for 1 second), then explosion
+    of particles
+  - Screen transitions: iris-wipe (circular mask that shrinks to black, then expands on new scene)
+  ---
+
+  ## Save System
+
+  - Use localStorage to persist progress
+  - Save after each stage completion: which stages are complete, coin totals, best times, lives remaining
+  - Loading the game restores progress to the world map with completed stages marked
+  - Include a "New Game" option on the title screen that clears save data (with confirmation prompt)
+
+  ---
+
+  ## Technical Constraints
+
+  - Single HTML file with embedded JavaScript and CSS, OR a small number of files (index.html + game.js + a few module files)
+  - No external dependencies, libraries, or frameworks
+  - No image or audio files -- everything drawn with Canvas API
+  - Must run in Chrome/Chromium at 60fps
+  - All level data defined in code (JSON-like tile arrays)
+  - Game state machine: TITLE -> WORLD_MAP -> STAGE -> PAUSED -> BOSS -> STAGE_COMPLETE -> GAME_OVER -> VICTORY
+
+  ---
+
+  ## Evaluation Priorities
+
+  The evaluator should verify these in order of importance:
+  1. **Game boots and renders**: the canvas appears and the title screen is visible
+  2. **Core gameplay loop works**: player can move, jump, attack, and collide with tiles
+  3. **At least one complete stage is playable**: start to boss to completion
+  4. **World map functions**: navigating between stages, showing completion status
+  5. **Boss fights have distinct mechanics**: each boss has a unique attack pattern and vulnerability window
+  6. **All 4 worlds have distinct visual themes**: different color palettes, background layers, tile styles
+  7. **Puzzles require interaction**: not just walking through -- the player must do something to solve them
+  8. **Collectibles are tracked**: coins persist across stages, shown on HUD and world map
+  9. **Save/load works**: refreshing the browser preserves progress
+  10. **All 13 stages are completable**: every stage from 1-1 through The Citadel can be played start to finish
+  11. **Performance**: maintains 60fps during gameplay (no frame drops during normal play)
+  12. **Game feel**: coyote time, jump buffering, screen shake, and particles are present and functioning
+
+  That's the full prompt. Key design decisions for harness success:
+
+  - Testable at every layer -- the evaluation priorities are ordered so early sprints (engine, player, first stage) have clear pass/fail criteria
+  before content-heavy sprints begin
+  - No external assets -- everything is Canvas-drawn, so the generator can't get stuck on missing files
+  - Explicit mechanics with numbers -- every boss has exact hit counts, timing windows, and arena layouts, giving the evaluator concrete things to
+   verify
+  - Natural sprint decomposition -- engine → player → world map → world 1 → world 2 → ... → final boss, each buildable in isolation
+  - 13 distinct bosses -- this is the real stress test; each needs unique AI, attack patterns, and vulnerability logic
