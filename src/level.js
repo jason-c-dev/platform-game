@@ -1103,7 +1103,7 @@ const Level = {
             // Slow horizontal movement
             Player.vx *= 0.9;
             // Allow swimming up with jump key
-            if (Input.isHeld('z') || Input.isHeld('Z') || Input.isHeld('ArrowUp')) {
+            if (Input.isDown('z') || Input.isDown('Z') || Input.isDown('ArrowUp')) {
                 Player.vy -= 0.4;
                 if (Player.vy < -3) Player.vy = -3;
             }
