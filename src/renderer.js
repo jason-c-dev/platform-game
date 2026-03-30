@@ -25,9 +25,17 @@ const Renderer = {
     _snowParticles: [],
     _snowInitialized: false,
 
+    // Ember particles for volcano world
+    _emberParticles: [],
+    _emberInitialized: false,
+
     clear() {
         const world = this._getCurrentWorld();
-        if (world === 2) {
+        if (world === 3) {
+            // Volcano background - dark fiery sky
+            this.ctx.fillStyle = '#1A0A0A';
+            this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        } else if (world === 2) {
             // Tundra background - deep night sky
             this.ctx.fillStyle = '#0A1520';
             this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -57,7 +65,10 @@ const Renderer = {
         // Advance animation timer
         this.frameTime += 1 / 60;
 
-        if (world === 2) {
+        if (world === 3) {
+            // Volcano parallax
+            this._renderVolcanoParallax();
+        } else if (world === 2) {
             // Tundra parallax
             this._renderTundraParallax();
         } else if (world === 1) {
@@ -512,6 +523,9 @@ const Renderer = {
             case TILE_ICE:
                 this._drawIceTile(ctx, x, y, s, col, row);
                 break;
+            case TILE_LAVA:
+                this._drawLavaTile(ctx, x, y, s, col, row);
+                break;
         }
     },
 
@@ -524,7 +538,10 @@ const Renderer = {
                            tileAbove === TILE_QUICKSAND || tileAbove === TILE_QUICKSAND_DEEP ||
                            tileAbove === TILE_ICE);
 
-        if (world === 2) {
+        if (world === 3) {
+            // VOLCANO TILES
+            this._drawVolcanoSolidTile(ctx, x, y, s, col, row, isSurface);
+        } else if (world === 2) {
             // TUNDRA TILES
             this._drawTundraSolidTile(ctx, x, y, s, col, row, isSurface);
         } else if (world === 1) {
@@ -2274,6 +2291,374 @@ const Renderer = {
             }
             ctx.globalAlpha = 1.0;
         }
+    },
+
+    // =======================
+    // VOLCANO PARALLAX
+    // =======================
+    _renderVolcanoParallax() {
+        const ctx = this.ctx;
+
+        // Layer 0: Fiery sky gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+        grad.addColorStop(0, '#1A0A0A');
+        grad.addColorStop(0.3, '#2A1010');
+        grad.addColorStop(0.6, COLORS.volcano.darkRed);
+        grad.addColorStop(0.85, COLORS.volcano.lavaOrange);
+        grad.addColorStop(1, COLORS.volcano.moltenYellow);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Layer 1: Distant volcanic mountains
+        if (Camera.layers[0]) {
+            const layer = Camera.layers[0];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 120;
+
+            for (const m of layer.elements) {
+                const sx = m.x - offsetX;
+                if (sx + m.width < -50 || sx > CANVAS_WIDTH + 50) continue;
+
+                // Dark mountain
+                ctx.fillStyle = COLORS.volcano.darkStone;
+                ctx.beginPath();
+                ctx.moveTo(sx, baseY);
+                ctx.lineTo(sx + m.width / 2, baseY - m.height);
+                ctx.lineTo(sx + m.width, baseY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Lava glow at peak
+                ctx.fillStyle = COLORS.volcano.lavaOrange;
+                ctx.globalAlpha = 0.4 + Math.sin(this.frameTime * 2 + m.x * 0.01) * 0.2;
+                ctx.beginPath();
+                ctx.arc(sx + m.width / 2, baseY - m.height + 10, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+
+            // Dark ground fill
+            ctx.fillStyle = COLORS.volcano.darkStone;
+            ctx.fillRect(0, baseY, CANVAS_WIDTH, CANVAS_HEIGHT - baseY);
+        }
+
+        // Layer 2: Mid-distance lava flows and rock formations
+        if (Camera.layers[1]) {
+            const layer = Camera.layers[1];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 70;
+
+            for (const t of layer.elements) {
+                const sx = t.x - offsetX;
+                if (sx + t.width < -20 || sx > CANVAS_WIDTH + 20) continue;
+
+                if (t.trunk > 12) {
+                    // Rock spire
+                    ctx.fillStyle = COLORS.volcano.shadow;
+                    ctx.globalAlpha = 0.6;
+                    ctx.beginPath();
+                    ctx.moveTo(sx + t.width / 2 - 8, baseY);
+                    ctx.lineTo(sx + t.width / 2, baseY - t.height * 0.5);
+                    ctx.lineTo(sx + t.width / 2 + 8, baseY);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                } else {
+                    // Lava pool glow
+                    ctx.fillStyle = COLORS.volcano.lavaOrange;
+                    ctx.globalAlpha = 0.2 + Math.sin(this.frameTime * 1.5 + t.x * 0.02) * 0.1;
+                    ctx.beginPath();
+                    ctx.ellipse(sx + t.width / 2, baseY, t.width * 0.4, 5, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+
+        // Layer 3: Near rocky ground
+        if (Camera.layers[2]) {
+            const layer = Camera.layers[2];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 20;
+            ctx.fillStyle = COLORS.volcano.shadow;
+            ctx.globalAlpha = 0.5;
+            for (const t of layer.elements) {
+                const sx = t.x - offsetX;
+                if (sx + t.width < -30 || sx > CANVAS_WIDTH + 30) continue;
+                ctx.beginPath();
+                ctx.moveTo(sx, baseY);
+                ctx.quadraticCurveTo(sx + t.width / 2, baseY - t.height * 0.2, sx + t.width, baseY);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    // =======================
+    // VOLCANO SOLID TILE
+    // =======================
+    _drawVolcanoSolidTile(ctx, x, y, s, col, row, isSurface) {
+        if (isSurface) {
+            // Dark stone surface with lava cracks
+            ctx.fillStyle = COLORS.volcano.darkStone;
+            ctx.fillRect(x, y, s, s);
+            // Reddish top highlight
+            ctx.fillStyle = COLORS.volcano.darkRed;
+            ctx.fillRect(x, y, s, 4);
+            // Stone body
+            ctx.fillStyle = COLORS.volcano.shadow;
+            ctx.fillRect(x, y + 10, s, s - 10);
+
+            // Glowing crack detail
+            ctx.strokeStyle = COLORS.volcano.lavaOrange;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.3 + Math.sin(this.frameTime * 2 + col * 0.5) * 0.1;
+            const seed = col * 13 + row * 7;
+            ctx.beginPath();
+            ctx.moveTo(x + (seed % 12) + 4, y + 12);
+            ctx.lineTo(x + (seed % 16) + 8, y + 22);
+            ctx.lineTo(x + (seed % 10) + 14, y + s - 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+
+            ctx.fillStyle = COLORS.volcano.darkStone;
+            ctx.fillRect(x, y + s - 1, s, 1);
+        } else {
+            // Underground dark stone
+            ctx.fillStyle = COLORS.volcano.shadow;
+            ctx.fillRect(x, y, s, s);
+
+            // Stone texture
+            ctx.fillStyle = COLORS.volcano.darkStone;
+            ctx.globalAlpha = 0.5;
+            const seed = col * 17 + row * 31;
+            for (let i = 0; i < 5; i++) {
+                const px = x + ((seed + i * 13) % 26) + 3;
+                const py = y + ((seed + i * 19) % 26) + 3;
+                ctx.fillRect(px, py, 3, 2);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Mortar/crack lines
+            ctx.fillStyle = COLORS.volcano.darkStone;
+            ctx.globalAlpha = 0.3;
+            ctx.fillRect(x, y, s, 1);
+            ctx.fillRect(x, y, 1, s);
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    // =======================
+    // LAVA TILE
+    // =======================
+    _drawLavaTile(ctx, x, y, s, col, row) {
+        const t = this.frameTime;
+
+        // Base lava color
+        ctx.fillStyle = COLORS.volcano.lavaOrange;
+        ctx.fillRect(x, y, s, s);
+
+        // Animated bubbling surface
+        ctx.fillStyle = COLORS.volcano.moltenYellow;
+        ctx.globalAlpha = 0.6 + Math.sin(t * 3 + col * 0.8) * 0.2;
+        const bubbleX = x + 8 + Math.sin(t * 2 + col * 1.5) * 6;
+        const bubbleY = y + 8 + Math.cos(t * 2.5 + col * 1.2) * 4;
+        ctx.beginPath();
+        ctx.arc(bubbleX, bubbleY, 4 + Math.sin(t * 4 + col) * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Second bubble
+        ctx.globalAlpha = 0.4 + Math.sin(t * 2 + col * 2) * 0.2;
+        const b2x = x + 20 + Math.sin(t * 1.8 + col * 0.7) * 5;
+        const b2y = y + 18 + Math.cos(t * 3 + col * 1.1) * 3;
+        ctx.beginPath();
+        ctx.arc(b2x, b2y, 3 + Math.sin(t * 3.5 + col * 1.5) * 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Dark crust at edges
+        ctx.fillStyle = COLORS.volcano.darkRed;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(x, y, s, 2);
+        ctx.fillRect(x, y + s - 2, s, 2);
+        ctx.globalAlpha = 1.0;
+
+        // Orange glow above
+        ctx.fillStyle = COLORS.volcano.lavaOrange;
+        ctx.globalAlpha = 0.08;
+        ctx.fillRect(x, y - 8, s, 8);
+        ctx.globalAlpha = 1.0;
+    },
+
+    // =======================
+    // EMBER PARTICLES (Volcano foreground effect)
+    // =======================
+    _initEmberParticles() {
+        this._emberParticles = [];
+        for (let i = 0; i < 60; i++) {
+            this._emberParticles.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * CANVAS_HEIGHT,
+                size: 1 + Math.random() * 2.5,
+                speedY: -(0.3 + Math.random() * 1.0),  // Rise upward
+                speedX: -0.3 + Math.random() * 0.6,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.5 + Math.random() * 2,
+                alpha: 0.3 + Math.random() * 0.5,
+                color: Math.random() > 0.5 ? COLORS.volcano.lavaOrange :
+                       (Math.random() > 0.5 ? COLORS.volcano.moltenYellow : COLORS.volcano.darkRed),
+            });
+        }
+        this._emberInitialized = true;
+    },
+
+    updateAndRenderEmbers() {
+        const world = this._getCurrentWorld();
+        if (world !== 3) {
+            this._emberInitialized = false;
+            return;
+        }
+
+        if (!this._emberInitialized) this._initEmberParticles();
+
+        const ctx = this.ctx;
+        for (const p of this._emberParticles) {
+            // Update — rise upward
+            p.y += p.speedY;
+            p.wobble += p.wobbleSpeed * (1 / 60);
+            p.x += p.speedX + Math.sin(p.wobble) * 0.4;
+
+            // Wrap around
+            if (p.y < -5) {
+                p.y = CANVAS_HEIGHT + 5;
+                p.x = Math.random() * CANVAS_WIDTH;
+            }
+            if (p.x < -5) p.x = CANVAS_WIDTH + 5;
+            if (p.x > CANVAS_WIDTH + 5) p.x = -5;
+
+            // Render — glowing ember
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha * (0.5 + Math.sin(this.frameTime * 3 + p.wobble) * 0.5);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+    },
+
+    // =======================
+    // VOLCANO SPECIAL RENDERS (chains, valves, rising lava)
+    // =======================
+    renderChains(ctx) {
+        const camX = Camera.x;
+        const camY = Camera.y;
+        for (const chain of Level.chains) {
+            const sx = chain.x - camX;
+            const sy = chain.y - camY;
+            if (sx < -200 || sx > CANVAS_WIDTH + 200) continue;
+
+            // Chain links
+            ctx.strokeStyle = '#8A8A8A';
+            ctx.lineWidth = 3;
+            const endX = sx + Math.sin(chain.angle) * chain.length;
+            const endY = sy + Math.cos(chain.angle) * chain.length;
+
+            // Draw chain links
+            const links = 8;
+            for (let i = 0; i < links; i++) {
+                const t1 = i / links;
+                const t2 = (i + 1) / links;
+                const x1 = sx + (endX - sx) * t1;
+                const y1 = sy + (endY - sy) * t1;
+                const x2 = sx + (endX - sx) * t2;
+                const y2 = sy + (endY - sy) * t2;
+
+                ctx.strokeStyle = i % 2 === 0 ? '#8A8A8A' : '#6A6A6A';
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+
+            // Anchor point at top
+            ctx.fillStyle = '#5A5A5A';
+            ctx.beginPath();
+            ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Grab point at bottom
+            ctx.fillStyle = chain.grabbed ? COLORS.mutedGold : '#4A4A4A';
+            ctx.beginPath();
+            ctx.arc(endX, endY, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    },
+
+    renderValves(ctx) {
+        const camX = Camera.x;
+        const camY = Camera.y;
+        for (const valve of Level.valves) {
+            const sx = valve.x - camX;
+            const sy = valve.y - camY;
+            if (sx < -40 || sx > CANVAS_WIDTH + 40) continue;
+
+            // Base/mount
+            ctx.fillStyle = '#5A5A5A';
+            ctx.fillRect(sx + 8, sy + 20, 16, 12);
+
+            // Lever/valve handle
+            const angle = valve.activated ? Math.PI * 0.25 : -Math.PI * 0.25;
+            ctx.save();
+            ctx.translate(sx + 16, sy + 20);
+            ctx.rotate(angle);
+            ctx.fillStyle = valve.activated ? COLORS.mossGreen : COLORS.volcano.darkRed;
+            ctx.fillRect(-3, -18, 6, 18);
+            // Handle knob
+            ctx.fillStyle = valve.activated ? COLORS.mutedGold : '#8A8A8A';
+            ctx.beginPath();
+            ctx.arc(0, -18, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    },
+
+    renderRisingLava(ctx) {
+        if (Level.lavaLevel === null || Level.lavaLevel <= 0) return;
+
+        const camY = Camera.y;
+        const lavaWorldY = Level.height * TILE_SIZE - Level.lavaLevel;
+        const screenY = lavaWorldY - camY;
+
+        if (screenY > CANVAS_HEIGHT) return;
+
+        const t = this.frameTime;
+
+        // Lava surface wave
+        ctx.fillStyle = COLORS.volcano.lavaOrange;
+        ctx.globalAlpha = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(0, screenY);
+        for (let x = 0; x <= CANVAS_WIDTH; x += 8) {
+            const wave = Math.sin(t * 2 + x * 0.03) * 3;
+            ctx.lineTo(x, screenY + wave);
+        }
+        ctx.lineTo(CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.lineTo(0, CANVAS_HEIGHT);
+        ctx.closePath();
+        ctx.fill();
+
+        // Bright surface line
+        ctx.strokeStyle = COLORS.volcano.moltenYellow;
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        for (let x = 0; x <= CANVAS_WIDTH; x += 8) {
+            const wave = Math.sin(t * 2 + x * 0.03) * 3;
+            if (x === 0) ctx.moveTo(x, screenY + wave);
+            else ctx.lineTo(x, screenY + wave);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
     },
 
     // =======================
