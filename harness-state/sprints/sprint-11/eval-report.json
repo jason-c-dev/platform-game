@@ -1,0 +1,244 @@
+{
+  "sprint": 11,
+  "name": "Visual Effects & Polish",
+  "attempt": 3,
+  "timestamp": "2026-03-30T15:30:00Z",
+  "overallResult": "PASS",
+  "passCount": 28,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "category": "screen-shake",
+      "description": "Camera.shake method exists with configurable intensity and duration",
+      "result": "PASS",
+      "evidence": "Camera.shake is a function. Camera.shakeX and Camera.shakeY properties exist. Calling Camera.shake(10, 0.5) then updateShake() produces non-zero offsets (shakeX=-7.03, shakeY=-8.71) that decay over the duration."
+    },
+    {
+      "id": "C-02",
+      "category": "screen-shake",
+      "description": "Screen shake applied to render pass",
+      "result": "PASS",
+      "evidence": "states.js _renderStage() applies ctx.translate(Camera.shakeX, Camera.shakeY) when shake is active. ctx.save()/ctx.restore() ensures HUD is not affected. All game rendering (parallax, tiles, enemies, player, particles) is offset."
+    },
+    {
+      "id": "C-03",
+      "category": "screen-shake",
+      "description": "Screen shake on boss hit",
+      "result": "PASS",
+      "evidence": "enemies.js _damageEnemy() calls Camera.shake(6, 0.3) when boss is hit — matches design spec (6px, 300ms). Line 2744."
+    },
+    {
+      "id": "C-04",
+      "category": "screen-shake",
+      "description": "Screen shake on player damage",
+      "result": "PASS",
+      "evidence": "player.js takeDamage() calls Camera.shake(4, 0.2) — matches design spec (4px, 200ms). Line 888."
+    },
+    {
+      "id": "C-05",
+      "category": "hit-flash",
+      "description": "Player sprite hit flash on damage",
+      "result": "PASS",
+      "evidence": "Player.hitFlash set to 4 frames in takeDamage() (line 885). Renderer checks hitFlash > 0 and overlays white (#FFFFFF) at 0.85 alpha (renderer.js:1322-1327). hitFlash overrides invincibility blink (line 1262)."
+    },
+    {
+      "id": "C-06",
+      "category": "hit-flash",
+      "description": "Enemy and boss hitFlash on damage",
+      "result": "PASS",
+      "evidence": "All enemy render functions check hitFlash (e.g., e.hitFlash > 0 && e.hitFlash % 2 === 0 triggers '#FFFFFF' fill). Found in all enemy types: Shroomba, Sandcrawler, Frostwing, Lavaslime, Citadel enemies, and all 5 bosses. hitFlash initialized to 0 in spawn()."
+    },
+    {
+      "id": "C-07",
+      "category": "ambient-particles",
+      "description": "Forest leaf ambient particles",
+      "result": "PASS",
+      "evidence": "Renderer._initLeafParticles creates 30 leaf particles with forest colors (COLORS.forest.leaf, deepCanopy, highlight, bark, #6BC060). updateAndRenderLeaves() gates on world === 0 (Forest). Particles drift downward with sinusoidal horizontal sway via wobble."
+    },
+    {
+      "id": "C-08",
+      "category": "ambient-particles",
+      "description": "Desert sand ambient particles",
+      "result": "PASS",
+      "evidence": "Renderer._initSandParticles creates 35 sand particles with desert colors. updateAndRenderSand() gates on world === 1 (Desert). Particles drift primarily horizontally (speedX 0.5-1.7) with slight downward (speedY 0.05-0.2)."
+    },
+    {
+      "id": "C-09",
+      "category": "ambient-particles",
+      "description": "Tundra snow particles",
+      "result": "PASS",
+      "evidence": "Renderer._initSnowParticles creates 80 snow particles using COLORS.tundra.snowWhite. updateAndRenderSnow() gates on world === 2 (Tundra). Snow drifts down with slight horizontal wobble."
+    },
+    {
+      "id": "C-10",
+      "category": "ambient-particles",
+      "description": "Volcano ember particles",
+      "result": "PASS",
+      "evidence": "Renderer._initEmberParticles creates 60 ember particles using COLORS.volcano.lavaOrange, moltenYellow, darkRed. updateAndRenderEmbers() gates on world === 3 (Volcano). Embers rise upward (negative speedY) with wobble and pulsing alpha."
+    },
+    {
+      "id": "C-11",
+      "category": "ambient-particles",
+      "description": "World-specific particles gated by world ID",
+      "result": "PASS",
+      "evidence": "Each system checks _getCurrentWorld() and returns early if not matching: Leaves (world !== 0), Sand (world !== 1), Snow (world !== 2), Embers (world !== 3). Each also resets its _initialized flag on world change."
+    },
+    {
+      "id": "C-12",
+      "category": "death-animation",
+      "description": "Player death particles (4+ pieces with gravity)",
+      "result": "PASS",
+      "evidence": "Particles.spawnDeathParticles spawns 9 rectangular particles with gravity=0.15. Runtime test confirmed: 9 particles spawned, all with gravity > 0 and shape='rect'. Particles burst radially outward."
+    },
+    {
+      "id": "C-13",
+      "category": "death-animation",
+      "description": "Death particle colors match player palette",
+      "result": "PASS",
+      "evidence": "Death colors: [COLORS.playerBlue (#3A7BD5), COLORS.playerBlueDark (#2A5BA5), COLORS.playerSkin (#E8DCC8), '#3A3A4A']. 4 unique colors confirmed at runtime. Matches player sprite palette (blue body, skin tone, dark accent)."
+    },
+    {
+      "id": "C-14",
+      "category": "boss-defeat",
+      "description": "Boss defeat slow-motion",
+      "result": "PASS",
+      "evidence": "enemies.js _onBossDefeated() sets Game.timeScale = 0.3 (within 0.2-0.4 range). setTimeout restores to 1.0 after 1000ms (within 700-1500ms range). Line 2370-2373."
+    },
+    {
+      "id": "C-15",
+      "category": "boss-defeat",
+      "description": "Boss defeat particle explosion",
+      "result": "PASS",
+      "evidence": "Boss defeat spawns 30 particles in a radial burst pattern (loop i < 30). Particles have 1.5s lifetime, mix of rect/circle shapes, gravity=0.08."
+    },
+    {
+      "id": "C-16",
+      "category": "boss-defeat",
+      "description": "Boss defeat colors per world",
+      "result": "PASS",
+      "evidence": "World-specific color palettes: Forest (leaf, deepCanopy, highlight, bark), Desert (sand, darkSand, lightStone, bleachedBone), Tundra (iceBlue, snowWhite, deepIce, auroraGreen), Volcano (lavaOrange, moltenYellow, darkRed), Citadel (multi-color including #FF69B4). Lines 2328-2343."
+    },
+    {
+      "id": "C-17",
+      "category": "boss-defeat",
+      "description": "Boss defeat shake stronger than hit",
+      "result": "PASS",
+      "evidence": "Boss defeat: Camera.shake(12, 0.5). Boss hit: Camera.shake(6, 0.3). Ratio: 2.0x intensity (meets >=2x requirement). Duration also longer (0.5s vs 0.3s)."
+    },
+    {
+      "id": "C-18",
+      "category": "iris-wipe",
+      "description": "Iris-wipe center point",
+      "result": "PASS",
+      "evidence": "Transition.start() checks GameState.current === STAGE to center on Player position. Falls back to CANVAS_WIDTH/2, CANVAS_HEIGHT/2 for menus. Re-centers on opening phase for new scene."
+    },
+    {
+      "id": "C-19",
+      "category": "iris-wipe",
+      "description": "Iris-wipe timing",
+      "result": "PASS",
+      "evidence": "Transition.duration = 0.25s per phase. Has hold phase (1 frame). Easing: close uses t*t (quadratic ease-in), open uses 1-(1-t)*(1-t) (quadratic ease-out). Total ~500ms."
+    },
+    {
+      "id": "C-20",
+      "category": "dust-particles",
+      "description": "Landing dust particles",
+      "result": "PASS",
+      "evidence": "Particles.spawnLandingDust spawns 5 tan particles. Called in Player._updateGroundMovement() (line 291) when onGround && !_wasOnGround && _prevVy > 2. Also called in wall slide landing (line 401) and crouch slide landing (lines 795, 800)."
+    },
+    {
+      "id": "C-21",
+      "category": "dust-particles",
+      "description": "Wall slide sparks",
+      "result": "PASS",
+      "evidence": "Particles.spawnWallSlideSparks spawns 3 white/yellow sparks. Called in Player._updateWallSlide() every 3 frames (line 462). Sparks spray from wall contact point using wallDir."
+    },
+    {
+      "id": "C-22",
+      "category": "dust-particles",
+      "description": "Running dust particles",
+      "result": "PASS",
+      "evidence": "Particles.spawnRunDust spawns 2 particles per call. Called in Player._updateGroundMovement() every 6 frames when running (line 312). Particles trail behind player based on facing direction."
+    },
+    {
+      "id": "C-23",
+      "category": "time-scale",
+      "description": "Game.timeScale property",
+      "result": "PASS",
+      "evidence": "Game.timeScale exists, defaults to 1.0. Game loop uses scaledTimestep = FIXED_TIMESTEP / timeScale (game.js:236). Values < 1.0 increase the scaled timestep, reducing effective update frequency for slow-motion."
+    },
+    {
+      "id": "C-24",
+      "category": "explosion-effects",
+      "description": "Block break debris particles",
+      "result": "PASS",
+      "evidence": "Particles.spawnBlockBreak spawns 8 debris particles (confirmed at runtime). Particles use block-colored debris colors, rect shapes with gravity=0.12."
+    },
+    {
+      "id": "C-25",
+      "category": "integration",
+      "description": "Performance maintained",
+      "result": "PASS",
+      "evidence": "Game runs at 60 FPS consistently. After 5+ seconds of runtime: fps=60, frameCount=304. No frame drops observed during automated testing."
+    },
+    {
+      "id": "C-26",
+      "category": "integration",
+      "description": "No console errors",
+      "result": "PASS",
+      "evidence": "Zero JavaScript console errors during full game load and 5+ seconds of runtime. No pageerror events fired."
+    },
+    {
+      "id": "C-27",
+      "category": "integration",
+      "description": "Game loads without errors",
+      "result": "PASS",
+      "evidence": "Canvas visible (960x540), debug API available, Game.init() completes. All script files load correctly. Title screen renders."
+    },
+    {
+      "id": "C-28",
+      "category": "screen-shake",
+      "description": "Shake decay smooth",
+      "result": "PASS",
+      "evidence": "Linear decay: intensity reduces proportionally to remaining time (progress = shakeTimer / shakeDuration). Early frames max offset ~15.64, late frames max offset ~1.33. Final values reach exactly (0, 0) when timer expires."
+    }
+  ],
+  "regressionResults": {
+    "sprintsTested": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "totalChecks": 30,
+    "passed": 30,
+    "failed": 0,
+    "details": "All 30 regression checks passed. Core engine (canvas 960x540, TILE_SIZE=32, gravity, input), player mechanics (update, physics, wall jump, coyote time), state machine (GameState, Transition, HUD, Menu), world map & save (WorldMap, SaveSystem, Collectibles), enemies & bosses (spawn, spawnBoss, _onBossDefeated), world palettes (desert, tundra, volcano), audio (AudioManager), particles, camera shake — all verified functional. Game runs at 60 FPS with timeScale=1.0."
+  },
+  "designSpecCompliance": {
+    "screenShake": "Matches design spec: player hurt 4px/200ms, boss hit 6px/300ms, explosion 8px+(12px)/400ms+(500ms). Linear decay as specified.",
+    "particles": "Landing dust (5 particles, tan), run dust (2 per footstep), wall sparks (3, white/yellow), death (9 rect particles, player palette), boss defeat (30 particles, radial burst) — all match design spec quantities and behaviors.",
+    "irisWipe": "500ms total (250ms close + hold + 250ms open). Quadratic ease-in for close, ease-out for open. Player-centered in gameplay, canvas-centered in menus. Matches design spec exactly.",
+    "ambientParticles": "Forest leaves (30, drift down with sway), Desert sand (35, horizontal drift), Tundra snow (80, gentle fall), Volcano embers (60, rise with glow) — all world-gated, exceed 20 minimum.",
+    "colorPalette": "All new VFX use design spec colors: player blue #3A7BD5, skin #E8DCC8, world palettes for boss defeat particles. Hazard red #FF4444 used in volcano defeat."
+  },
+  "holistic": {
+    "designQuality": {
+      "score": 8,
+      "notes": "Visual effects system is well-integrated with the existing design language. Screen shake uses design-spec values (4/6/8px). Ambient particles use world palette colors exclusively. HUD is correctly excluded from shake effects via save/restore. Death animation uses player sprite colors. Iris-wipe with easing curves provides smooth, professional transitions."
+    },
+    "originality": {
+      "score": 7,
+      "notes": "World-specific ambient particles are a nice touch — leaves, sand, snow, embers each behave differently (drift directions, wobble patterns). Boss defeat combines slow-motion + explosion + screen shake for dramatic effect. Per-world boss defeat particle colors add thematic cohesion. The Citadel multi-color celebration is a thoughtful detail."
+    },
+    "codeQuality": {
+      "score": 8,
+      "notes": "Clean separation of concerns: Camera handles shake state, Particles handles spawning, Renderer handles world-specific ambient effects, enemies.js handles boss defeat choreography. Linear shake decay is simple and effective. World gating pattern (check _getCurrentWorld, return early) is consistent across all 4 ambient systems. timeScale integration into the fixed-timestep loop is minimal and correct."
+    },
+    "uxPolish": {
+      "score": 8,
+      "notes": "All VFX serve gameplay feedback: hit flash confirms damage, screen shake conveys impact, death particles show destruction. Boss defeat slow-mo creates a cinematic moment. Ambient particles add atmospheric depth without distracting. No frame drops — effects are performant. HUD unaffected by screen shake is important UX detail."
+    },
+    "completeness": {
+      "score": 9,
+      "notes": "All 28 criteria satisfied. Screen shake system complete with decay. Hit flash on both player and all enemy/boss types. All 4 worlds have ambient particles plus proper gating. Death animation with player-colored pieces. Boss defeat with slow-mo, world-colored particles, strong shake. Iris-wipe fully specified. Dust/spark particles all functional. Time scale integration working."
+    }
+  },
+  "summary": "Sprint 11 (Visual Effects & Polish) passes all 28 criteria and all 30 regression checks. The implementation adds a comprehensive visual effects layer: screen shake (4 trigger points with design-spec intensities), hit flash (player + all enemies/bosses), world-specific ambient particles (4 distinct systems, properly gated), death animation (9 particles in player colors), boss defeat choreography (slow-mo + 30-particle world-colored explosion + strong shake), and iris-wipe transitions (250ms phases with easing). All effects integrate cleanly with existing systems at 60 FPS."
+}
