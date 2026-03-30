@@ -83,10 +83,14 @@ const GameState = {
 
     setupTitle() {
         Menu.initTitle();
+        AudioManager.stopAmbient();
+        AudioManager.stopBossMusic();
     },
 
     setupWorldMap() {
         WorldMap.init();
+        AudioManager.stopAmbient();
+        AudioManager.stopBossMusic();
     },
 
     setupStage() {
@@ -116,6 +120,14 @@ const GameState = {
                 Enemies.spawn(spawn.type, spawn.x, spawn.y);
             }
         }
+
+        // Start world-appropriate ambient audio
+        const worldThemes = ['forest', 'desert', 'tundra', 'volcano', 'volcano'];
+        const stageInfo = WorldMap.STAGES.find(s => s.id === this.currentStageId);
+        const worldIndex = stageInfo ? stageInfo.world : 0;
+        const worldTheme = worldThemes[worldIndex] || 'forest';
+        AudioManager.stopBossMusic();
+        AudioManager.startAmbient(worldTheme);
     },
 
     restartStage() {
@@ -144,10 +156,21 @@ const GameState = {
                 Enemies.spawn(spawn.type, spawn.x, spawn.y);
             }
         }
+
+        // Restart ambient audio for this world
+        const worldThemes = ['forest', 'desert', 'tundra', 'volcano', 'volcano'];
+        const stageInfo = WorldMap.STAGES.find(s => s.id === this.currentStageId);
+        const worldIndex = stageInfo ? stageInfo.world : 0;
+        const worldTheme = worldThemes[worldIndex] || 'forest';
+        AudioManager.stopBossMusic();
+        AudioManager.startAmbient(worldTheme);
     },
 
     setupGameOver() {
         Menu.initGameOver();
+        AudioManager.stopAmbient();
+        AudioManager.stopBossMusic();
+        AudioManager.playGameOver();
     },
 
     setupStageComplete() {
@@ -158,6 +181,11 @@ const GameState = {
 
         // Record completion in save system
         WorldMap.completeStage(this.currentStageId, this.stageTime, this.coinsCollected);
+
+        // Audio: stage clear jingle + stop ambient
+        AudioManager.stopAmbient();
+        AudioManager.stopBossMusic();
+        AudioManager.playStageClear();
     },
 
     // =============================================
@@ -407,6 +435,11 @@ const GameState = {
         }
         this.totalTime = accTime;
         this.totalCoins = accCoins;
+
+        // Audio: stop stage sounds, play victory jingle
+        AudioManager.stopAmbient();
+        AudioManager.stopBossMusic();
+        AudioManager.playStageClear();
 
         // Initialize victory screen
         Menu.initVictory(this.totalTime, this.totalCoins, this.totalDeaths);
