@@ -1,0 +1,61 @@
+{
+  "sprintId": "fix-003",
+  "title": "Fix Elder Shroomba boss: recovery vulnerability, death respawn, arena confinement",
+  "issueRef": "Fixes #5",
+  "criteria": [
+    {
+      "id": "FIX-003-C01",
+      "description": "During the Elder Shroomba's vulnerable state, checkEnemyPlayerCollisions must NOT deal contact damage to the player when touching the boss. The boss entity must be skipped in enemy-player collision when boss.vulnerable === true.",
+      "verification": "code-review + runtime: Player can stand next to boss during vulnerable window without taking damage",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-C02",
+      "description": "During the Elder Shroomba's vulnerable state, player attack collisions (melee, chargeAttack, jumpAttack) still deal damage to the boss via checkPlayerAttackCollisions. The existing vulnerability check (e.isBoss && !e.vulnerable) remains intact.",
+      "verification": "code-review: attack collision path unchanged for vulnerable bosses",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-C03",
+      "description": "When the player dies during a boss fight (hp reaches 0, _die() fires), after the respawn delay the player respawns at the stage start (Level.spawnX, Level.spawnY) with full HP. The boss fight state is reset: arena entry wall is unsealed (col 65 ground-level rows restored to TILE_EMPTY), camera lock is released, and the boss is reset to its spawn position with full health.",
+      "verification": "code-review + runtime: death during boss fight leads to full level reset of boss encounter",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-C04",
+      "description": "After respawning from a boss-fight death, the camera follows the player normally (not locked to arena), the player can walk through the level, and re-entering the boss arena re-triggers the boss fight sequence.",
+      "verification": "runtime: camera tracks player after respawn, boss arena can be re-triggered",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-C05",
+      "description": "The Elder Shroomba boss X position is clamped within the boss arena bounds on every frame. The boss cannot move past the arena left wall (Level.bossArenaX + TILE_SIZE) or right wall. This prevents the boss from escaping through the entry gap.",
+      "verification": "code-review: boss X clamped in _updateElderShroomba or _updateBoss",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-C06",
+      "description": "When the player is dead (Player.state === 'dead'), the boss stops tracking toward the player and does not initiate new attacks. The boss either idles or pauses its attack cycle.",
+      "verification": "code-review: boss AI checks Player.state !== 'dead' before tracking/attacking",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-R01",
+      "description": "REGRESSION: Boss attack patterns still function — boss jumps, creates shockwaves on landing, and transitions through attacking/vulnerable states correctly.",
+      "verification": "code-review: _updateElderShroomba attack/vulnerable cycle intact",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-R02",
+      "description": "REGRESSION: Boss can still be defeated — when boss health reaches 0, _onBossDefeated fires and the boss is removed. Boss health bar, phase transitions, and defeat sequence unchanged.",
+      "verification": "code-review: boss defeat path intact",
+      "blocking": true
+    },
+    {
+      "id": "FIX-003-R03",
+      "description": "REGRESSION: Game loads and runs without JavaScript errors. index.html serves correctly and the game loop starts.",
+      "verification": "runtime: page loads, no console errors on startup",
+      "blocking": true
+    }
+  ]
+}
