@@ -209,6 +209,12 @@ const Renderer = {
             case TILE_BOUNCE:
                 this._drawBounceTile(ctx, x, y, s);
                 break;
+            case TILE_LADDER:
+                this._drawLadderTile(ctx, x, y, s);
+                break;
+            case TILE_CRUMBLE:
+                this._drawCrumbleTile(ctx, x, y, s, col, row);
+                break;
         }
     },
 
@@ -375,6 +381,64 @@ const Renderer = {
         ctx.arc(x + s / 2, y + s * 0.2, s * 0.5, Math.PI * 1.1, Math.PI * 1.9);
         ctx.stroke();
         ctx.globalAlpha = 1.0;
+    },
+
+    _drawLadderTile(ctx, x, y, s) {
+        // Ladder: brown rails with rungs
+        ctx.fillStyle = '#6B4A25';
+        // Rails
+        ctx.fillRect(x + 4, y, 4, s);
+        ctx.fillRect(x + s - 8, y, 4, s);
+        // Rungs
+        ctx.fillStyle = '#8B6B3D';
+        for (let i = 0; i < 4; i++) {
+            const ry = y + 4 + i * 8;
+            ctx.fillRect(x + 6, ry, s - 14, 3);
+        }
+        // Highlight on rails
+        ctx.fillStyle = '#A8854A';
+        ctx.fillRect(x + 4, y, 1, s);
+        ctx.fillRect(x + s - 8, y, 1, s);
+    },
+
+    _drawCrumbleTile(ctx, x, y, s, col, row) {
+        // Check if this tile is currently shaking
+        const crumbleState = Level.crumblingTiles.find(ct => ct.col === col && ct.row === row);
+        let shakeX = 0, shakeY = 0;
+
+        if (crumbleState && crumbleState.shaking) {
+            shakeX = (Math.random() - 0.5) * 3;
+            shakeY = (Math.random() - 0.5) * 2;
+        }
+
+        // Similar to solid tile but with cracks and less sturdy look
+        ctx.fillStyle = '#8A7A5A';
+        ctx.fillRect(x + shakeX, y + shakeY, s, s);
+
+        // Crack lines
+        ctx.strokeStyle = '#5A4A3A';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x + shakeX + s * 0.2, y + shakeY);
+        ctx.lineTo(x + shakeX + s * 0.5, y + shakeY + s * 0.4);
+        ctx.lineTo(x + shakeX + s * 0.3, y + shakeY + s * 0.8);
+        ctx.moveTo(x + shakeX + s * 0.5, y + shakeY + s * 0.4);
+        ctx.lineTo(x + shakeX + s * 0.8, y + shakeY + s * 0.6);
+        ctx.stroke();
+
+        // Border
+        ctx.fillStyle = '#6A5A4A';
+        ctx.fillRect(x + shakeX, y + shakeY, s, 2);
+        ctx.fillRect(x + shakeX, y + shakeY, 2, s);
+        ctx.fillStyle = '#4A3A2A';
+        ctx.fillRect(x + shakeX + s - 2, y + shakeY, 2, s);
+        ctx.fillRect(x + shakeX, y + shakeY + s - 2, s, 2);
+
+        // Warning color when about to crumble
+        if (crumbleState && crumbleState.timer < 15) {
+            ctx.fillStyle = 'rgba(217, 79, 79, 0.3)';
+            ctx.fillRect(x + shakeX, y + shakeY, s, s);
+        }
     },
 
     // =======================

@@ -94,7 +94,7 @@ const Physics = {
             const rightCol = Math.floor((entity.x + entity.width) / TILE_SIZE);
             for (let row = top; row <= bottom; row++) {
                 const tile = Level.getTile(rightCol, row);
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE) {
+                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE) {
                     entity.x = rightCol * TILE_SIZE - entity.width;
                     entity.vx = 0;
                     result.hitRight = true;
@@ -106,7 +106,7 @@ const Physics = {
             const leftCol = Math.floor(entity.x / TILE_SIZE);
             for (let row = top; row <= bottom; row++) {
                 const tile = Level.getTile(leftCol, row);
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE) {
+                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE) {
                     entity.x = (leftCol + 1) * TILE_SIZE;
                     entity.vx = 0;
                     result.hitLeft = true;
@@ -128,7 +128,7 @@ const Physics = {
             const bottomRow = Math.floor((entity.y + entity.height) / TILE_SIZE);
             for (let col = left; col <= right; col++) {
                 const tile = Level.getTile(col, bottomRow);
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE) {
+                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE) {
                     entity.y = bottomRow * TILE_SIZE - entity.height;
                     entity.vy = 0;
                     result.hitBottom = true;
@@ -160,7 +160,7 @@ const Physics = {
             for (let col = left; col <= right; col++) {
                 const tile = Level.getTile(col, topRow);
                 // One-way platforms do NOT block from below
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE) {
+                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE) {
                     entity.y = (topRow + 1) * TILE_SIZE;
                     entity.vy = 0;
                     result.hitTop = true;

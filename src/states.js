@@ -79,6 +79,7 @@ const GameState = {
     setupStage() {
         Level.init();
         Particles.init();
+        Enemies.init();
         Player.init();
         Camera.init();
         Camera.x = Player.x - CANVAS_WIDTH / 2;
@@ -89,16 +90,25 @@ const GameState = {
         Camera.y = Math.max(0, Math.min(Camera.y, maxY));
         this.stageTime = 0;
         this.coinsCollected = 0;
+
         // Initialize collectibles for this stage
         Collectibles.init(
             Level.coinPositions || [],
             Level.healthPositions || []
         );
+
+        // Spawn enemies from level data
+        if (Level.enemySpawns) {
+            for (const spawn of Level.enemySpawns) {
+                Enemies.spawn(spawn.type, spawn.x, spawn.y);
+            }
+        }
     },
 
     restartStage() {
         Level.init();
         Particles.init();
+        Enemies.init();
         Player.init();
         Camera.init();
         Camera.x = Player.x - CANVAS_WIDTH / 2;
@@ -114,6 +124,13 @@ const GameState = {
             Level.coinPositions || [],
             Level.healthPositions || []
         );
+
+        // Spawn enemies
+        if (Level.enemySpawns) {
+            for (const spawn of Level.enemySpawns) {
+                Enemies.spawn(spawn.type, spawn.x, spawn.y);
+            }
+        }
     },
 
     setupGameOver() {
@@ -240,16 +257,75 @@ const GameState = {
 
         // Normal gameplay update
         Level.updateMovingPlatforms();
+        Level.updateCrumblingTiles();
         Player.update();
+        Enemies.update();
+        Enemies.checkPlayerAttackCollisions();
+        Enemies.checkEnemyPlayerCollisions();
         Collectibles.update();
         Particles.update();
         Camera.update(Player);
+
+        // Check boss arena trigger
+        this._checkBossArena();
+
+        // Check exit zone (only if boss is defeated or no boss)
+        this._checkExitZone();
 
         // Check for game over
         if (Player.gameOver) {
             this.transitionTo(this.GAME_OVER, () => {
                 this.setupGameOver();
             });
+        }
+    },
+
+    _checkBossArena() {
+        if (Level.bossTriggered || !Level.bossData) return;
+
+        if (Player.x + Player.width > Level.bossArenaX) {
+            Level.bossTriggered = true;
+
+            // Spawn boss
+            const bd = Level.bossData;
+            Enemies.spawnBoss(bd.type, bd.spawnX, bd.spawnY);
+
+            // Lock camera to arena
+            Camera.lockToArena(Level.bossArenaX, Level.width * TILE_SIZE);
+
+            // Place a wall tile at arena entrance to prevent exit
+            const wallCol = Math.floor(Level.bossArenaX / TILE_SIZE);
+            for (let r = 0; r < Level.height - 3; r++) {
+                if (Level.getTile(wallCol, r) === TILE_EMPTY) {
+                    Level.setTile(wallCol, r, TILE_SOLID);
+                }
+            }
+
+            // Push player into arena if needed
+            if (Player.x < Level.bossArenaX + TILE_SIZE) {
+                Player.x = Level.bossArenaX + TILE_SIZE;
+            }
+        }
+    },
+
+    _checkExitZone() {
+        // Exit zone reached when near exitX/exitY
+        if (!Level.exitX) return;
+
+        // Don't check exit if boss is alive
+        if (Enemies.boss) return;
+
+        // Check if player is near exit
+        const dx = Math.abs(Player.x - Level.exitX);
+        const dy = Math.abs(Player.y - Level.exitY);
+
+        if (dx < TILE_SIZE * 2 && dy < TILE_SIZE * 3) {
+            // Only transition if not already transitioning
+            if (!this.transitioning && this.current === this.STAGE) {
+                this.transitionTo(this.STAGE_COMPLETE, () => {
+                    this.setupStageComplete();
+                });
+            }
         }
     },
 
@@ -279,6 +355,7 @@ const GameState = {
         Renderer.renderTiles();
         Renderer.renderMovingPlatforms();
         Collectibles.render(ctx);
+        Enemies.render(ctx);
         Renderer.renderPlayer(Player);
         Renderer.renderParticles();
         HUD.render(ctx);

@@ -1,5 +1,6 @@
 // ============================================================
 // camera.js — Camera with smooth follow, dead zone, clamping, parallax
+// Supports arena lock for boss fights
 // ============================================================
 
 const Camera = {
@@ -10,14 +11,29 @@ const Camera = {
     shakeX: 0,
     shakeY: 0,
 
+    // Arena lock for boss fights
+    locked: false,
+    arenaLeft: 0,
+    arenaRight: 0,
+    arenaLock: false,
+    minX: null,
+    maxX: null,
+
     // Parallax layers (Forest theme)
     layers: [],
+    parallaxLayers: [], // Alias for test access
 
     init() {
         this.x = 0;
         this.y = 0;
         this.targetX = 0;
         this.targetY = 0;
+        this.locked = false;
+        this.arenaLock = false;
+        this.arenaLeft = 0;
+        this.arenaRight = 0;
+        this.minX = null;
+        this.maxX = null;
 
         // Create 4 parallax layers for Forest
         this.layers = [
@@ -26,6 +42,24 @@ const Camera = {
             { speed: 0.3, color1: '#2D5A27', color2: '#4A8C3F', elements: this._generateMidTrees() },
             { speed: 0.5, color1: '#3A6B30', color2: '#4A8C3F', elements: this._generateForegroundLeaves() }
         ];
+        this.parallaxLayers = this.layers;
+    },
+
+    lockToArena(left, right) {
+        this.locked = true;
+        this.arenaLock = true;
+        this.arenaLeft = left;
+        this.arenaRight = right;
+        this.minX = left;
+        this.maxX = right - CANVAS_WIDTH;
+        if (this.maxX < this.minX) this.maxX = this.minX;
+    },
+
+    unlock() {
+        this.locked = false;
+        this.arenaLock = false;
+        this.minX = null;
+        this.maxX = null;
     },
 
     update(targetEntity) {
@@ -48,14 +82,20 @@ const Camera = {
 
         this.y += (this.targetY - this.y) * CAMERA_SMOOTH;
 
+        // Arena lock bounds
+        if (this.locked) {
+            if (this.minX !== null && this.x < this.minX) this.x = this.minX;
+            if (this.maxX !== null && this.x > this.maxX) this.x = this.maxX;
+        }
+
         // Clamp to level bounds
-        const maxX = Level.width * TILE_SIZE - CANVAS_WIDTH;
-        const maxY = Level.height * TILE_SIZE - CANVAS_HEIGHT;
+        const levelMaxX = Level.width * TILE_SIZE - CANVAS_WIDTH;
+        const levelMaxY = Level.height * TILE_SIZE - CANVAS_HEIGHT;
 
         if (this.x < 0) this.x = 0;
-        if (this.x > maxX) this.x = maxX;
+        if (this.x > levelMaxX) this.x = levelMaxX;
         if (this.y < 0) this.y = 0;
-        if (this.y > maxY) this.y = maxY;
+        if (this.y > levelMaxY) this.y = levelMaxY;
     },
 
     _generateMountains() {

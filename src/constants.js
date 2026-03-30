@@ -17,6 +17,19 @@ const TILE_HAZARD = 3;
 const TILE_BREAKABLE = 4;
 const TILE_BOUNCE = 5;
 const TILE_LADDER = 6;
+const TILE_CRUMBLE = 7;
+
+// TILES convenience object for test access
+const TILES = {
+    EMPTY: 0,
+    SOLID: 1,
+    ONE_WAY: 2,
+    HAZARD: 3,
+    BREAKABLE: 4,
+    BOUNCE: 5,
+    LADDER: 6,
+    CRUMBLE: 7
+};
 
 // Physics
 const GRAVITY = 0.55;

@@ -145,6 +145,33 @@ const Game = {
             transitionTo: (state) => {
                 GameState.transitionTo(state);
             },
+            // Sprint 5: Enemy/Boss debug API
+            getEnemyCount: () => Enemies.enemies.length,
+            getEnemies: () => Enemies.enemies.map(e => ({
+                type: e.type, x: e.x, y: e.y, health: e.health,
+                speed: e.speed, state: e.state, isBoss: e.isBoss
+            })),
+            getBoss: () => {
+                const b = Enemies.boss;
+                if (!b) return null;
+                return {
+                    type: b.type, health: b.health, maxHealth: b.maxHealth,
+                    phase: b.phase, vulnerable: b.vulnerable,
+                    state: b.state, attackPattern: b.attackPattern
+                };
+            },
+            spawnEnemy: (type, x, y) => Enemies.spawn(type, x, y),
+            spawnBoss: (type, x, y) => Enemies.spawnBoss(type, x, y),
+            triggerBoss: () => {
+                if (Level.bossData && !Level.bossTriggered) {
+                    Level.bossTriggered = true;
+                    const bd = Level.bossData;
+                    Enemies.spawnBoss(bd.type, bd.spawnX, bd.spawnY);
+                    Camera.lockToArena(Level.bossArenaX, Level.width * TILE_SIZE);
+                }
+            },
+            parallaxLayerCount: () => Camera.layers ? Camera.layers.length : 0,
+            getProjectileCount: () => Enemies.projectiles.length,
             getTile: (col, row) => Level.getTile(col, row),
             setTile: (col, row, type) => Level.setTile(col, row, type),
             TILE_SIZE: TILE_SIZE,
