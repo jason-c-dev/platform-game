@@ -15,9 +15,10 @@ const Physics = {
         }
     },
 
-    applyMovement(entity, inputDir) {
+    applyMovement(entity, inputDir, maxSpeed) {
         const accel = entity.onGround ? GROUND_ACCELERATION : AIR_ACCELERATION;
         const friction = entity.onGround ? GROUND_FRICTION : AIR_DRAG;
+        const max = maxSpeed || WALK_MAX_SPEED;
 
         if (inputDir !== 0) {
             entity.vx += inputDir * accel;
@@ -31,9 +32,8 @@ const Physics = {
         }
 
         // Max horizontal speed
-        const maxSpeed = 5;
-        if (entity.vx > maxSpeed) entity.vx = maxSpeed;
-        if (entity.vx < -maxSpeed) entity.vx = -maxSpeed;
+        if (entity.vx > max) entity.vx = max;
+        if (entity.vx < -max) entity.vx = -max;
     },
 
     /**
@@ -200,5 +200,22 @@ const Physics = {
             }
         }
         return null;
+    },
+
+    /**
+     * Check if a rectangle overlaps any solid or breakable tile
+     */
+    checkRectOverlapsSolid(rx, ry, rw, rh) {
+        const left = Math.floor(rx / TILE_SIZE);
+        const right = Math.floor((rx + rw - 1) / TILE_SIZE);
+        const top = Math.floor(ry / TILE_SIZE);
+        const bottom = Math.floor((ry + rh - 1) / TILE_SIZE);
+        for (let r = top; r <= bottom; r++) {
+            for (let c = left; c <= right; c++) {
+                const t = Level.getTile(c, r);
+                if (t === TILE_SOLID || t === TILE_BREAKABLE) return true;
+            }
+        }
+        return false;
     }
 };

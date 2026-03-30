@@ -28,9 +28,48 @@ const AIR_DRAG = 0.92;
 const JUMP_FORCE = -10.5;
 const BOUNCE_FORCE = -15;
 
-// Player
+// Player dimensions
 const PLAYER_WIDTH = 20;
 const PLAYER_HEIGHT = 30;
+const PLAYER_CROUCH_HEIGHT = 20;
+
+// Player movement speeds
+const WALK_MAX_SPEED = 5;
+const RUN_MAX_SPEED = 8;
+
+// Wall mechanics
+const WALL_SLIDE_SPEED = 2;
+const WALL_JUMP_VX = 7;
+const WALL_JUMP_VY = -10;
+
+// Crouch-slide
+const CROUCH_SLIDE_FRICTION = 0.975;
+const CROUCH_SLIDE_MIN_SPEED = 5;
+
+// Variable jump & assist
+const VARIABLE_JUMP_MULTIPLIER = 0.4;
+const COYOTE_FRAMES = 6;       // ~100ms at 60fps
+const JUMP_BUFFER_FRAMES = 8;  // ~133ms at 60fps
+
+// Combat
+const ATTACK_DURATION = 9;     // frames
+const ATTACK_RANGE = 22;
+const ATTACK_HEIGHT = 20;
+const CHARGE_TIME = 60;        // frames (1 second)
+const CHARGE_ATTACK_RANGE = 32;
+const CHARGE_ATTACK_HEIGHT = 28;
+const JUMP_ATTACK_WIDTH = 16;
+const JUMP_ATTACK_HEIGHT = 20;
+const JUMP_ATTACK_BOUNCE = -10;
+
+// Health & combat feedback
+const PLAYER_MAX_HP = 3;
+const PLAYER_START_LIVES = 5;
+const INVINCIBILITY_TIME = 1.5; // seconds
+const HURT_KNOCKBACK_VX = 4;
+const HURT_KNOCKBACK_VY = -7;
+const HURT_DURATION = 20;       // frames
+const RESPAWN_DELAY = 1.2;      // seconds
 
 // Camera
 const CAMERA_SMOOTH = 0.08;
@@ -54,6 +93,7 @@ const COLORS = {
 
     // Player
     playerBlue: '#3A7BD5',
+    playerBlueDark: '#2A5BA5',
     playerSkin: '#E8DCC8',
 
     // Hazards
