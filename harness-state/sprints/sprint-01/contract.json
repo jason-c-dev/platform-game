@@ -1,0 +1,392 @@
+{
+  "sprintNumber": 1,
+  "name": "Core Engine",
+  "theme": "Game loop, canvas rendering, tile system, physics, camera with parallax scrolling",
+  "features": ["F1: Game Loop & Renderer", "F2: Tile System & Level Data", "F3: Physics & Collision", "F4: Camera System"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "bootstrap",
+      "description": "Opening index.html in a browser displays an HTML5 Canvas element that fills the browser window",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html in the browser",
+        "Verify a <canvas> element exists on the page",
+        "Verify the canvas is visible and has non-zero dimensions",
+        "Verify the canvas scales to fill the viewport while preserving aspect ratio"
+      ],
+      "threshold": "Canvas element is present, visible, and scaled to fit the window"
+    },
+    {
+      "id": "C-02",
+      "category": "bootstrap",
+      "description": "The canvas uses 960x540 logical pixels as its internal resolution",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html",
+        "Inspect the canvas element's width and height attributes (not CSS dimensions)",
+        "Verify canvas.width === 960 and canvas.height === 540"
+      ],
+      "threshold": "Canvas internal resolution is exactly 960x540"
+    },
+    {
+      "id": "C-03",
+      "category": "game-loop",
+      "description": "A fixed-timestep game loop runs at 60 updates per second with rendering interpolation",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and let it run for 2 seconds",
+        "Check that the game exposes or logs a frame counter or update count",
+        "Verify approximately 120 updates have occurred (60/sec × 2 sec, ±10%)",
+        "Verify requestAnimationFrame is used for rendering"
+      ],
+      "threshold": "Game loop runs at approximately 60 updates/sec with delta-time driven rendering"
+    },
+    {
+      "id": "C-04",
+      "category": "game-loop",
+      "description": "The game renders without errors and produces visible output on the canvas",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html",
+        "Wait 1 second for the game to initialize",
+        "Take a screenshot of the canvas",
+        "Verify the canvas is not blank (not entirely one color)",
+        "Check the browser console for JavaScript errors"
+      ],
+      "threshold": "Canvas shows rendered content with no JS errors in the console"
+    },
+    {
+      "id": "C-05",
+      "category": "tiles",
+      "description": "A test level is defined as a 2D array of tile IDs with 32x32 pixel tiles",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Search the codebase for level/tile data definitions",
+        "Verify levels are stored as 2D arrays of numeric tile IDs",
+        "Verify TILE_SIZE or equivalent constant equals 32",
+        "Verify the test level is at least 80 tiles wide (wider than the viewport)"
+      ],
+      "threshold": "Level data exists as a 2D array with 32px tiles, wider than one screen"
+    },
+    {
+      "id": "C-06",
+      "category": "tiles",
+      "description": "Multiple tile types are implemented: solid, one-way platform, hazard, breakable, bounce pad",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Search for tile type definitions in the codebase",
+        "Verify at least 5 distinct tile types are defined (solid, one-way, hazard, breakable, bounce)",
+        "Verify each tile type has a unique ID/constant",
+        "Verify tiles render with distinct visual appearances"
+      ],
+      "threshold": "At least 5 tile types defined with unique IDs and distinct visuals"
+    },
+    {
+      "id": "C-07",
+      "category": "tiles",
+      "description": "Only tiles visible in the viewport are rendered (culling optimization)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the tile rendering code",
+        "Verify the render function calculates visible tile bounds based on camera position",
+        "Verify tiles outside the viewport bounds are not drawn",
+        "The rendering loop should iterate only over visible column/row ranges"
+      ],
+      "threshold": "Tile rendering uses viewport culling — only visible tiles are drawn each frame"
+    },
+    {
+      "id": "C-08",
+      "category": "tiles",
+      "description": "Tiles render with the Forest world's distinct color palette and visual patterns",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and view the test level",
+        "Take a screenshot showing rendered tiles",
+        "Verify tiles use the Forest palette colors (deep greens, browns) not plain colors",
+        "Verify solid tiles have texture/pattern (not flat fills)"
+      ],
+      "threshold": "Tiles render with Forest-themed colors and visual texture, not plain flat rectangles"
+    },
+    {
+      "id": "C-09",
+      "category": "physics",
+      "description": "A test entity (player placeholder) is affected by gravity and falls until hitting solid tiles",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game",
+        "Observe the test entity's initial position",
+        "Wait a short time and verify the entity has moved downward (gravity)",
+        "Verify the entity stops falling when it contacts a solid tile",
+        "Verify the entity rests on top of the tile, not inside it"
+      ],
+      "threshold": "Entity falls under gravity and lands on solid tiles without clipping through"
+    },
+    {
+      "id": "C-10",
+      "category": "physics",
+      "description": "AABB collision detection prevents the entity from passing through solid tiles in all directions",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Move the entity left into a solid wall — verify it stops and doesn't clip through",
+        "Move the entity right into a solid wall — verify it stops",
+        "Jump the entity into a solid ceiling — verify it bonks and falls back down",
+        "Let the entity fall onto a solid floor — verify it lands on top"
+      ],
+      "threshold": "Entity cannot pass through solid tiles in any direction (left, right, up, down)"
+    },
+    {
+      "id": "C-11",
+      "category": "physics",
+      "description": "Gravity applies with terminal velocity — falling speed caps at a maximum",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the physics update code",
+        "Verify gravity is applied as a constant acceleration each frame",
+        "Verify a terminal velocity constant exists",
+        "Verify downward velocity is clamped to terminal velocity"
+      ],
+      "threshold": "Gravity accelerates the entity downward with velocity capped at terminal velocity"
+    },
+    {
+      "id": "C-12",
+      "category": "physics",
+      "description": "One-way platforms allow the entity to jump through from below but land on from above",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Position the entity below a one-way platform",
+        "Make the entity jump upward through it — verify it passes through",
+        "After passing above the platform, verify the entity lands on top of it when falling back down",
+        "Verify the platform does not block horizontal movement"
+      ],
+      "threshold": "Entity passes through one-way platforms from below but lands on them from above"
+    },
+    {
+      "id": "C-13",
+      "category": "physics",
+      "description": "Moving platforms carry the entity — both horizontal and vertical movement",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Place the entity on a horizontally moving platform",
+        "Verify the entity moves with the platform without drifting off",
+        "Place the entity on a vertically moving platform",
+        "Verify the entity rides up and down with it without falling through or floating"
+      ],
+      "threshold": "Entity is carried by moving platforms in both horizontal and vertical axes"
+    },
+    {
+      "id": "C-14",
+      "category": "physics",
+      "description": "Ground and air physics differ: ground has higher acceleration and friction, air has lower acceleration and drag",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review physics constants for ground vs air states",
+        "Verify ground acceleration is higher than air acceleration",
+        "Verify ground friction exists and slows the entity when not pressing a direction",
+        "Verify air drag is lower than ground friction (less stopping power in air)"
+      ],
+      "threshold": "Distinct ground/air acceleration and friction constants with ground > air acceleration"
+    },
+    {
+      "id": "C-15",
+      "category": "input",
+      "description": "Arrow keys move the test entity left and right on the ground",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and wait for the entity to be on ground",
+        "Press the left arrow key — verify entity moves left",
+        "Press the right arrow key — verify entity moves right",
+        "Release both keys — verify entity decelerates and stops (friction)"
+      ],
+      "threshold": "Left/right arrow keys move the entity horizontally with visible deceleration on release"
+    },
+    {
+      "id": "C-16",
+      "category": "input",
+      "description": "A jump key (Z) makes the entity jump upward when on the ground",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Ensure the entity is on the ground",
+        "Press the Z key",
+        "Verify the entity moves upward (y position decreases)",
+        "Verify the entity falls back down due to gravity",
+        "Verify the entity cannot jump again while in the air (no infinite jump)"
+      ],
+      "threshold": "Z key causes the entity to jump from the ground and return via gravity; no air-jumping"
+    },
+    {
+      "id": "C-17",
+      "category": "camera",
+      "description": "The camera smoothly follows the entity horizontally as it moves through the level",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Move the entity to the right for several seconds",
+        "Verify the viewport scrolls to follow the entity",
+        "Verify new tiles appear on the right side of the screen as the entity moves",
+        "Verify the camera movement is smooth (not snapping frame-to-frame)"
+      ],
+      "threshold": "Camera smoothly tracks the entity horizontally, scrolling the level as it moves"
+    },
+    {
+      "id": "C-18",
+      "category": "camera",
+      "description": "Vertical camera tracking uses a dead zone — camera only moves when entity is near top or bottom 25%",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the camera update code",
+        "Verify a vertical dead zone is defined (top 25% and bottom 25% thresholds)",
+        "Verify the camera does not move vertically when the entity is in the middle 50%",
+        "Verify the camera adjusts vertically when the entity moves outside the dead zone"
+      ],
+      "threshold": "Camera stays still vertically when entity is in center 50%, scrolls when in outer 25%"
+    },
+    {
+      "id": "C-19",
+      "category": "camera",
+      "description": "Parallax scrolling background renders at least 3 layers that scroll at different speeds",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and take a screenshot showing the background",
+        "Move the entity to the right for 2+ seconds",
+        "Take another screenshot",
+        "Verify background layers are visible behind the tiles",
+        "Verify layers move at different rates (far layers slower, near layers faster)"
+      ],
+      "threshold": "At least 3 parallax background layers visible, scrolling at different rates"
+    },
+    {
+      "id": "C-20",
+      "category": "camera",
+      "description": "Camera is clamped to level bounds — does not scroll past the start or end of the level",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Move the entity to the far left edge of the level",
+        "Verify the camera does not scroll past the left boundary (no empty space on the left)",
+        "Move the entity to the far right edge",
+        "Verify the camera does not scroll past the right boundary"
+      ],
+      "threshold": "Camera stops at level boundaries and does not show empty space beyond the level"
+    },
+    {
+      "id": "C-21",
+      "category": "performance",
+      "description": "The game maintains 60fps during normal gameplay with no dropped frames",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and let it run for 5 seconds with the entity moving",
+        "Measure frame times using performance.now() or requestAnimationFrame timestamps",
+        "Verify the average frame time is ~16.67ms (60fps)",
+        "Verify no frame exceeds 33ms (no dropped frames)"
+      ],
+      "threshold": "Average FPS >= 55 over a 5-second period with no individual frame exceeding 33ms"
+    },
+    {
+      "id": "C-22",
+      "category": "architecture",
+      "description": "The project uses vanilla JavaScript with no external libraries or dependencies",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review all JavaScript source files",
+        "Verify no import statements reference node_modules or CDN URLs",
+        "Verify no <script> tags load external libraries",
+        "Verify no package.json with runtime dependencies exists"
+      ],
+      "threshold": "Zero external runtime dependencies — pure vanilla JS, Canvas API, and Web Audio API only"
+    },
+    {
+      "id": "C-23",
+      "category": "architecture",
+      "description": "Code is organized into modular files — separate modules for game loop, tiles, physics, camera, input, and rendering",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the project file structure",
+        "Verify separate files/modules exist for major systems (game loop, tiles, physics, camera, input)",
+        "Verify modules export/share functionality via a clear pattern (ES modules, namespace objects, or similar)",
+        "Verify index.html loads all necessary scripts"
+      ],
+      "threshold": "At least 5 separate JS files/modules for distinct engine systems"
+    },
+    {
+      "id": "C-24",
+      "category": "tiles",
+      "description": "The test level includes all tile types in a playable layout — ground, platforms, walls, one-way platforms, hazards, and a gap to traverse",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and visually inspect the test level",
+        "Verify solid ground tiles form a walkable surface",
+        "Verify walls exist that block horizontal movement",
+        "Verify one-way platforms are visible and accessible",
+        "Verify a hazard tile is present (visually distinct, e.g. red spikes)",
+        "Verify the level has a gap that requires jumping to cross"
+      ],
+      "threshold": "Test level contains solid, wall, one-way, hazard tiles, and at least one gap requiring a jump"
+    },
+    {
+      "id": "C-25",
+      "category": "physics",
+      "description": "Hazard tiles deal damage or trigger a reaction when the entity contacts them",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Move the entity into a hazard tile (spikes or lava)",
+        "Verify the entity takes damage, gets knocked back, respawns, or reacts visibly",
+        "Verify the hazard is visually distinct from safe tiles"
+      ],
+      "threshold": "Contact with hazard tiles produces a visible gameplay reaction (damage, knockback, or respawn)"
+    },
+    {
+      "id": "C-26",
+      "category": "physics",
+      "description": "Bounce pads launch the entity upward with a higher-than-normal jump impulse",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Position the entity above a bounce pad tile",
+        "Let the entity fall onto the bounce pad",
+        "Verify the entity is launched upward higher than a regular jump",
+        "Verify the bounce is visually obvious (entity moves significantly upward)"
+      ],
+      "threshold": "Bounce pads launch the entity to a height clearly greater than a normal jump"
+    },
+    {
+      "id": "C-27",
+      "category": "visual",
+      "description": "The test entity (player placeholder) is drawn using Canvas drawing commands — not a plain rectangle",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and take a screenshot",
+        "Inspect the entity visually — verify it is drawn with some character detail (head, body, limbs) using Canvas shapes",
+        "Verify it uses the player color (#3A7BD5 blue body) from the design spec",
+        "Verify it is not a plain single-color rectangle"
+      ],
+      "threshold": "Entity is drawn as a recognizable character figure using Canvas shapes, not a plain box"
+    },
+    {
+      "id": "C-28",
+      "category": "visual",
+      "description": "The entity visually faces the direction of movement (flips when changing direction)",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Move the entity to the right — take a screenshot",
+        "Move the entity to the left — take a screenshot",
+        "Compare: verify the entity's facing direction changes (sprite flipped)"
+      ],
+      "threshold": "Entity sprite flips horizontally when the movement direction changes"
+    }
+  ],
+  "outOfScope": [
+    "Full player animation states (walk cycle, run cycle, etc.) — Sprint 2",
+    "Player combat mechanics (attack, charge attack, health/lives) — Sprint 2",
+    "Game state machine (title screen, menus, pause) — Sprint 3",
+    "HUD elements (health hearts, coin counter) — Sprint 3",
+    "World map navigation — Sprint 4",
+    "Save/load system — Sprint 4",
+    "Enemy AI and boss fights — Sprint 5",
+    "Sound and music — Sprint 10",
+    "Particle effects and screen shake — Sprint 11",
+    "Wall slide and wall jump mechanics — Sprint 2",
+    "Coyote time and jump buffering — Sprint 2",
+    "Variable-height jump (hold for higher) — Sprint 2",
+    "Crouch and crouch-slide — Sprint 2"
+  ],
+  "regressionSprints": [],
+  "notes": "This sprint establishes the engine foundation. The test entity is a player placeholder that can move and jump but does not have the full player movement vocabulary (wall jump, coyote time, combat, etc.). The focus is on rock-solid physics, tile rendering, camera, and game loop — the systems everything else builds on."
+}
