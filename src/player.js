@@ -61,6 +61,9 @@ const Player = {
     // Crouch slide
     slideVx: 0,
 
+    // Hit flash (C-05)
+    hitFlash: 0,
+
     // Death/respawn
     deathTimer: 0,
     deathCount: 0,
@@ -191,6 +194,11 @@ const Player = {
             case 'jumpAttack':
                 this._updateJumpAttack(inputDir);
                 break;
+        }
+
+        // ---- Hit flash timer (C-05) ----
+        if (this.hitFlash > 0) {
+            this.hitFlash--;
         }
 
         // ---- Invincibility timer ----
@@ -874,7 +882,10 @@ const Player = {
         if (this.invincible || this.state === 'dead' || this.state === 'hurt') return;
 
         this.hp--;
+        this.hitFlash = 4; // White flash for 4 frames (C-05)
         AudioManager.playHurt();
+        // Screen shake on player damage (C-04) — design spec: 4px, 200ms
+        Camera.shake(4, 0.2);
         if (this.hp <= 0) {
             this.hp = 0;
             this._die();
