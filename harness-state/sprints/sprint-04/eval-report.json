@@ -1,0 +1,212 @@
+{
+  "sprintNumber": 4,
+  "name": "World Map & Progression",
+  "overallResult": "PASS",
+  "passCount": 28,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "category": "world-map-state",
+      "result": "PASS",
+      "evidence": "Initial state is TITLE. After pressing Enter, game transitions to WORLD_MAP (confirmed via window.__gameDebug.gameState === 'WORLD_MAP'). Screenshot shows top-down map view, not gameplay. No player character in gameplay form visible."
+    },
+    {
+      "id": "C-02",
+      "category": "world-map-nodes",
+      "result": "PASS",
+      "evidence": "getWorldMapNodes() returns 13 nodes. X range is 790px (120 to 910), Y range is 170px (180 to 350). Nodes are arranged in 4 clusters plus a Citadel node. Path lines connect nodes visually. Screenshot confirms clustered layout with visible connections."
+    },
+    {
+      "id": "C-03",
+      "category": "world-map-nodes",
+      "result": "PASS",
+      "evidence": "Code review + screenshot: WORLD_COLORS uses Forest (#2D5A27/#4A8C3F greens), Desert (#C4943A/#8B6B2E sandy/gold), Tundra (#6B9CB8/#A8D4E6 ice blue), Volcano (#8B2A1A/#FF6A2A dark red). _renderWorldAreas draws radial gradient washes behind each cluster. World labels visible on map: 'Whispering Forest', 'Scorching Desert', 'Frozen Tundra', 'Molten Volcano'. All match design spec world palettes exactly."
+    },
+    {
+      "id": "C-04",
+      "category": "world-map-nodes",
+      "result": "PASS",
+      "evidence": "Selected node (1-1) shows pulsing Muted Gold glow at 1.5Hz (Math.sin(animTimer * PI * 3)). Comparing screenshots 500ms apart confirms visual change in glow size/opacity. Locked nodes rendered with Steel Blue #6B8CAE at 50% opacity (globalAlpha=0.5). Checkmark drawn in Moss Green for completed nodes. Visual distinction is clear between states."
+    },
+    {
+      "id": "C-05",
+      "category": "world-map-navigation",
+      "result": "PASS",
+      "evidence": "ArrowRight on fresh game (only 1-1 unlocked) stays on 1-1 — cannot navigate to locked nodes. After unlockAllStages(), ArrowRight moves to 1-2, ArrowLeft returns to 1-1. Navigation follows sequential path connections. Selection indicator (pulse glow) clearly shows current node."
+    },
+    {
+      "id": "C-06",
+      "category": "world-map-navigation",
+      "result": "PASS",
+      "evidence": "Pressing Enter on selected node 1-1 transitions to STAGE state (confirmed via gameState === 'STAGE'). Player character visible at spawn position (96, 642). HUD shows stage name 'Canopy Trail' matching the selected node."
+    },
+    {
+      "id": "C-07",
+      "category": "world-map-info",
+      "result": "PASS",
+      "evidence": "Screenshot confirms info panel at bottom-right of canvas. Panel shows: 'Canopy Trail' (stage name, bold), 'Best Time' with '---' for unplayed stage, 'Coins' with '???' for unplayed, difficulty stars (1 filled, 2 empty for difficulty 1), world name 'Whispering Forest'. Panel has dark background (rgba 26,26,46,0.6) with 2px Muted Gold border. Size 260x160px, 32px inset from edges. Matches design spec precisely."
+    },
+    {
+      "id": "C-08",
+      "category": "world-map-info",
+      "result": "PASS",
+      "evidence": "Forced selection to locked node 1-2 (Hollow Depths). Screenshot confirms info panel shows: 'Hollow Depths' (stage name), 'LOCKED' in bold 22px Steel Blue, 'Complete Canopy Trail' and 'to unlock' messages in Steel Blue 14px. No gameplay stats (time/coins) shown for locked stages."
+    },
+    {
+      "id": "C-09",
+      "category": "world-map-unlock",
+      "result": "PASS",
+      "evidence": "Fresh game (localStorage cleared): getWorldMapNodes() returns 1 unlocked node (index 0, stageId '1-1'). All other 12 nodes have unlocked: false. First node is 'Canopy Trail' in Forest world."
+    },
+    {
+      "id": "C-10",
+      "category": "world-map-unlock",
+      "result": "PASS",
+      "evidence": "After completing stage 1-1 (via triggerStageComplete) and returning to world map: node 1-1 has completed: true, node 1-2 (Hollow Depths) has unlocked: true. Navigation can reach 1-2. Screenshot shows checkmark on 1-1 node. Save data confirms '1-1' in completedStages."
+    },
+    {
+      "id": "C-11",
+      "category": "world-map-pause",
+      "result": "PASS",
+      "evidence": "Screenshot of pause menu clearly shows 4 options: 'Resume', 'Restart Stage', 'Return to World Map', 'Quit to Title'. Selecting 'Return to World Map' (ArrowDown x2 + Enter) transitions to WORLD_MAP state. Confirmed via gameState === 'WORLD_MAP'."
+    },
+    {
+      "id": "C-12",
+      "category": "collectibles-coins",
+      "result": "PASS",
+      "evidence": "Stage loads with 15 coin items and 2 health items (17 total). Coins visible as golden circles in stage screenshot. When player hitbox overlaps a coin position, coin is collected (confirmed by teleporting player to coin coordinates). GameState.coinsCollected increments from 0 to 1. Coin particles spawn on collection."
+    },
+    {
+      "id": "C-13",
+      "category": "collectibles-coins",
+      "result": "PASS",
+      "evidence": "Code review: coins rendered as golden circles with fillStyle COLORS.coinGold (#FFD700). Glint highlight at #FFF8DC drawn when spinPhase > 0.2. Bobbing animation via sin wave (y = baseY + sin(animTimer*3 + offset)*3). Spin effect via scaleX oscillation (0.4 + 0.6 * abs(sin(animTimer*4 + offset))). Darker edge stroke at #B8860B. Screenshots confirm golden animated circles visible in stage."
+    },
+    {
+      "id": "C-14",
+      "category": "collectibles-health",
+      "result": "PASS",
+      "evidence": "Health pickups rendered as green hearts (Moss Green #5A9E6F) with white cross overlay — visually distinct from gold coins. At full HP (3), health pickup is NOT collected (code: if Player.hp < PLAYER_MAX_HP). After reducing HP to 2, teleporting to health pickup position collected it and restored HP to 3. Pickup has pulsing glow when collectible, 40% opacity when player is at full HP."
+    },
+    {
+      "id": "C-15",
+      "category": "collectibles-tracking",
+      "result": "PASS",
+      "evidence": "Stage complete screen screenshot shows 'Coins 0 / 15' — X is coins collected this run, Y is total coins for stage (from WorldMap.STAGES[0].totalCoins = 15). Format matches 'X / Y' requirement. initStageComplete receives (stageTime, coinsCollected, totalCoins) parameters."
+    },
+    {
+      "id": "C-16",
+      "category": "save-system",
+      "result": "PASS",
+      "evidence": "After completing stage 1-1 and returning to world map, localStorage key 'kingdoms_of_the_canvas_save' contains: completedStages: ['1-1'], coinRecords: {'1-1': 0}, bestTimes: {'1-1': 2.267}, lives: 5. All required fields present: completed stages, coin totals per stage, best times per stage, current lives."
+    },
+    {
+      "id": "C-17",
+      "category": "save-system",
+      "result": "PASS",
+      "evidence": "After full page reload, SaveSystem.hasSaveData() returns true. Title screen shows 'Continue' option (screenshot confirms). Selecting Continue transitions to world map where: node 1-1 shows completed state, node 1-2 shows unlocked state. Info panel for 1-1 shows saved bestTime (2.267s) and coinRecord (0). All save data properly restored."
+    },
+    {
+      "id": "C-18",
+      "category": "save-system",
+      "result": "PASS",
+      "evidence": "Code review of save.js recordStageCompletion() at line 81: bestTimes updated only if 'time < data.bestTimes[stageId]' (lower is better). Line 86: coinRecords updated only if 'coins > data.coinRecords[stageId]' (higher is better). Both have fallback for first-time (no previous record). Save written to localStorage after comparisons."
+    },
+    {
+      "id": "C-19",
+      "category": "save-system",
+      "result": "PASS",
+      "evidence": "Screenshot (no save): title shows only 'New Game' and 'Controls'. Screenshot (with save): title shows 'Continue', 'New Game', 'Controls'. Code in initTitle(): _titleHasSave = SaveSystem.hasSaveData(); builds options array accordingly. Continue transitions to WORLD_MAP with saved progress via GameState.setupWorldMap()."
+    },
+    {
+      "id": "C-20",
+      "category": "save-system",
+      "result": "PASS",
+      "evidence": "Screenshot confirms confirmation dialog: 'Start New Game?' title, 'This will erase your save data.' message, Yes/No buttons with selection triangle. Default selection is 'No' (safe default). After confirming Yes: SaveSystem.hasSaveData() returns false, transitions to WORLD_MAP with only 1 unlocked node (fresh state). Dialog styled per design spec: 320x180, Deep Charcoal bg, Muted Gold border."
+    },
+    {
+      "id": "C-21",
+      "category": "stage-complete-flow",
+      "result": "PASS",
+      "evidence": "After triggerStageComplete, state is STAGE_COMPLETE. Stage complete screen shows 'Press Enter to Continue'. Pressing Enter transitions to WORLD_MAP (not TITLE). World map reflects updated completion state (1-1 completed, 1-2 unlocked)."
+    },
+    {
+      "id": "C-22",
+      "category": "world-map-visual",
+      "result": "PASS",
+      "evidence": "Screenshot confirms world map background is NOT a flat color. Visible elements: radial gradient (#16162E to #0A0A1A), subtle 48px grid lines (rgba 45,45,68,0.15), twinkling stars with varying brightness/size, colored radial gradient washes behind each world cluster. Distinct visual identity from both title screen and gameplay stages."
+    },
+    {
+      "id": "C-23",
+      "category": "world-map-visual",
+      "result": "PASS",
+      "evidence": "Code review of _renderPaths (worldmap.js:394-420): strokeStyle = COLORS.warmSlate (#2D2D44), lineWidth = 3. Unlocked paths: setLineDash([]) (solid line). Locked paths: setLineDash([8, 6]) (dashed line). setLineDash([]) called after each path to reset. All three design spec requirements met: dashed for locked, solid for unlocked, Warm Slate color."
+    },
+    {
+      "id": "C-24",
+      "category": "world-map-empty",
+      "result": "PASS",
+      "evidence": "Screenshot confirms on fresh game: animated downward-pointing arrow (Muted Gold triangle + shaft) above node 1-1 with bobbing animation (sin(animTimer*4)*8 offset). Text 'Begin your journey' in bold 16px Muted Gold positioned above arrow. Both pulsate with alpha oscillation (0.8 + 0.2*sin). _isFirstVisit flag set when completedStages.length === 0."
+    },
+    {
+      "id": "C-25",
+      "category": "debug-api",
+      "result": "PASS",
+      "evidence": "window.__gameDebug exposes: unlockAllStages() (calls WorldMap.unlockAllStages, verified all 13 nodes become unlocked), getSelectedNode() (returns stageId, name, world, unlocked, completed, x, y), getSaveData() / setSaveData() / clearSaveData(), getWorldMapNodes() (returns all 13 nodes with state), setSelectedNode(index). All functions confirmed working via Playwright evaluation."
+    },
+    {
+      "id": "C-26",
+      "category": "architecture",
+      "result": "PASS",
+      "evidence": "Three new dedicated module files: src/worldmap.js (759 lines, WorldMap object), src/collectibles.js (239 lines, Collectibles object), src/save.js (131 lines, SaveSystem object). All loaded via <script> tags in index.html (lines 49-51). Modules follow existing object-literal pattern consistent with Player, Camera, Level, etc. No inlining in existing files beyond necessary integration points (states.js dispatch, game.js debug API)."
+    },
+    {
+      "id": "C-27",
+      "category": "regression",
+      "result": "PASS",
+      "evidence": "Tested in STAGE entered from world map: gravity works (player lands on ground, y=642), ArrowRight moves player (x delta 114px), Z triggers jump (vy=-0.9, onGround=false), X triggers attack (attackTimer=4), ArrowDown triggers crouch (state='crouch', height=20). HUD visible with hearts, coin counter (x 000), stage name 'Canopy Trail'. Escape opens pause with Resume/Restart/Return to World Map/Quit. HP=3, Lives=5 correct. Iris-wipe transitions present throughout."
+    },
+    {
+      "id": "C-28",
+      "category": "regression",
+      "result": "PASS",
+      "evidence": "Canvas: 960x540 confirmed. FPS: 60 (>= 55 threshold). Navigated through all states: TITLE → WORLD_MAP → STAGE → PAUSED → STAGE (resume) → GAME_OVER → STAGE (restart) → STAGE_COMPLETE → WORLD_MAP. Zero JavaScript console errors across all state transitions. Performance stable throughout."
+    }
+  ],
+  "regressionResults": {
+    "sprintsTested": [1, 2, 3],
+    "allPassed": true,
+    "summary": "Sprint 1-3 features verified via C-27 and C-28: game loop at 60fps, AABB collision/physics, camera/parallax, player movement (walk, run, jump, wall slide, crouch), combat (melee attack with attackTimer), health/lives (3 HP / 5 lives), HUD (hearts, coins, stage name), pause menu (all options), game over flow, stage complete screen, iris-wipe transitions. Canvas 960x540, zero JS errors across all states."
+  },
+  "holisticScores": {
+    "designQuality": {
+      "score": 8,
+      "rationale": "Faithful implementation of the design spec. World map uses all specified colors: Deep Charcoal bg, Warm Slate paths, Muted Gold accents, Steel Blue locked states, Moss Green checkmarks, Soft Cream text. Info panel matches spec (260x160, bottom-right, 32px inset, Muted Gold border). Node states correctly use 28px diameter, 50% opacity for locked, pulse at 1.5Hz. Title screen buttons are 240x40 with selection triangles. Confirmation dialog is 320x180. Text rendering uses 2px dark outline consistently. World cluster palettes exactly match design spec values. Minor deduction: world area washes are quite subtle — could be more visually distinct."
+    },
+    "originality": {
+      "score": 7,
+      "rationale": "Well-executed world map with creative touches: twinkling star background with grid overlay creates good atmosphere, first-visit guidance with bobbing arrow is a nice UX detail, coin spin animation simulates 3D rotation, health pickup green heart with white cross is clearly distinct from coins. Four themed world names (Whispering Forest, Scorching Desert, Frozen Tundra, Molten Volcano) add flavor. The save system with best-time and coin-record tracking adds replay value. Overall a solid, polished implementation that goes beyond minimum requirements."
+    },
+    "codeQuality": {
+      "score": 8,
+      "rationale": "Clean modular architecture: 3 new files (worldmap.js, collectibles.js, save.js) follow existing object-literal module pattern. Well-commented with JSDoc-style headers. Proper separation of concerns: save system handles persistence, world map handles navigation/rendering, collectibles handle in-stage items. Save system defensively merges with defaults for forward-compatibility. Debug API extensions are comprehensive. No global variable leaks. State machine integration is minimal and clean (only necessary touchpoints in states.js and game.js)."
+    },
+    "completeness": {
+      "score": 9,
+      "rationale": "All 28 criteria pass. Every specified feature is implemented: world map with 13 nodes in 4 clusters, node visual states (locked/unlocked/completed/selected), arrow-key navigation with lock enforcement, info panel with full stats, locked panel with unlock hint, stage entry/return flow, collectible coins with animation, health pickups with conditional collection, coin tracking on stage complete, save/load with best-time and coin-record logic, title screen Continue/New Game with confirmation dialog, first-visit guidance, debug API extensions. Nothing was skipped or stubbed."
+    },
+    "uxPolish": {
+      "score": 8,
+      "rationale": "Smooth iris-wipe transitions between all states. First-visit guidance text with animated arrow is a nice onboarding touch. Confirmation dialog for New Game defaults to 'No' (safe default). Info panel updates dynamically when selecting different nodes. Pulse animation on selected node provides clear feedback. Health pickups show reduced opacity when at full HP (visual hint). Coin collection spawns gold particle burst. Stage complete shows collected/total format. World map Escape returns to title for easy navigation. Only minor polish gap: no animation when completing a stage and returning to world map (path unlock animation noted as out-of-scope)."
+    }
+  },
+  "blockingIssues": [],
+  "nonBlockingIssues": [
+    "World area color washes on the map are quite subtle — the radial gradients could use slightly higher opacity to make Forest/Desert/Tundra/Volcano regions more visually distinct at a glance",
+    "Coins near spawn are positioned 1 tile above ground level, requiring jumps to collect the first 3 coins — may confuse new players who expect to walk through them",
+    "No path-unlock animation when a new stage becomes available (noted as out-of-scope for Sprint 4, deferred to Sprint 5+)"
+  ],
+  "testingMethod": "Playwright headless browser automation + code review. 4 test scripts covering: world map state/navigation/visual (group 1), stage entry/collectibles/completion flow (group 2), save system persistence/title screen adaptation (group 3), regression testing of Sprint 1-3 features (group 4). Additional targeted coin collection mechanics test. Screenshots captured for all visual criteria verification.",
+  "timestamp": "2026-03-30T10:15:00Z"
+}
