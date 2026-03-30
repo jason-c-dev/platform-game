@@ -57,9 +57,9 @@ const AudioManager = {
     _updateMasterGain() {
         if (!this._masterGain) return;
         if (this.muted) {
-            this._masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.01);
+            this._masterGain.gain.setValueAtTime(0, this.ctx.currentTime);
         } else {
-            this._masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.01);
+            this._masterGain.gain.setValueAtTime(this.masterVolume, this.ctx.currentTime);
         }
     },
 

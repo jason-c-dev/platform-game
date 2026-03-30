@@ -607,9 +607,9 @@ const Menu = {
 
         // Menu panel
         const panelW = 280;
-        const panelH = this._pauseOptions.length * 44 + 32;
+        const panelH = this._pauseOptions.length * 48 + 32;
         const panelX = (CANVAS_WIDTH - panelW) / 2;
-        const panelY = 165;
+        const panelY = 155;
 
         ctx.fillStyle = 'rgba(45, 45, 68, 0.9)';
         this._roundRect(ctx, panelX, panelY, panelW, panelH, 8);
