@@ -426,11 +426,21 @@ const WorldMap = {
             const worldColor = this.WORLD_COLORS[node.world];
 
             if (isSelected) {
-                // Pulsing glow for selected node
-                const pulseSize = 4 + Math.sin(this.animTimer * Math.PI * 3) * 3; // 1.5Hz
+                // Pulsing glow for selected node — 1.5Hz oscillation
+                const pulsePhase = Math.sin(this.animTimer * Math.PI * 3);
+                const pulseSize = 6 + pulsePhase * 5;
+                const pulseAlpha = 0.3 + 0.2 * pulsePhase;
+
+                // Outer glow ring
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, node.radius + pulseSize + 4, 0, Math.PI * 2);
+                ctx.fillStyle = this._hexToRGBA(COLORS.mutedGold, pulseAlpha * 0.4);
+                ctx.fill();
+
+                // Inner glow
                 ctx.beginPath();
                 ctx.arc(node.x, node.y, node.radius + pulseSize, 0, Math.PI * 2);
-                ctx.fillStyle = this._hexToRGBA(COLORS.mutedGold, 0.25 + 0.15 * Math.sin(this.animTimer * Math.PI * 3));
+                ctx.fillStyle = this._hexToRGBA(COLORS.mutedGold, pulseAlpha);
                 ctx.fill();
             }
 
@@ -662,28 +672,31 @@ const WorldMap = {
         const node = this.nodes[0];
 
         // Animated arrow pointing to first node
-        const arrowOffset = Math.sin(this.animTimer * 4) * 6;
+        const arrowOffset = Math.sin(this.animTimer * 4) * 8;
 
         // Arrow above the node
         ctx.save();
         ctx.fillStyle = COLORS.mutedGold;
-        ctx.globalAlpha = 0.7 + 0.3 * Math.sin(this.animTimer * 3);
+        ctx.globalAlpha = 0.8 + 0.2 * Math.sin(this.animTimer * 3);
 
         const ax = node.x;
-        const ay = node.y - node.radius - 24 + arrowOffset;
+        const ay = node.y - node.radius - 28 + arrowOffset;
 
         // Triangle arrow pointing down
         ctx.beginPath();
-        ctx.moveTo(ax - 8, ay - 12);
-        ctx.lineTo(ax + 8, ay - 12);
+        ctx.moveTo(ax - 10, ay - 16);
+        ctx.lineTo(ax + 10, ay - 16);
         ctx.lineTo(ax, ay);
         ctx.closePath();
         ctx.fill();
 
-        // Guidance text
+        // Arrow shaft
+        ctx.fillRect(ax - 3, ay - 28, 6, 14);
+
+        // Guidance text — larger and more visible
         this._drawTextWithOutline(ctx, 'Begin your journey',
-            ax, ay - 24,
-            '14px sans-serif',
+            ax, ay - 38,
+            'bold 16px sans-serif',
             COLORS.mutedGold, COLORS.deepCharcoal, 'center');
         ctx.restore();
     },
