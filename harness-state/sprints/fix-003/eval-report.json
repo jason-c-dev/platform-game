@@ -1,0 +1,64 @@
+{
+  "sprintId": "fix-003",
+  "overallResult": "PASS",
+  "passCount": 9,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "FIX-003-C01",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- checkEnemyPlayerCollisions at enemies.js:2736 adds 'if (e.isBoss && e.vulnerable) continue;' before the AABB check. When boss is in vulnerable state, the collision loop skips the boss entity, preventing contact damage. Correctly placed after dying/dead/intro guards."
+    },
+    {
+      "id": "FIX-003-C02",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- checkPlayerAttackCollisions at enemies.js:2699 retains the existing 'if (e.isBoss && !e.vulnerable) continue;' guard untouched by this diff. When boss IS vulnerable, !e.vulnerable is false, so the continue is not hit and _damageEnemy(e, 1) executes at line 2715. Player attacks can still damage the boss during vulnerable windows."
+    },
+    {
+      "id": "FIX-003-C03",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- player.js _respawn() at lines 961-974: (1) Level.bossTriggered set to false, (2) Enemies.resetBossFight() removes boss from enemies array, clears projectiles, sets HUD.bossActive=false, stops boss music, (3) Camera.unlock() releases arena lock, (4) wall unsealing iterates Level.bossSealedRows and restores TILE_EMPTY. Player respawns at respawnX/Y (which equals Level.spawnX/spawnY -- only assignment is at init, line 89-90) with full HP (line 949: this.hp = PLAYER_MAX_HP)."
+    },
+    {
+      "id": "FIX-003-C04",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- Camera.unlock() at camera.js:119 sets locked=false, arenaLock=false, minX/maxX=null, restoring normal follow behavior. Level.bossTriggered=false means _checkBossArena() in states.js:367 will pass the guard check and re-trigger the boss fight when the player re-enters the arena (Player.x + Player.width > Level.bossArenaX). Level.bossData is not cleared, so the spawn data persists for re-triggering."
+    },
+    {
+      "id": "FIX-003-C05",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- enemies.js:1387-1390: arenaLeft = (Level.bossArenaX || 0) + TILE_SIZE (one tile inside left boundary, past the sealed wall column), arenaRight = (Level.width - 1) * TILE_SIZE - b.width (one tile before level right edge minus boss width). Clamping runs every frame at the end of _updateElderShroomba, after all movement code. Boss cannot escape through the entry gap."
+    },
+    {
+      "id": "FIX-003-C06",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- enemies.js:1308: 'if (Player.state === \"dead\") return;' at the top of _updateElderShroomba, before any attacking logic, vulnerable state transitions, or horizontal tracking code. This early return prevents all AI behavior. Note: gravity still applies via _updateBoss (lines 1283-1303) which runs after the dispatch, which is correct -- boss stays grounded but doesn't attack or track."
+    },
+    {
+      "id": "FIX-003-R01",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- REGRESSION: The attacking state (jump, shockwave creation at targetTime, transition to vulnerable) and the vulnerable state (countdown, transition back to attacking) are unchanged in the diff. Lines 1313-1377 are unmodified. The only additions are the dead-player guard at the top (line 1308) and arena clamping at the bottom (lines 1387-1390), neither of which interfere with the attack/vulnerable cycle during normal gameplay."
+    },
+    {
+      "id": "FIX-003-R02",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- REGRESSION: Boss defeat path is untouched. _damageEnemy reduces health, health<=0 triggers death at line 407-412, _onBossDefeated at line 2341 handles HUD, music stop, and celebration particles. The new resetBossFight() method is a separate code path only called from _respawn(), never from the defeat sequence."
+    },
+    {
+      "id": "FIX-003-R03",
+      "result": "PASS",
+      "blocking": true,
+      "notes": "PASS -- REGRESSION: All three modified files pass Node.js syntax checking (node -c). HTTP server serves index.html (200), all src/*.js files (200). Script loading order in index.html is correct. resetBossFight() references HUD and AudioManager which are global objects available at runtime despite different load order."
+    }
+  ],
+  "blockers": [],
+  "summary": "All 9 criteria pass. The fix correctly addresses: (1) vulnerable boss no longer deals contact damage via skip in checkEnemyPlayerCollisions, (2) player attacks still damage vulnerable boss via unchanged checkPlayerAttackCollisions guard, (3) death during boss fight triggers full reset (boss removal, wall unsealing, camera unlock, bossTriggered=false) in _respawn, (4) camera follows normally after respawn and boss can be re-triggered, (5) boss X position clamped within arena bounds every frame, (6) boss AI pauses when player is dead. No regressions detected in attack patterns, defeat sequence, or game loading."
+}
