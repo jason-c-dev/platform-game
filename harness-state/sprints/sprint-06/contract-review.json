@@ -1,0 +1,196 @@
+{
+  "sprintNumber": 6,
+  "decision": "accepted",
+  "reviewDate": "2026-03-30",
+  "summary": "Comprehensive contract with 30 criteria covering all aspects of World 2: Scorching Desert. Feature coverage maps completely to the sprint plan theme (desert visuals, 3 enemy types, 3 bosses, quicksand, dark rooms, water/swimming, pressure plates, mirror puzzles, 3 stage layouts, integration, and regressions). Most criteria include concrete page.evaluate() code for deterministic testing. Regression sprints 1-5 correctly listed. Accepted with notes on minor areas for evaluator awareness.",
+  "criteriaReview": [
+    {
+      "id": "C-01",
+      "verdict": "pass",
+      "comment": "Testable — checks COLORS.desert constants programmatically plus screenshot visual verification. Desert palette hex values pinned explicitly."
+    },
+    {
+      "id": "C-02",
+      "verdict": "pass",
+      "comment": "Testable — tries multiple property paths for parallax layer count (Renderer, Camera, __gameDebug). Good resilience to implementation variation."
+    },
+    {
+      "id": "C-03",
+      "verdict": "pass",
+      "comment": "Screenshot-based for a purely visual effect is appropriate. Two screenshots ~30 frames apart is a reasonable approach to detect animated shimmer. Evaluator should look for wavy distortion, oscillating bands, or particle-based heat lines."
+    },
+    {
+      "id": "C-04",
+      "verdict": "pass",
+      "note": "Step 4 ('Position player near a Sand Skitter and wait 30 frames, verify the skitter moves toward the player') lacks concrete page.evaluate code. The evaluator will need to write evaluate code to position the player within detection range and measure the skitter's x delta over 30 frames. Description is clear enough for the evaluator to construct the test."
+    },
+    {
+      "id": "C-05",
+      "verdict": "pass",
+      "comment": "Thorough — tests invincibility by attacking and verifying health unchanged. Checks both invincible flag and Infinity health patterns. The sine-wave movement pattern is not explicitly tested but invincibility is the key distinguishing mechanic."
+    },
+    {
+      "id": "C-06",
+      "verdict": "pass",
+      "note": "Steps 4-5 (kill mummy, verify revive, kill again, verify dead) are described in natural language without page.evaluate code. The evaluator will need to construct kill-and-verify sequences. The revive-tracking property check in step 2 provides good initial verification. Description is sufficient for evaluator adaptation."
+    },
+    {
+      "id": "C-07",
+      "verdict": "pass",
+      "comment": "Tile scan uses fallback approach — checks hardcoded tile IDs (8, 9) OR Level.quicksandTiles array. Good resilience. Player sinking test via y-position increase is concrete."
+    },
+    {
+      "id": "C-08",
+      "verdict": "pass",
+      "comment": "Checks multiple possible implementation patterns for dark room system (Level.darkZones, Level.darkRooms, Level.isDark, Renderer.darkMode, Renderer.drawDarkOverlay). Good coverage of implementation variation."
+    },
+    {
+      "id": "C-09",
+      "verdict": "pass",
+      "comment": "Same fallback tile scan pattern as C-07 for water tiles. Physics modification test is described but evaluator may need to construct evaluate code for reduced gravity verification."
+    },
+    {
+      "id": "C-10",
+      "verdict": "pass",
+      "comment": "Pressure plate detection uses tile scan with Level.pressurePlates fallback. Activation effect test is described but not coded — evaluator should verify state change programmatically."
+    },
+    {
+      "id": "C-11",
+      "verdict": "pass",
+      "note": "Step 4 ('Verify mirrors have orientation/angle and can redirect light or projectiles') is vague — no evaluate code provided. The existence check in step 2 is concrete. The evaluator should inspect mirror object properties for angle/orientation fields. This is the least testable criterion but acceptable for a novel mechanic whose implementation shape is unknown."
+    },
+    {
+      "id": "C-12",
+      "verdict": "pass",
+      "comment": "Concrete width/spawn/exit/boss/enemy checks via single page.evaluate call. Width >= 100 is reasonable for stage 2-1."
+    },
+    {
+      "id": "C-13",
+      "verdict": "pass",
+      "comment": "Same structure as C-12 with width >= 130. Consistent and testable."
+    },
+    {
+      "id": "C-14",
+      "verdict": "pass",
+      "comment": "Same structure with width >= 140. Progressive width increase across stages is good design."
+    },
+    {
+      "id": "C-15",
+      "verdict": "pass",
+      "comment": "Concrete boss property inspection. Checks type, health, maxHealth, name. HP of 6 for Sand Wyrm is specified."
+    },
+    {
+      "id": "C-16",
+      "verdict": "pass",
+      "comment": "Tests maxHealth === 8. Teleportation test ('x position changes discontinuously') is described clearly enough for evaluator to measure."
+    },
+    {
+      "id": "C-17",
+      "verdict": "pass",
+      "comment": "Tests maxHealth === 12, checks for heads property or headCount. Multi-head mechanic verification is concrete."
+    },
+    {
+      "id": "C-18",
+      "verdict": "pass",
+      "comment": "Excellent — directly replicates Sprint 5 C-14 vulnerability window test pattern with explicit evaluate code for both invulnerable and vulnerable states. Highly testable."
+    },
+    {
+      "id": "C-19",
+      "verdict": "pass",
+      "comment": "Follows Sprint 5 C-15 phase transition pattern. Sets health to 40%, waits 60 frames, checks phase increase. Concrete."
+    },
+    {
+      "id": "C-20",
+      "verdict": "pass",
+      "comment": "Concrete coin count verification (18, 22, 28) plus health pickup checks. Matches WorldMap.STAGES definitions."
+    },
+    {
+      "id": "C-21",
+      "verdict": "pass",
+      "comment": "Simple >= 3 enemies per stage. Low bar but sufficient as a placement verification."
+    },
+    {
+      "id": "C-22",
+      "verdict": "pass",
+      "comment": "Good — records Level.width per stage and cross-checks for uniqueness. Also verifies widths don't match Forest widths (85, 125, 155). Prevents layout reuse."
+    },
+    {
+      "id": "C-23",
+      "verdict": "pass",
+      "comment": "Tests boss spawn on arena entry with HUD activation check. Follows Sprint 5 C-28 pattern."
+    },
+    {
+      "id": "C-24",
+      "verdict": "pass",
+      "comment": "Thorough — tests STAGE_COMPLETE transition, world map update, AND save data persistence (completedStages, bestTimes, coinRecords). Multi-layer verification."
+    },
+    {
+      "id": "C-25",
+      "verdict": "pass",
+      "comment": "Tests unlock gating — World 2 locked with clean save, unlocked after completing stages 1-1 through 1-3. Critical progression gate verification."
+    },
+    {
+      "id": "C-26",
+      "verdict": "pass",
+      "comment": "Forest regression — checks all 3 stages load with original widths, enemy types, and boss HP values. Comprehensive."
+    },
+    {
+      "id": "C-27",
+      "verdict": "pass",
+      "comment": "Player movement regression — standard movement/combat checks in desert context. Follows Sprint 5 C-30 pattern."
+    },
+    {
+      "id": "C-28",
+      "verdict": "pass",
+      "comment": "State machine regression — standard transition checks. Follows Sprint 5 C-31 pattern."
+    },
+    {
+      "id": "C-29",
+      "verdict": "pass",
+      "comment": "World map regression with desert-specific additions — checks desert nodes exist (world === 1), total nodes >= 12, desert world colors. Good."
+    },
+    {
+      "id": "C-30",
+      "verdict": "pass",
+      "comment": "Cross-world save persistence — verifies both World 1 and World 2 data coexist without data loss. Important integration test."
+    }
+  ],
+  "coverageAssessment": {
+    "sprintPlanFeatures": ["F16: World 2 — Scorching Desert"],
+    "coveredAspects": [
+      "Desert visual theme (tiles, parallax, heat shimmer) — C-01, C-02, C-03",
+      "3 new enemy types (Sand Skitter, Dust Devil, Mummy) — C-04, C-05, C-06",
+      "Quicksand mechanic — C-07",
+      "Dark room mechanic — C-08",
+      "Water/swimming physics — C-09",
+      "Pressure plate puzzles — C-10",
+      "Mirror puzzles — C-11",
+      "3 stage layouts (2-1 Dune Sea, 2-2 Buried Temple, 2-3 Oasis Mirage) — C-12, C-13, C-14",
+      "3 bosses (Sand Wyrm, Pharaoh Specter, Hydra Cactus) — C-15, C-16, C-17",
+      "Boss vulnerability windows — C-18",
+      "Boss phase transitions — C-19",
+      "Collectibles placement — C-20",
+      "Enemy placement — C-21",
+      "World map integration — C-22, C-25, C-29",
+      "Boss fight triggers — C-23",
+      "Stage completion and save system — C-24, C-30",
+      "Forest regression — C-26",
+      "Player movement regression — C-27",
+      "State machine regression — C-28"
+    ],
+    "gaps": "None — all sprint plan features are covered. The contract is thorough."
+  },
+  "regressionCheck": {
+    "listed": [1, 2, 3, 4, 5],
+    "expected": [1, 2, 3, 4, 5],
+    "verdict": "correct",
+    "comment": "All 5 prior sprints correctly listed for regression testing."
+  },
+  "notes": [
+    "30 criteria is aggressive for a single feature sprint but justified by the density of World 2 content (3 stages, 3 enemy types, 3 bosses, 5 new mechanics, visual theme).",
+    "Three criteria have test steps described in natural language rather than concrete page.evaluate code: C-04 step 4 (Sand Skitter charge), C-06 steps 4-5 (Mummy revive cycle), C-11 step 4 (mirror interaction). The evaluator should construct evaluate sequences for these at test time — the descriptions are clear enough.",
+    "Tile ID guesses (8/9 for quicksand, 10/11 for water, 12/13 for pressure plates) are fragile but each criterion has named-property fallbacks (Level.quicksandTiles, Level.waterTiles, Level.pressurePlates), providing good resilience to implementation variation.",
+    "All criteria appear implicitly blocking. Consider whether C-11 (mirror puzzles) and C-10 (pressure plates) should be non-blocking if they prove too complex for a single sprint, but this is a generator concern rather than a contract deficiency.",
+    "The out-of-scope list is well-defined and correctly excludes Worlds 3-4, Citadel, audio, visual polish, and performance optimization."
+  ]
+}
