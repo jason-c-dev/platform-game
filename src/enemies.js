@@ -61,6 +61,20 @@ const Enemies = {
             canRevive: (type === 'mummy'),
             reviveCount: 0,
             reviveTimer: 0,
+            // Frost Imp specific
+            projectileType: (type === 'frost_imp' || type === 'frostimp') ? 'snowball' : undefined,
+            freezesPlatforms: (type === 'frost_imp' || type === 'frostimp'),
+            freezeOnHit: (type === 'frost_imp' || type === 'frostimp'),
+            snowballFreeze: (type === 'frost_imp' || type === 'frostimp'),
+            // Ice Golem specific
+            shattersOnDeath: (type === 'ice_golem' || type === 'icegolem'),
+            deathType: (type === 'ice_golem' || type === 'icegolem') ? 'shatter' : 'normal',
+            fragments: null,
+            // Snow Owl specific
+            flightTimer: 0,
+            swoopTimer: 0,
+            swooping: false,
+            flightPhase: 0,
         };
         if (config) Object.assign(enemy, config);
         this.enemies.push(enemy);
@@ -99,6 +113,22 @@ const Enemies = {
                 health: 12, maxHealth: 12, width: 52, height: 56, speed: 0,
                 attackPattern: 'multi_head', attackType: 'multi_head',
                 patterns: ['multi_head']
+            },
+            // Tundra bosses
+            'frost_bear': {
+                health: 7, maxHealth: 7, width: 44, height: 44, speed: 2,
+                attackPattern: 'frost_beam', attackType: 'frost_beam',
+                patterns: ['frost_beam']
+            },
+            'crystal_witch': {
+                health: 25, maxHealth: 25, width: 36, height: 44, speed: 0,
+                attackPattern: 'crystal_shield', attackType: 'crystal_shield',
+                patterns: ['crystal_shield']
+            },
+            'yeti_monarch': {
+                health: 9, maxHealth: 9, width: 48, height: 52, speed: 1.5,
+                attackPattern: 'boulder', attackType: 'boulder',
+                patterns: ['boulder']
             },
         };
 
@@ -173,9 +203,32 @@ const Enemies = {
             'sand_wyrm': 'Sand Wyrm',
             'pharaoh_specter': 'Pharaoh Specter',
             'hydra_cactus': 'Hydra Cactus',
+            'frost_bear': 'Frost Bear',
+            'crystal_witch': 'Crystal Witch',
+            'yeti_monarch': 'Yeti Monarch',
         };
         HUD.bossName = names[type] || type;
         boss.name = names[type] || type;
+
+        // Tundra boss extras
+        if (type === 'frost_bear') {
+            boss.beamTimer = 0;
+            boss.beamActive = false;
+            boss.boulderTimer = 0;
+        }
+        if (type === 'crystal_witch') {
+            boss.shieldHP = 20;
+            boss.shieldHealth = 20;
+            boss.shieldMaxHP = 20;
+            boss.shield = { active: true, hp: 20, maxHp: 20 };
+            boss.teleportTimer = 0;
+            boss.crystalTimer = 0;
+        }
+        if (type === 'yeti_monarch') {
+            boss.boulderTimer = 0;
+            boss.boulderCooldown = 90;
+            boss.slamTimer = 0;
+        }
 
         return boss;
     },
@@ -197,6 +250,16 @@ const Enemies = {
                 return { width: 22, height: 30, health: Infinity, speed: 0.8, behavior: 'sine_wave' };
             case 'mummy':
                 return { width: 22, height: 28, health: 2, speed: 0.6, behavior: 'patrol_revive' };
+            // Tundra enemies
+            case 'frost_imp':
+            case 'frostimp':
+                return { width: 20, height: 22, health: 1, speed: 0.7, behavior: 'projectile' };
+            case 'ice_golem':
+            case 'icegolem':
+                return { width: 28, height: 32, health: 2, speed: 0.5, behavior: 'patrol_ice' };
+            case 'snow_owl':
+            case 'snowowl':
+                return { width: 24, height: 20, health: 1, speed: 1.5, behavior: 'figure8' };
             default:
                 return { width: 24, height: 24, health: 1, speed: 1, behavior: 'patrol' };
         }
@@ -220,10 +283,20 @@ const Enemies = {
             if (e.hitFlash > 0) e.hitFlash--;
             e.animTimer += 1 / 60;
 
-            if (e.state === 'dying') {
+            if (e.state === 'dying' || e.state === 'shatter') {
                 e.deathTimer -= 1 / 60;
-                // Float up and fade
-                e.y -= 0.5;
+                if (e.state === 'shatter' && e.fragments) {
+                    // Update shatter fragments with gravity
+                    for (const f of e.fragments) {
+                        f.x += f.vx;
+                        f.y += f.vy;
+                        f.vy += 0.15;
+                        f.rotation += 0.1;
+                    }
+                } else {
+                    // Float up and fade
+                    e.y -= 0.5;
+                }
                 if (e.deathTimer <= 0) {
                     e.state = 'dead';
                     if (e === this.boss) {
@@ -310,6 +383,13 @@ const Enemies = {
             case 'dust_devil':
             case 'dustdevil': this._updateDustDevil(e); break;
             case 'mummy': this._updateMummy(e); break;
+            // Tundra enemies
+            case 'frost_imp':
+            case 'frostimp': this._updateFrostImp(e); break;
+            case 'ice_golem':
+            case 'icegolem': this._updateIceGolem(e); break;
+            case 'snow_owl':
+            case 'snowowl': this._updateSnowOwl(e); break;
             default: this._updateShroomba(e); break;
         }
     },
@@ -627,6 +707,220 @@ const Enemies = {
     },
 
     // =============================================
+    // TUNDRA ENEMY AI
+    // =============================================
+
+    _updateFrostImp(e) {
+        // Frost Imp: stationary-ish, throws snowball projectiles in arc
+        e.shootTimer--;
+        if (e.shootTimer <= 0) {
+            e.shootTimer = 90 + Math.random() * 40;
+            // Fire snowball in arc toward player
+            const dx = Player.x - e.x;
+            const dy = Player.y - e.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 350 && dist > 0) {
+                const speed = 2.5;
+                const angle = Math.atan2(dy - 40, dx); // Aim above player for arc
+                this.projectiles.push({
+                    x: e.x + e.width / 2,
+                    y: e.y + 4,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 2, // Arc upward
+                    width: 10,
+                    height: 10,
+                    life: 3,
+                    hostile: true,
+                    type: 'snowball',
+                    gravity: 0.12,
+                    animTimer: 0,
+                    freezesPlatforms: true,
+                });
+                e.facing = dx > 0 ? 1 : -1;
+            }
+        }
+
+        // Light patrol movement
+        e.vx = e.speed * e.facing * 0.3;
+        e.x += e.vx;
+
+        // Gravity
+        e.vy += GRAVITY;
+        if (e.vy > TERMINAL_VELOCITY) e.vy = TERMINAL_VELOCITY;
+        e.y += e.vy;
+
+        // Floor collision
+        const footRow = Math.floor((e.y + e.height) / TILE_SIZE);
+        const leftCol = Math.floor(e.x / TILE_SIZE);
+        const rightCol = Math.floor((e.x + e.width - 1) / TILE_SIZE);
+        for (let c = leftCol; c <= rightCol; c++) {
+            const tile = Level.getTile(c, footRow);
+            if (tile === TILE_SOLID || tile === TILE_ICE || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE) {
+                e.y = footRow * TILE_SIZE - e.height;
+                e.vy = 0;
+                break;
+            }
+        }
+
+        // Wall collision / edge detection
+        if (e.facing > 0) {
+            const wallCol = Math.floor((e.x + e.width) / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.getTile(wallCol, midRow) === TILE_SOLID || Level.getTile(wallCol, midRow) === TILE_ICE) {
+                e.facing = -1;
+            }
+        } else {
+            const wallCol = Math.floor(e.x / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.getTile(wallCol, midRow) === TILE_SOLID || Level.getTile(wallCol, midRow) === TILE_ICE) {
+                e.facing = 1;
+            }
+        }
+
+        // Edge check
+        const lookAheadCol = e.facing > 0
+            ? Math.floor((e.x + e.width + 4) / TILE_SIZE)
+            : Math.floor((e.x - 4) / TILE_SIZE);
+        const floorBelow = Level.getTile(lookAheadCol, footRow);
+        if (floorBelow === TILE_EMPTY || floorBelow === TILE_HAZARD) {
+            e.facing *= -1;
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 4) % 2;
+    },
+
+    _updateIceGolem(e) {
+        // Ice Golem: patrols on ground, slides on ice surfaces
+        const footRow = Math.floor((e.y + e.height) / TILE_SIZE);
+        const leftCol = Math.floor(e.x / TILE_SIZE);
+        const rightCol = Math.floor((e.x + e.width - 1) / TILE_SIZE);
+
+        // Check if on ice
+        let onIce = false;
+        for (let c = leftCol; c <= rightCol; c++) {
+            if (Level.getTile(c, footRow) === TILE_ICE) {
+                onIce = true;
+                break;
+            }
+        }
+        e.onIce = onIce;
+
+        // Movement — faster on ice, less responsive
+        if (onIce) {
+            e.vx += e.facing * 0.03;
+            e.vx *= 0.99; // Ice friction
+            if (Math.abs(e.vx) > e.speed * 2) e.vx = e.speed * 2 * e.facing;
+        } else {
+            e.vx = e.speed * e.facing;
+        }
+        e.x += e.vx;
+
+        // Gravity
+        e.vy += GRAVITY;
+        if (e.vy > TERMINAL_VELOCITY) e.vy = TERMINAL_VELOCITY;
+        e.y += e.vy;
+
+        // Floor collision
+        let onGround = false;
+        for (let c = leftCol; c <= rightCol; c++) {
+            const tile = Level.getTile(c, Math.floor((e.y + e.height) / TILE_SIZE));
+            if (tile === TILE_SOLID || tile === TILE_ICE || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE) {
+                e.y = Math.floor((e.y + e.height) / TILE_SIZE) * TILE_SIZE - e.height;
+                e.vy = 0;
+                onGround = true;
+                break;
+            }
+        }
+
+        // Wall collision
+        if (e.facing > 0) {
+            const wallCol = Math.floor((e.x + e.width) / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            const tile = Level.getTile(wallCol, midRow);
+            if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_ICE) {
+                e.x = wallCol * TILE_SIZE - e.width;
+                e.facing = -1;
+                e.vx = 0;
+            }
+        } else {
+            const wallCol = Math.floor(e.x / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            const tile = Level.getTile(wallCol, midRow);
+            if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_ICE) {
+                e.x = (wallCol + 1) * TILE_SIZE;
+                e.facing = 1;
+                e.vx = 0;
+            }
+        }
+
+        // Edge detection
+        if (onGround && !onIce) {
+            const lookCol = e.facing > 0
+                ? Math.floor((e.x + e.width + 4) / TILE_SIZE)
+                : Math.floor((e.x - 4) / TILE_SIZE);
+            const floor = Level.getTile(lookCol, footRow);
+            if (floor === TILE_EMPTY || floor === TILE_HAZARD) {
+                e.facing *= -1;
+            }
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 3) % 2;
+    },
+
+    _updateSnowOwl(e) {
+        // Snow Owl: figure-8 flight pattern + swoop at player
+        e.flightTimer += 1 / 60;
+        e.swoopTimer -= 1 / 60;
+
+        if (!e.swooping) {
+            // Figure-8 pattern
+            const speed = e.speed;
+            const phase = e.flightTimer * 1.5 + (e.flightPhase || 0);
+            e.vx = Math.sin(phase) * speed;
+            e.vy = Math.sin(phase * 2) * speed * 0.5;
+
+            e.x += e.vx;
+            e.y += e.vy;
+
+            e.facing = e.vx > 0 ? 1 : -1;
+
+            // Check if player is below and initiate swoop
+            const dx = Player.x - e.x;
+            const dy = Player.y - e.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 200 && dy > 30 && e.swoopTimer <= 0) {
+                e.swooping = true;
+                e.swoopTimer = 3; // cooldown after swoop
+                e.vx = (dx / dist) * 4;
+                e.vy = (dy / dist) * 4;
+            }
+        } else {
+            // Swooping — dive toward player position
+            e.x += e.vx;
+            e.y += e.vy;
+
+            // Pull out of swoop after a bit or near ground
+            e.vy -= 0.04; // gradually pull up
+            if (e.vy < -2 || e.y > (Level.height - 4) * TILE_SIZE) {
+                e.swooping = false;
+                e.vy = -2;
+            }
+        }
+
+        // Keep within level bounds (vertical)
+        if (e.y < 2 * TILE_SIZE) {
+            e.y = 2 * TILE_SIZE;
+            e.vy = Math.abs(e.vy);
+        }
+        if (e.y > (Level.height - 4) * TILE_SIZE) {
+            e.y = (Level.height - 4) * TILE_SIZE;
+            e.vy = -Math.abs(e.vy);
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 6) % 4;
+    },
+
+    // =============================================
     // BOSS AI
     // =============================================
 
@@ -668,10 +962,15 @@ const Enemies = {
             case 'sand_wyrm': this._updateSandWyrm(b); break;
             case 'pharaoh_specter': this._updatePharaohSpecter(b); break;
             case 'hydra_cactus': this._updateHydraCactus(b); break;
+            // Tundra bosses
+            case 'frost_bear': this._updateFrostBear(b); break;
+            case 'crystal_witch': this._updateCrystalWitch(b); break;
+            case 'yeti_monarch': this._updateYetiMonarch(b); break;
         }
 
         // Apply gravity to bosses that use it
-        if (b.type !== 'vine_mother' && b.type !== 'pharaoh_specter' && b.type !== 'hydra_cactus') {
+        if (b.type !== 'vine_mother' && b.type !== 'pharaoh_specter' && b.type !== 'hydra_cactus'
+            && b.type !== 'crystal_witch') {
             b.vy += GRAVITY;
             if (b.vy > TERMINAL_VELOCITY) b.vy = TERMINAL_VELOCITY;
             b.y += b.vy;
@@ -1195,6 +1494,282 @@ const Enemies = {
     },
 
     // =============================================
+    // TUNDRA BOSS AI
+    // =============================================
+
+    _updateFrostBear(b) {
+        // Frost Bear: 7 HP, frost beam attack, charges
+        const vulnDuration = b.phase === 1 ? 80 : 55;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Phase 1: Move toward player then fire frost beam
+            const dx = Player.x - b.x;
+            b.facing = dx > 0 ? 1 : -1;
+
+            if (b.attackTimer < 30) {
+                // Approach player
+                b.vx = b.facing * b.speed * (b.phase === 2 ? 1.5 : 1);
+            } else if (b.attackTimer === 30) {
+                // Stop and telegraph beam
+                b.vx = 0;
+                b.beamActive = true;
+            } else if (b.attackTimer === 40) {
+                // Fire frost beam — horizontal beam of frost projectiles
+                const beamDir = b.facing;
+                for (let i = 0; i < 5; i++) {
+                    this.projectiles.push({
+                        x: b.x + (beamDir > 0 ? b.width : 0),
+                        y: b.y + b.height / 2 - 4 + (i - 2) * 4,
+                        vx: beamDir * (3 + i * 0.3),
+                        vy: 0,
+                        width: 12,
+                        height: 6,
+                        life: 2.0,
+                        hostile: true,
+                        type: 'frost_beam',
+                        ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            // Phase 2 extra: slam attack
+            if (b.phase === 2 && b.attackTimer === 55) {
+                // Ground slam — creates shockwave
+                this.projectiles.push({
+                    x: b.x - 30, y: b.y + b.height - 8,
+                    vx: -2.5, vy: 0,
+                    width: 60, height: 12,
+                    life: 1.0, hostile: true,
+                    type: 'frost_beam', ignoreWalls: true,
+                    animTimer: 0,
+                });
+                this.projectiles.push({
+                    x: b.x + b.width - 30, y: b.y + b.height - 8,
+                    vx: 2.5, vy: 0,
+                    width: 60, height: 12,
+                    life: 1.0, hostile: true,
+                    type: 'frost_beam', ignoreWalls: true,
+                    animTimer: 0,
+                });
+            }
+
+            const attackDuration = b.phase === 1 ? 60 : 70;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+                b.beamActive = false;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.beamActive = false;
+            b.vx = 0;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+    },
+
+    _updateCrystalWitch(b) {
+        // Crystal Witch: 25 HP total = 20 shield + 5 witch
+        // Shield must be destroyed before witch can be damaged
+        const vulnDuration = b.phase === 1 ? 90 : 60;
+
+        // Update shield state
+        if (b.shield && b.shield.active) {
+            b.shieldHP = Math.max(0, b.maxHealth - 5 - (b.maxHealth - b.health - 5));
+            if (b.shieldHP < 0) b.shieldHP = 0;
+            b.shield.hp = b.health > 5 ? b.health - 5 : 0;
+            b.shieldHealth = b.shield.hp;
+            if (b.health <= 5) {
+                b.shield.active = false;
+                b.shieldHP = 0;
+                b.shieldHealth = 0;
+            }
+        }
+
+        // Float in place
+        b.y += Math.sin(b.stateTimer * 0.05) * 0.3;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Teleport to random position
+            if (b.attackTimer === 15) {
+                const arenaLeft = Level.bossArenaX + 3 * TILE_SIZE;
+                const arenaRight = Level.bossArenaX + 25 * TILE_SIZE;
+                b.x = arenaLeft + Math.random() * (arenaRight - arenaLeft);
+                b.y = 6 * TILE_SIZE + Math.random() * 4 * TILE_SIZE;
+                // Spawn teleport particles
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    Particles.particles.push({
+                        x: b.x + b.width / 2, y: b.y + b.height / 2,
+                        vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3,
+                        gravity: 0, size: 3, color: COLORS.tundra.iceBlue,
+                        life: 0.5, maxLife: 0.5, shrink: true, shape: 'circle'
+                    });
+                }
+            }
+
+            // Fire crystal shards
+            if (b.attackTimer === 30) {
+                const count = b.phase === 1 ? 4 : 6;
+                for (let i = 0; i < count; i++) {
+                    const angle = (i / count) * Math.PI * 2;
+                    this.projectiles.push({
+                        x: b.x + b.width / 2,
+                        y: b.y + b.height / 2,
+                        vx: Math.cos(angle) * 2.5,
+                        vy: Math.sin(angle) * 2.5,
+                        width: 8, height: 8,
+                        life: 2.5, hostile: true,
+                        type: 'crystal_shard', ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            // Phase 2: second wave
+            if (b.phase === 2 && b.attackTimer === 45) {
+                const dx = Player.x - b.x;
+                const dy = Player.y - b.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                for (let i = 0; i < 3; i++) {
+                    const spread = (i - 1) * 0.3;
+                    this.projectiles.push({
+                        x: b.x + b.width / 2,
+                        y: b.y + b.height / 2,
+                        vx: (dx / dist) * 3 + spread,
+                        vy: (dy / dist) * 3,
+                        width: 10, height: 10,
+                        life: 2.5, hostile: true,
+                        type: 'crystal_shard', ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            const attackDuration = b.phase === 1 ? 55 : 65;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+    },
+
+    _updateYetiMonarch(b) {
+        // Yeti Monarch: 9 HP, boulder throw, ground slam, tiered arena
+        const vulnDuration = b.phase === 1 ? 80 : 55;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Move toward player
+            const dx = Player.x - b.x;
+            b.facing = dx > 0 ? 1 : -1;
+
+            if (b.attackTimer < 25) {
+                b.vx = b.facing * b.speed * (b.phase === 2 ? 1.4 : 1);
+            } else if (b.attackTimer === 25) {
+                b.vx = 0;
+            }
+
+            // Boulder throw
+            if (b.attackTimer === 35) {
+                this.projectiles.push({
+                    x: b.x + b.width / 2,
+                    y: b.y - 10,
+                    vx: b.facing * 3,
+                    vy: -4,
+                    width: 16, height: 16,
+                    life: 3.0, hostile: true,
+                    type: 'boulder', ignoreWalls: false,
+                    gravity: 0.15, animTimer: 0,
+                });
+                b.boulderTimer = 0;
+            }
+
+            // Phase 2: second boulder
+            if (b.phase === 2 && b.attackTimer === 50) {
+                this.projectiles.push({
+                    x: b.x + b.width / 2,
+                    y: b.y - 10,
+                    vx: b.facing * 2.5,
+                    vy: -5,
+                    width: 16, height: 16,
+                    life: 3.0, hostile: true,
+                    type: 'boulder', ignoreWalls: false,
+                    gravity: 0.15, animTimer: 0,
+                });
+            }
+
+            // Phase 2: ground slam shockwave
+            if (b.phase === 2 && b.attackTimer === 60) {
+                this.projectiles.push({
+                    x: b.x - 20, y: b.y + b.height - 8,
+                    vx: -3, vy: 0,
+                    width: 40, height: 10,
+                    life: 0.8, hostile: true,
+                    type: 'shockwave', ignoreWalls: true,
+                    animTimer: 0,
+                });
+                this.projectiles.push({
+                    x: b.x + b.width - 20, y: b.y + b.height - 8,
+                    vx: 3, vy: 0,
+                    width: 40, height: 10,
+                    life: 0.8, hostile: true,
+                    type: 'shockwave', ignoreWalls: true,
+                    animTimer: 0,
+                });
+            }
+
+            const attackDuration = b.phase === 1 ? 55 : 75;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vx = 0;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+    },
+
+    // =============================================
     // BOSS DEFEAT
     // =============================================
 
@@ -1327,29 +1902,73 @@ const Enemies = {
             }
 
             e.health = 0;
-            e.state = 'dying';
-            e.deathTimer = e.isBoss ? 1.5 : 0.5;
 
-            // Death particles
-            for (let i = 0; i < (e.isBoss ? 15 : 6); i++) {
-                const angle = (i / (e.isBoss ? 15 : 6)) * Math.PI * 2;
-                const speed = 1 + Math.random() * 2;
-                Particles.particles.push({
-                    x: e.x + e.width / 2 + (Math.random() - 0.5) * e.width,
-                    y: e.y + e.height / 2 + (Math.random() - 0.5) * e.height,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 1,
-                    gravity: 0.08,
-                    size: 2 + Math.random() * 3,
-                    color: e.isBoss ? COLORS.mutedGold : (
-                        (e.type === 'sand_skitter' || e.type === 'sandskitter' || e.type === 'mummy') ? COLORS.desert.sand :
-                        COLORS.forest.leaf
-                    ),
-                    life: 0.6,
-                    maxLife: 0.6,
-                    shrink: true,
-                    shape: 'rect'
-                });
+            // Ice Golem shatter effect
+            if (e.shattersOnDeath || e.deathType === 'shatter') {
+                e.state = 'shatter';
+                e.deathTimer = 0.8;
+                e.fragments = [];
+                // Create 8 ice fragments
+                for (let i = 0; i < 8; i++) {
+                    const angle = (i / 8) * Math.PI * 2;
+                    const speed = 2 + Math.random() * 3;
+                    e.fragments.push({
+                        x: e.x + e.width / 2,
+                        y: e.y + e.height / 2,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - 3,
+                        size: 4 + Math.random() * 6,
+                        rotation: Math.random() * Math.PI * 2,
+                    });
+                    Particles.particles.push({
+                        x: e.x + e.width / 2 + (Math.random() - 0.5) * e.width,
+                        y: e.y + e.height / 2 + (Math.random() - 0.5) * e.height,
+                        vx: Math.cos(angle) * speed * 0.7,
+                        vy: Math.sin(angle) * speed * 0.7 - 2,
+                        gravity: 0.12,
+                        size: 3 + Math.random() * 4,
+                        color: COLORS.tundra.iceBlue,
+                        life: 0.8,
+                        maxLife: 0.8,
+                        shrink: true,
+                        shape: 'rect'
+                    });
+                }
+            } else {
+                e.state = 'dying';
+            }
+            e.deathTimer = e.isBoss ? 1.5 : (e.shattersOnDeath ? 0.8 : 0.5);
+
+            // Death particles — determine color by enemy type
+            let deathColor;
+            if (e.isBoss) {
+                deathColor = COLORS.mutedGold;
+            } else if (e.type === 'sand_skitter' || e.type === 'sandskitter' || e.type === 'mummy') {
+                deathColor = COLORS.desert.sand;
+            } else if (e.type === 'frost_imp' || e.type === 'frostimp' || e.type === 'ice_golem' || e.type === 'icegolem' || e.type === 'snow_owl' || e.type === 'snowowl') {
+                deathColor = COLORS.tundra.iceBlue;
+            } else {
+                deathColor = COLORS.forest.leaf;
+            }
+
+            if (!e.shattersOnDeath) {
+                for (let i = 0; i < (e.isBoss ? 15 : 6); i++) {
+                    const angle = (i / (e.isBoss ? 15 : 6)) * Math.PI * 2;
+                    const speed = 1 + Math.random() * 2;
+                    Particles.particles.push({
+                        x: e.x + e.width / 2 + (Math.random() - 0.5) * e.width,
+                        y: e.y + e.height / 2 + (Math.random() - 0.5) * e.height,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - 1,
+                        gravity: 0.08,
+                        size: 2 + Math.random() * 3,
+                        color: deathColor,
+                        life: 0.6,
+                        maxLife: 0.6,
+                        shrink: true,
+                        shape: 'rect'
+                    });
+                }
             }
         }
     },
@@ -1380,8 +1999,8 @@ const Enemies = {
             }
 
             // Dying fade
-            if (e.state === 'dying') {
-                ctx.globalAlpha = Math.max(0, e.deathTimer / (e.isBoss ? 1.5 : 0.5));
+            if (e.state === 'dying' || e.state === 'shatter') {
+                ctx.globalAlpha = Math.max(0, e.deathTimer / (e.isBoss ? 1.5 : 0.8));
             }
 
             if (e.isBoss) {
@@ -1404,6 +2023,13 @@ const Enemies = {
             case 'dust_devil':
             case 'dustdevil': this._renderDustDevil(ctx, e, sx, sy); break;
             case 'mummy': this._renderMummy(ctx, e, sx, sy); break;
+            // Tundra enemies
+            case 'frost_imp':
+            case 'frostimp': this._renderFrostImp(ctx, e, sx, sy); break;
+            case 'ice_golem':
+            case 'icegolem': this._renderIceGolem(ctx, e, sx, sy); break;
+            case 'snow_owl':
+            case 'snowowl': this._renderSnowOwl(ctx, e, sx, sy); break;
             default: this._renderShroomba(ctx, e, sx, sy); break;
         }
     },
@@ -1728,6 +2354,10 @@ const Enemies = {
             case 'sand_wyrm': this._renderSandWyrm(ctx, b, sx, sy); break;
             case 'pharaoh_specter': this._renderPharaohSpecter(ctx, b, sx, sy); break;
             case 'hydra_cactus': this._renderHydraCactus(ctx, b, sx, sy); break;
+            // Tundra bosses
+            case 'frost_bear': this._renderFrostBear(ctx, b, sx, sy); break;
+            case 'crystal_witch': this._renderCrystalWitch(ctx, b, sx, sy); break;
+            case 'yeti_monarch': this._renderYetiMonarch(ctx, b, sx, sy); break;
         }
 
         // Vulnerability indicator
@@ -2276,12 +2906,502 @@ const Enemies = {
                 ctx.fill();
                 break;
 
+            // Tundra projectiles
+            case 'snowball':
+            case 'freeze_snowball':
+                ctx.fillStyle = COLORS.tundra.snowWhite;
+                ctx.globalAlpha = 0.9;
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, p.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                // Ice sparkle
+                ctx.fillStyle = COLORS.tundra.iceBlue;
+                ctx.globalAlpha = 0.6;
+                ctx.fillRect(sx + 2, sy + 2, 3, 2);
+                ctx.globalAlpha = 1.0;
+                break;
+
+            case 'frost_beam':
+                ctx.fillStyle = COLORS.tundra.iceBlue;
+                ctx.globalAlpha = 0.7;
+                ctx.fillRect(sx, sy, p.width, p.height);
+                ctx.fillStyle = COLORS.tundra.snowWhite;
+                ctx.globalAlpha = 0.5;
+                ctx.fillRect(sx + 1, sy + 1, p.width - 2, p.height - 2);
+                ctx.globalAlpha = 1.0;
+                break;
+
+            case 'crystal_shard':
+                ctx.fillStyle = COLORS.tundra.iceBlue;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(sx, sy + p.height / 2);
+                ctx.lineTo(sx + p.width / 2, sy);
+                ctx.lineTo(sx + p.width, sy + p.height / 2);
+                ctx.lineTo(sx + p.width / 2, sy + p.height);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = COLORS.tundra.snowWhite;
+                ctx.globalAlpha = 0.5;
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                break;
+
+            case 'boulder':
+                ctx.fillStyle = '#7A6A5A';
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, p.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#5A4A3A';
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2 - 2, sy + p.height / 2 - 2, p.width / 4, 0, Math.PI * 2);
+                ctx.fill();
+                // Rock texture
+                ctx.fillStyle = '#8A7A6A';
+                ctx.fillRect(sx + p.width / 2 + 2, sy + 3, 3, 3);
+                break;
+
             default:
                 ctx.fillStyle = '#FF4444';
                 ctx.beginPath();
                 ctx.arc(sx + p.width / 2, sy + p.height / 2, p.width / 2, 0, Math.PI * 2);
                 ctx.fill();
         }
+    },
+
+    // =============================================
+    // TUNDRA ENEMY RENDERERS
+    // =============================================
+
+    _renderFrostImp(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const flash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+
+        // Body — small ice-blue creature
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.iceBlue;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.6, w * 0.45, h * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.beginPath();
+        ctx.arc(sx + w / 2, sy + h * 0.3, w * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#1A1A2E';
+        const eyeX = e.facing > 0 ? 2 : -2;
+        ctx.fillRect(sx + w / 2 - 4 + eyeX, sy + h * 0.25, 3, 3);
+        ctx.fillRect(sx + w / 2 + 2 + eyeX, sy + h * 0.25, 3, 3);
+
+        // Pointy frost crown
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.deepIce;
+        ctx.beginPath();
+        ctx.moveTo(sx + w / 2 - 5, sy + h * 0.15);
+        ctx.lineTo(sx + w / 2, sy - 2);
+        ctx.lineTo(sx + w / 2 + 5, sy + h * 0.15);
+        ctx.fill();
+
+        // Arms
+        ctx.strokeStyle = flash ? '#FFFFFF' : COLORS.tundra.iceBlue;
+        ctx.lineWidth = 2;
+        const armSway = Math.sin(e.animTimer * 3) * 3;
+        ctx.beginPath();
+        ctx.moveTo(sx + 2, sy + h * 0.5);
+        ctx.lineTo(sx - 3, sy + h * 0.6 + armSway);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx + w - 2, sy + h * 0.5);
+        ctx.lineTo(sx + w + 3, sy + h * 0.6 - armSway);
+        ctx.stroke();
+    },
+
+    _renderIceGolem(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const flash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+
+        // Shatter state — draw fragments instead
+        if (e.state === 'shatter' && e.fragments) {
+            for (const f of e.fragments) {
+                const fx = f.x - Camera.x;
+                const fy = f.y - Camera.y;
+                ctx.save();
+                ctx.translate(fx, fy);
+                ctx.rotate(f.rotation);
+                ctx.fillStyle = COLORS.tundra.iceBlue;
+                ctx.globalAlpha = Math.max(0, e.deathTimer / 0.8);
+                ctx.fillRect(-f.size / 2, -f.size / 2, f.size, f.size);
+                ctx.fillStyle = COLORS.tundra.snowWhite;
+                ctx.globalAlpha *= 0.5;
+                ctx.fillRect(-f.size / 2, -f.size / 2, f.size * 0.4, f.size * 0.4);
+                ctx.restore();
+            }
+            ctx.globalAlpha = 1.0;
+            return;
+        }
+
+        // Body — large rectangular ice creature
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.deepIce;
+        ctx.fillRect(sx + 2, sy + h * 0.2, w - 4, h * 0.8);
+
+        // Ice crystal surface
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.iceBlue;
+        ctx.fillRect(sx + 4, sy + h * 0.25, w - 8, h * 0.15);
+        ctx.fillRect(sx + 4, sy + h * 0.5, w - 8, h * 0.15);
+
+        // Head
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.fillRect(sx + w * 0.15, sy, w * 0.7, h * 0.25);
+
+        // Eyes — glowing blue
+        ctx.fillStyle = '#4488FF';
+        const eyeOff = e.facing > 0 ? 2 : -2;
+        ctx.fillRect(sx + w * 0.25 + eyeOff, sy + h * 0.08, 4, 4);
+        ctx.fillRect(sx + w * 0.6 + eyeOff, sy + h * 0.08, 4, 4);
+
+        // Arms (thick ice blocks)
+        const armBob = Math.sin(e.animTimer * 2) * 2;
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.deepIce;
+        ctx.fillRect(sx - 4, sy + h * 0.3 + armBob, 6, h * 0.3);
+        ctx.fillRect(sx + w - 2, sy + h * 0.3 - armBob, 6, h * 0.3);
+
+        // Frost sparkle
+        ctx.fillStyle = COLORS.tundra.snowWhite;
+        ctx.globalAlpha = 0.5 + Math.sin(e.animTimer * 4) * 0.3;
+        ctx.fillRect(sx + 6, sy + 4, 3, 2);
+        ctx.fillRect(sx + w - 10, sy + h * 0.4, 2, 3);
+        ctx.globalAlpha = 1.0;
+    },
+
+    _renderSnowOwl(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const flash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+
+        // Wing flap animation
+        const wingAngle = Math.sin(e.animTimer * 8) * 0.4;
+
+        ctx.save();
+        ctx.translate(sx + w / 2, sy + h / 2);
+        if (e.facing < 0) ctx.scale(-1, 1);
+
+        // Left wing
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.save();
+        ctx.rotate(-wingAngle);
+        ctx.beginPath();
+        ctx.moveTo(-4, 0);
+        ctx.lineTo(-w * 0.6, -h * 0.2);
+        ctx.lineTo(-w * 0.4, h * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Right wing
+        ctx.save();
+        ctx.rotate(wingAngle);
+        ctx.beginPath();
+        ctx.moveTo(4, 0);
+        ctx.lineTo(w * 0.6, -h * 0.2);
+        ctx.lineTo(w * 0.4, h * 0.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Body
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, w * 0.25, h * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = flash ? '#FFFFFF' : '#DDE8F0';
+        ctx.beginPath();
+        ctx.arc(0, -h * 0.25, w * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes — large owl eyes
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        ctx.arc(-3, -h * 0.28, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(3, -h * 0.28, 3, 0, Math.PI * 2);
+        ctx.fill();
+        // Pupils
+        ctx.fillStyle = '#1A1A2E';
+        ctx.fillRect(-3.5, -h * 0.3, 2, 2);
+        ctx.fillRect(2.5, -h * 0.3, 2, 2);
+
+        // Beak
+        ctx.fillStyle = '#C4A35A';
+        ctx.beginPath();
+        ctx.moveTo(-2, -h * 0.2);
+        ctx.lineTo(0, -h * 0.14);
+        ctx.lineTo(2, -h * 0.2);
+        ctx.fill();
+
+        // Ear tufts
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.iceBlue;
+        ctx.beginPath();
+        ctx.moveTo(-5, -h * 0.35);
+        ctx.lineTo(-3, -h * 0.5);
+        ctx.lineTo(-1, -h * 0.35);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(1, -h * 0.35);
+        ctx.lineTo(3, -h * 0.5);
+        ctx.lineTo(5, -h * 0.35);
+        ctx.fill();
+
+        ctx.restore();
+    },
+
+    // =============================================
+    // TUNDRA BOSS RENDERERS
+    // =============================================
+
+    _renderFrostBear(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const flash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+
+        ctx.save();
+        if (b.facing < 0) {
+            ctx.translate(sx + w, sy);
+            ctx.scale(-1, 1);
+            sx = 0; sy = 0;
+        }
+
+        // Body — large white bear
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.55, w * 0.45, h * 0.4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = flash ? '#FFFFFF' : '#DDE8F0';
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.65, sy + h * 0.25, w * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ears
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.iceBlue;
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.55, sy + h * 0.08, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.75, sy + h * 0.08, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = '#FF4444';
+        ctx.fillRect(sx + w * 0.6, sy + h * 0.2, 4, 4);
+        ctx.fillRect(sx + w * 0.72, sy + h * 0.2, 4, 4);
+
+        // Muzzle
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.deepIce;
+        ctx.beginPath();
+        ctx.ellipse(sx + w * 0.75, sy + h * 0.3, 6, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Legs
+        ctx.fillStyle = flash ? '#FFFFFF' : '#DDE8F0';
+        ctx.fillRect(sx + w * 0.15, sy + h * 0.8, 8, h * 0.2);
+        ctx.fillRect(sx + w * 0.35, sy + h * 0.8, 8, h * 0.2);
+        ctx.fillRect(sx + w * 0.55, sy + h * 0.8, 8, h * 0.2);
+        ctx.fillRect(sx + w * 0.7, sy + h * 0.8, 8, h * 0.2);
+
+        // Frost aura (when beaming)
+        if (b.beamActive) {
+            ctx.strokeStyle = COLORS.tundra.iceBlue;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.5 + Math.sin(b.stateTimer * 0.3) * 0.3;
+            ctx.beginPath();
+            ctx.arc(sx + w / 2, sy + h / 2, w * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Phase 2: ice crown
+        if (b.phase === 2) {
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(sx + w * 0.5 + i * 8 - 8, sy + h * 0.05);
+                ctx.lineTo(sx + w * 0.5 + i * 8 - 4, sy - 8);
+                ctx.lineTo(sx + w * 0.5 + i * 8, sy + h * 0.05);
+                ctx.fill();
+            }
+        }
+
+        ctx.restore();
+    },
+
+    _renderCrystalWitch(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const flash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+        const hover = Math.sin(b.animTimer * 2) * 4;
+
+        // Crystal shield (when active)
+        if (b.shield && b.shield.active) {
+            ctx.strokeStyle = COLORS.tundra.iceBlue;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.4 + Math.sin(b.stateTimer * 0.15) * 0.2;
+            // Diamond shield shape
+            ctx.beginPath();
+            ctx.moveTo(sx + w / 2, sy - 10 + hover);
+            ctx.lineTo(sx + w + 15, sy + h / 2 + hover);
+            ctx.lineTo(sx + w / 2, sy + h + 10 + hover);
+            ctx.lineTo(sx - 15, sy + h / 2 + hover);
+            ctx.closePath();
+            ctx.stroke();
+            // Inner glow
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.globalAlpha = 0.1;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Robe body
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.deepIce;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.2, sy + h * 0.3 + hover);
+        ctx.lineTo(sx + w * 0.5, sy + h * 0.2 + hover);
+        ctx.lineTo(sx + w * 0.8, sy + h * 0.3 + hover);
+        ctx.lineTo(sx + w * 0.9, sy + h + hover);
+        ctx.lineTo(sx + w * 0.1, sy + h + hover);
+        ctx.closePath();
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.beginPath();
+        ctx.arc(sx + w / 2, sy + h * 0.2 + hover, w * 0.25, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Witch hat (icy)
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.shadow;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.2, sy + h * 0.12 + hover);
+        ctx.lineTo(sx + w * 0.5, sy - 15 + hover);
+        ctx.lineTo(sx + w * 0.8, sy + h * 0.12 + hover);
+        ctx.fill();
+        // Hat brim
+        ctx.fillRect(sx + w * 0.1, sy + h * 0.1 + hover, w * 0.8, 4);
+
+        // Eyes — glowing purple
+        ctx.fillStyle = '#AA44FF';
+        ctx.fillRect(sx + w * 0.35, sy + h * 0.17 + hover, 4, 3);
+        ctx.fillRect(sx + w * 0.55, sy + h * 0.17 + hover, 4, 3);
+
+        // Crystal staff
+        ctx.strokeStyle = flash ? '#FFFFFF' : '#8B6B3D';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.8, sy + h * 0.35 + hover);
+        ctx.lineTo(sx + w * 0.85, sy + h * 0.9 + hover);
+        ctx.stroke();
+        // Staff crystal
+        ctx.fillStyle = COLORS.tundra.iceBlue;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.8, sy + h * 0.25 + hover);
+        ctx.lineTo(sx + w * 0.75, sy + h * 0.35 + hover);
+        ctx.lineTo(sx + w * 0.85, sy + h * 0.35 + hover);
+        ctx.fill();
+
+        // Phase 2: purple aura
+        if (b.phase === 2) {
+            ctx.strokeStyle = '#AA44FF';
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.3 + Math.sin(b.stateTimer * 0.2) * 0.2;
+            ctx.beginPath();
+            ctx.arc(sx + w / 2, sy + h / 2 + hover, w * 0.8, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    _renderYetiMonarch(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const flash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+
+        ctx.save();
+        if (b.facing < 0) {
+            ctx.translate(sx + w, sy);
+            ctx.scale(-1, 1);
+            sx = 0; sy = 0;
+        }
+
+        // Large body — white fur
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.55, w * 0.48, h * 0.42, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = flash ? '#FFFFFF' : '#DDE8F0';
+        ctx.beginPath();
+        ctx.arc(sx + w / 2, sy + h * 0.2, w * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Angry eyes
+        ctx.fillStyle = '#FF2222';
+        ctx.fillRect(sx + w * 0.3, sy + h * 0.15, 5, 5);
+        ctx.fillRect(sx + w * 0.55, sy + h * 0.15, 5, 5);
+
+        // Mouth
+        ctx.strokeStyle = '#1A1A2E';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.35, sy + h * 0.28);
+        ctx.lineTo(sx + w * 0.65, sy + h * 0.28);
+        ctx.stroke();
+
+        // Crown
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(sx + w * 0.2, sy + h * 0.02, w * 0.6, 5);
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.2 + i * w * 0.15, sy + h * 0.02);
+            ctx.lineTo(sx + w * 0.2 + i * w * 0.15 + w * 0.07, sy - 8);
+            ctx.lineTo(sx + w * 0.2 + (i + 1) * w * 0.15, sy + h * 0.02);
+            ctx.fill();
+        }
+
+        // Arms
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.snowWhite;
+        const armAnim = Math.sin(b.animTimer * 2) * 3;
+        ctx.fillRect(sx - 6, sy + h * 0.3 + armAnim, 10, h * 0.35);
+        ctx.fillRect(sx + w - 4, sy + h * 0.3 - armAnim, 10, h * 0.35);
+
+        // Hands/fists
+        ctx.fillStyle = flash ? '#FFFFFF' : COLORS.tundra.deepIce;
+        ctx.fillRect(sx - 8, sy + h * 0.6 + armAnim, 12, 10);
+        ctx.fillRect(sx + w - 4, sy + h * 0.6 - armAnim, 12, 10);
+
+        // Legs
+        ctx.fillStyle = flash ? '#FFFFFF' : '#DDE8F0';
+        ctx.fillRect(sx + w * 0.2, sy + h * 0.85, 10, h * 0.15);
+        ctx.fillRect(sx + w * 0.55, sy + h * 0.85, 10, h * 0.15);
+
+        // Phase 2: ice armor
+        if (b.phase === 2) {
+            ctx.strokeStyle = COLORS.tundra.iceBlue;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.5;
+            ctx.strokeRect(sx + 4, sy + h * 0.3, w - 8, h * 0.4);
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore();
     },
 
     // =============================================
