@@ -75,6 +75,17 @@ const Enemies = {
             swoopTimer: 0,
             swooping: false,
             flightPhase: 0,
+            // Magma Slime specific
+            splitOnDeath: (type === 'magma_slime' || type === 'magmaslime'),
+            splits: (type === 'magma_slime' || type === 'magmaslime'),
+            splitCount: (type === 'magma_slime' || type === 'magmaslime') ? 2 : 0,
+            isSmallSlime: false,
+            // Fire Bat specific (reuses flightTimer/swoopTimer from Snow Owl)
+            // Obsidian Knight specific
+            hasShield: (type === 'obsidian_knight' || type === 'obsidianknight'),
+            shielded: (type === 'obsidian_knight' || type === 'obsidianknight'),
+            frontalShield: (type === 'obsidian_knight' || type === 'obsidianknight'),
+            shieldDirection: (type === 'obsidian_knight' || type === 'obsidianknight') ? -1 : undefined,
         };
         if (config) Object.assign(enemy, config);
         this.enemies.push(enemy);
@@ -129,6 +140,22 @@ const Enemies = {
                 health: 9, maxHealth: 9, width: 48, height: 52, speed: 1.5,
                 attackPattern: 'boulder', attackType: 'boulder',
                 patterns: ['boulder']
+            },
+            // Volcano bosses
+            'lava_serpent': {
+                health: 7, maxHealth: 7, width: 48, height: 52, speed: 0,
+                attackPattern: 'emerge', attackType: 'emerge',
+                patterns: ['emerge', 'platform_destroy']
+            },
+            'iron_warden': {
+                health: 7, maxHealth: 7, width: 44, height: 48, speed: 2,
+                attackPattern: 'chain_anchor', attackType: 'chain_anchor',
+                patterns: ['chain_anchor', 'slam']
+            },
+            'dragon_caldera': {
+                health: 11, maxHealth: 11, width: 56, height: 52, speed: 1.5,
+                attackPattern: 'fire_breath', attackType: 'fire_breath',
+                patterns: ['fire_breath', 'dive_bomb']
             },
         };
 
@@ -206,6 +233,9 @@ const Enemies = {
             'frost_bear': 'Frost Bear',
             'crystal_witch': 'Crystal Witch',
             'yeti_monarch': 'Yeti Monarch',
+            'lava_serpent': 'Lava Serpent',
+            'iron_warden': 'Iron Warden',
+            'dragon_caldera': 'Dragon of the Caldera',
         };
         HUD.bossName = names[type] || type;
         boss.name = names[type] || type;
@@ -228,6 +258,25 @@ const Enemies = {
             boss.boulderTimer = 0;
             boss.boulderCooldown = 90;
             boss.slamTimer = 0;
+        }
+
+        // Volcano boss extras
+        if (type === 'lava_serpent') {
+            boss.submerged = true;
+            boss.emergeTimer = 0;
+            boss.platformDestroyTimer = 0;
+        }
+        if (type === 'iron_warden') {
+            boss.chainTimer = 0;
+            boss.slamTimer = 0;
+            boss.anchorActive = false;
+        }
+        if (type === 'dragon_caldera') {
+            boss.phase = 1;
+            boss.phases = [1, 2];
+            boss.breathTimer = 0;
+            boss.diveTimer = 0;
+            boss.flying = true;
         }
 
         return boss;
@@ -260,6 +309,16 @@ const Enemies = {
             case 'snow_owl':
             case 'snowowl':
                 return { width: 24, height: 20, health: 1, speed: 1.5, behavior: 'figure8' };
+            // Volcano enemies
+            case 'magma_slime':
+            case 'magmaslime':
+                return { width: 24, height: 20, health: 1, speed: 0.8, behavior: 'patrol' };
+            case 'fire_bat':
+            case 'firebat':
+                return { width: 22, height: 18, health: 1, speed: 1.5, behavior: 'erratic' };
+            case 'obsidian_knight':
+            case 'obsidianknight':
+                return { width: 26, height: 30, health: 2, speed: 0.6, behavior: 'patrol_shield' };
             default:
                 return { width: 24, height: 24, health: 1, speed: 1, behavior: 'patrol' };
         }
@@ -390,6 +449,13 @@ const Enemies = {
             case 'icegolem': this._updateIceGolem(e); break;
             case 'snow_owl':
             case 'snowowl': this._updateSnowOwl(e); break;
+            // Volcano enemies
+            case 'magma_slime':
+            case 'magmaslime': this._updateMagmaSlime(e); break;
+            case 'fire_bat':
+            case 'firebat': this._updateFireBat(e); break;
+            case 'obsidian_knight':
+            case 'obsidianknight': this._updateObsidianKnight(e); break;
             default: this._updateShroomba(e); break;
         }
     },
@@ -921,6 +987,150 @@ const Enemies = {
     },
 
     // =============================================
+    // VOLCANO ENEMY AI
+    // =============================================
+
+    _updateMagmaSlime(e) {
+        // Magma Slime: patrol like shroomba but bouncy movement
+        e.vx = e.speed * e.facing;
+        e.x += e.vx;
+
+        // Gravity
+        e.vy += GRAVITY;
+        if (e.vy > TERMINAL_VELOCITY) e.vy = TERMINAL_VELOCITY;
+        e.y += e.vy;
+
+        // Floor collision
+        const footRow = Math.floor((e.y + e.height) / TILE_SIZE);
+        const leftCol = Math.floor(e.x / TILE_SIZE);
+        const rightCol = Math.floor((e.x + e.width - 1) / TILE_SIZE);
+        for (let c = leftCol; c <= rightCol; c++) {
+            const tile = Level.getTile(c, footRow);
+            if (tile === TILE_SOLID || tile === TILE_ONE_WAY) {
+                e.y = footRow * TILE_SIZE - e.height;
+                e.vy = 0;
+                break;
+            }
+        }
+
+        // Wall detection / patrol reversal
+        const checkCol = e.facing > 0
+            ? Math.floor((e.x + e.width) / TILE_SIZE)
+            : Math.floor(e.x / TILE_SIZE);
+        const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+        if (Level.getTile(checkCol, midRow) === TILE_SOLID) {
+            e.facing *= -1;
+        }
+
+        // Edge detection: reverse at ledge
+        const aheadCol = e.facing > 0
+            ? Math.floor((e.x + e.width + 2) / TILE_SIZE)
+            : Math.floor((e.x - 2) / TILE_SIZE);
+        const belowRow = Math.floor((e.y + e.height + 4) / TILE_SIZE);
+        const belowTile = Level.getTile(aheadCol, belowRow);
+        if (belowTile === TILE_EMPTY || belowTile === TILE_LAVA) {
+            e.facing *= -1;
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 4) % 2;
+    },
+
+    _updateFireBat(e) {
+        // Fire Bat: erratic/swooping flight pattern
+        e.flightTimer += 1 / 60;
+        e.swoopTimer -= 1 / 60;
+
+        if (!e.swooping) {
+            // Erratic flight: sine wave with random-ish changes
+            const speed = e.speed;
+            const t = e.flightTimer * 2 + e.sineOffset;
+            e.vx = Math.sin(t * 1.3) * speed * 1.2;
+            e.vy = Math.cos(t * 0.7) * speed * 0.8;
+
+            e.x += e.vx;
+            e.y += e.vy;
+            e.facing = e.vx > 0 ? 1 : -1;
+
+            // Swoop at player when close
+            const dx = Player.x - e.x;
+            const dy = Player.y - e.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 180 && dy > 20 && e.swoopTimer <= 0) {
+                e.swooping = true;
+                e.swoopTimer = 2.5;
+                e.vx = (dx / dist) * 4.5;
+                e.vy = (dy / dist) * 4.5;
+            }
+        } else {
+            e.x += e.vx;
+            e.y += e.vy;
+            e.vy -= 0.05;
+            if (e.vy < -2 || e.y > (Level.height - 4) * TILE_SIZE) {
+                e.swooping = false;
+                e.vy = -2;
+            }
+        }
+
+        // Keep within bounds
+        if (e.y < 2 * TILE_SIZE) { e.y = 2 * TILE_SIZE; e.vy = Math.abs(e.vy); }
+        if (e.y > (Level.height - 4) * TILE_SIZE) { e.y = (Level.height - 4) * TILE_SIZE; e.vy = -Math.abs(e.vy); }
+
+        e.animFrame = Math.floor(e.animTimer * 8) % 4;
+    },
+
+    _updateObsidianKnight(e) {
+        // Obsidian Knight: slow patrol with frontal shield
+        e.vx = e.speed * e.facing;
+        e.x += e.vx;
+
+        // Gravity
+        e.vy += GRAVITY;
+        if (e.vy > TERMINAL_VELOCITY) e.vy = TERMINAL_VELOCITY;
+        e.y += e.vy;
+
+        // Floor collision
+        const footRow = Math.floor((e.y + e.height) / TILE_SIZE);
+        const leftCol = Math.floor(e.x / TILE_SIZE);
+        const rightCol = Math.floor((e.x + e.width - 1) / TILE_SIZE);
+        for (let c = leftCol; c <= rightCol; c++) {
+            const tile = Level.getTile(c, footRow);
+            if (tile === TILE_SOLID || tile === TILE_ONE_WAY) {
+                e.y = footRow * TILE_SIZE - e.height;
+                e.vy = 0;
+                break;
+            }
+        }
+
+        // Face toward player if close
+        const dx = Player.x - (e.x + e.width / 2);
+        if (Math.abs(dx) < 200) {
+            e.facing = dx > 0 ? 1 : -1;
+            e.shieldDirection = e.facing;
+        }
+
+        // Wall detection
+        const checkCol = e.facing > 0
+            ? Math.floor((e.x + e.width) / TILE_SIZE)
+            : Math.floor(e.x / TILE_SIZE);
+        const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+        if (Level.getTile(checkCol, midRow) === TILE_SOLID) {
+            e.facing *= -1;
+        }
+
+        // Edge detection
+        const aheadCol = e.facing > 0
+            ? Math.floor((e.x + e.width + 2) / TILE_SIZE)
+            : Math.floor((e.x - 2) / TILE_SIZE);
+        const belowRow = Math.floor((e.y + e.height + 4) / TILE_SIZE);
+        const belowTile = Level.getTile(aheadCol, belowRow);
+        if (belowTile === TILE_EMPTY || belowTile === TILE_LAVA) {
+            e.facing *= -1;
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 3) % 2;
+    },
+
+    // =============================================
     // BOSS AI
     // =============================================
 
@@ -966,11 +1176,15 @@ const Enemies = {
             case 'frost_bear': this._updateFrostBear(b); break;
             case 'crystal_witch': this._updateCrystalWitch(b); break;
             case 'yeti_monarch': this._updateYetiMonarch(b); break;
+            // Volcano bosses
+            case 'lava_serpent': this._updateLavaSerpent(b); break;
+            case 'iron_warden': this._updateIronWarden(b); break;
+            case 'dragon_caldera': this._updateDragonCaldera(b); break;
         }
 
         // Apply gravity to bosses that use it
         if (b.type !== 'vine_mother' && b.type !== 'pharaoh_specter' && b.type !== 'hydra_cactus'
-            && b.type !== 'crystal_witch') {
+            && b.type !== 'crystal_witch' && b.type !== 'lava_serpent' && b.type !== 'dragon_caldera') {
             b.vy += GRAVITY;
             if (b.vy > TERMINAL_VELOCITY) b.vy = TERMINAL_VELOCITY;
             b.y += b.vy;
@@ -1770,6 +1984,248 @@ const Enemies = {
     },
 
     // =============================================
+    // VOLCANO BOSS AI
+    // =============================================
+
+    _updateLavaSerpent(b) {
+        // Lava Serpent: 7 HP, emerges from lava, destroys platforms
+        const vulnDuration = b.phase === 1 ? 90 : 60;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            if (b.submerged) {
+                // Move underwater toward player
+                b.emergeTimer++;
+                const targetX = Player.x - b.width / 2;
+                b.x += (targetX - b.x) * 0.02;
+
+                if (b.emergeTimer >= 60) {
+                    b.submerged = false;
+                    b.emergeTimer = 0;
+                    b.vy = -8;
+                    // Destroy nearby platforms
+                    const col = Math.floor(b.x / TILE_SIZE);
+                    for (let c = col - 1; c <= col + 2; c++) {
+                        for (let r = 10; r <= 14; r++) {
+                            if (Level.getTile(c, r) === TILE_ONE_WAY) {
+                                Level.setTile(c, r, TILE_EMPTY);
+                                Particles.spawnBlockBreak(c, r);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Emerged — fire projectiles then submerge
+                b.y += b.vy;
+                b.vy += 0.1;
+
+                if (b.attackTimer === 30 || (b.phase === 2 && b.attackTimer === 45)) {
+                    // Fire projectile
+                    const dx = Player.x - b.x;
+                    const dy = Player.y - b.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    this.projectiles.push({
+                        x: b.x + b.width / 2, y: b.y,
+                        vx: (dx / dist) * 3.5, vy: (dy / dist) * 3.5,
+                        width: 12, height: 12,
+                        life: 2.0, hostile: true,
+                        type: 'fireball', ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+
+                const attackDuration = b.phase === 1 ? 60 : 55;
+                if (b.attackTimer >= attackDuration) {
+                    b.state = 'vulnerable';
+                    b.vulnerable = true;
+                    b.vulnerableTimer = vulnDuration;
+                    b.stateTimer = 0;
+                    b.attackTimer = 0;
+                }
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.submerged = true;
+                b.emergeTimer = 0;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+    },
+
+    _updateIronWarden(b) {
+        // Iron Warden: 7 HP, chain anchor attacks, slam
+        const vulnDuration = b.phase === 1 ? 80 : 55;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Move toward player
+            const dx = Player.x - b.x;
+            b.facing = dx > 0 ? 1 : -1;
+
+            if (b.attackTimer < 25) {
+                b.vx = b.facing * b.speed * (b.phase === 2 ? 1.5 : 1);
+            } else if (b.attackTimer === 25) {
+                b.vx = 0;
+            }
+
+            // Chain anchor attack
+            if (b.attackTimer === 30) {
+                b.anchorActive = true;
+                this.projectiles.push({
+                    x: b.x + (b.facing > 0 ? b.width : -16),
+                    y: b.y + b.height / 2,
+                    vx: b.facing * 5, vy: 0,
+                    width: 16, height: 12,
+                    life: 1.5, hostile: true,
+                    type: 'chain_anchor', ignoreWalls: false,
+                    animTimer: 0,
+                });
+            }
+
+            // Phase 2: slam attack
+            if (b.phase === 2 && b.attackTimer === 50) {
+                b.vy = -10;
+                b.slamTimer = 30;
+            }
+
+            if (b.slamTimer > 0) {
+                b.slamTimer--;
+                if (b.slamTimer === 0 && b.vy >= 0) {
+                    // Ground slam shockwave
+                    this.projectiles.push({
+                        x: b.x - 20, y: b.y + b.height - 8,
+                        vx: -3.5, vy: 0,
+                        width: 30, height: 10,
+                        life: 0.8, hostile: true,
+                        type: 'shockwave', ignoreWalls: true,
+                        animTimer: 0,
+                    });
+                    this.projectiles.push({
+                        x: b.x + b.width - 10, y: b.y + b.height - 8,
+                        vx: 3.5, vy: 0,
+                        width: 30, height: 10,
+                        life: 0.8, hostile: true,
+                        type: 'shockwave', ignoreWalls: true,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            const attackDuration = b.phase === 1 ? 55 : 70;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+                b.anchorActive = false;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vx = 0;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+
+        // Horizontal movement
+        b.x += b.vx;
+        b.facing = b.vx > 0 ? 1 : (b.vx < 0 ? -1 : b.facing);
+    },
+
+    _updateDragonCaldera(b) {
+        // Dragon of the Caldera: 11 HP, 2-phase, fire breath + dive bomb
+        const vulnDuration = b.phase === 1 ? 80 : 55;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Hover movement
+            const t = b.stateTimer * 0.02;
+            b.x += Math.sin(t) * 1.5;
+            b.y += Math.cos(t * 0.7) * 0.8;
+            b.facing = Player.x > b.x ? 1 : -1;
+
+            // Phase 1: fire breath
+            if (b.attackTimer === 30) {
+                for (let i = 0; i < 3; i++) {
+                    this.projectiles.push({
+                        x: b.x + (b.facing > 0 ? b.width : -10),
+                        y: b.y + b.height * 0.3 + i * 8,
+                        vx: b.facing * (3 + i * 0.5), vy: (i - 1) * 0.5,
+                        width: 14, height: 10,
+                        life: 1.5, hostile: true,
+                        type: 'fireball', ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            // Phase 2: additional dive bomb
+            if (b.phase === 2 && b.attackTimer === 50) {
+                b.vy = 6;
+                b.diveTimer = 20;
+            }
+
+            if (b.diveTimer > 0) {
+                b.diveTimer--;
+                b.y += b.vy;
+                if (b.diveTimer === 0) {
+                    b.vy = -3;
+                    // Create fire trail on ground
+                    for (let i = 0; i < 3; i++) {
+                        this.projectiles.push({
+                            x: b.x + (i - 1) * 30, y: b.y + b.height,
+                            vx: 0, vy: -0.5,
+                            width: 20, height: 20,
+                            life: 1.5, hostile: true,
+                            type: 'fire_trail', ignoreWalls: true,
+                            animTimer: 0,
+                        });
+                    }
+                }
+            }
+
+            const attackDuration = b.phase === 1 ? 65 : 80;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+                // Land for vulnerability
+                b.y = (Level.height - 5) * TILE_SIZE;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+                b.diveTimer = 0;
+                // Fly back up
+                b.y = (Level.height - 10) * TILE_SIZE;
+            }
+        }
+    },
+
+    // =============================================
     // BOSS DEFEAT
     // =============================================
 
@@ -1841,6 +2297,20 @@ const Enemies = {
                 // Boss vulnerability check
                 if (e.isBoss && !e.vulnerable) continue;
 
+                // Obsidian Knight frontal shield check
+                if (e.hasShield && e.shielded) {
+                    // Shield blocks attacks from the front (enemy facing direction)
+                    const attackFromFront = (e.facing === -1 && Player.x < e.x + e.width / 2) ||
+                                           (e.facing === 1 && Player.x > e.x + e.width / 2);
+                    if (attackFromFront) {
+                        // Blocked! Knock player back, play shield hit effect
+                        e.hitFlash = 4;
+                        Particles.spawnAttackSparks(e.x + (e.facing === -1 ? 0 : e.width), e.y + e.height / 2);
+                        this._hitCooldowns[cooldownKey] = 20;
+                        continue;
+                    }
+                }
+
                 this._damageEnemy(e, 1);
                 this._hitCooldowns[cooldownKey] = 15; // 15 frame cooldown
 
@@ -1891,6 +2361,26 @@ const Enemies = {
         Particles.spawnAttackSparks(e.x + e.width / 2, e.y + e.height / 2);
 
         if (e.health <= 0) {
+            // Magma Slime split check
+            if (e.splitOnDeath && !e.isSmallSlime) {
+                // Spawn 2 smaller slimes
+                for (let i = 0; i < 2; i++) {
+                    const dir = i === 0 ? -1 : 1;
+                    const child = this.spawn(e.type, e.x + dir * 12, e.y, {
+                        isSmallSlime: true,
+                        splitOnDeath: false,
+                        splits: false,
+                        splitCount: 0,
+                    });
+                    child.width = Math.floor(e.width * 0.6);
+                    child.height = Math.floor(e.height * 0.6);
+                    child.vx = dir * 2;
+                    child.vy = -4;
+                    child.health = 1;
+                    child.maxHealth = 1;
+                }
+            }
+
             // Mummy revive check
             if (e.canRevive && !e.revived && e.reviveCount === 0) {
                 e.health = 0;
@@ -1947,6 +2437,8 @@ const Enemies = {
                 deathColor = COLORS.desert.sand;
             } else if (e.type === 'frost_imp' || e.type === 'frostimp' || e.type === 'ice_golem' || e.type === 'icegolem' || e.type === 'snow_owl' || e.type === 'snowowl') {
                 deathColor = COLORS.tundra.iceBlue;
+            } else if (e.type === 'magma_slime' || e.type === 'magmaslime' || e.type === 'fire_bat' || e.type === 'firebat' || e.type === 'obsidian_knight' || e.type === 'obsidianknight') {
+                deathColor = COLORS.volcano.lavaOrange;
             } else {
                 deathColor = COLORS.forest.leaf;
             }
@@ -2030,6 +2522,13 @@ const Enemies = {
             case 'icegolem': this._renderIceGolem(ctx, e, sx, sy); break;
             case 'snow_owl':
             case 'snowowl': this._renderSnowOwl(ctx, e, sx, sy); break;
+            // Volcano enemies
+            case 'magma_slime':
+            case 'magmaslime': this._renderMagmaSlime(ctx, e, sx, sy); break;
+            case 'fire_bat':
+            case 'firebat': this._renderFireBat(ctx, e, sx, sy); break;
+            case 'obsidian_knight':
+            case 'obsidianknight': this._renderObsidianKnight(ctx, e, sx, sy); break;
             default: this._renderShroomba(ctx, e, sx, sy); break;
         }
     },
@@ -2358,6 +2857,10 @@ const Enemies = {
             case 'frost_bear': this._renderFrostBear(ctx, b, sx, sy); break;
             case 'crystal_witch': this._renderCrystalWitch(ctx, b, sx, sy); break;
             case 'yeti_monarch': this._renderYetiMonarch(ctx, b, sx, sy); break;
+            // Volcano bosses
+            case 'lava_serpent': this._renderLavaSerpent(ctx, b, sx, sy); break;
+            case 'iron_warden': this._renderIronWarden(ctx, b, sx, sy); break;
+            case 'dragon_caldera': this._renderDragonCaldera(ctx, b, sx, sy); break;
         }
 
         // Vulnerability indicator
@@ -3398,6 +3901,420 @@ const Enemies = {
             ctx.lineWidth = 3;
             ctx.globalAlpha = 0.5;
             ctx.strokeRect(sx + 4, sy + h * 0.3, w - 8, h * 0.4);
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore();
+    },
+
+    // =============================================
+    // VOLCANO ENEMY RENDERING
+    // =============================================
+
+    _renderMagmaSlime(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const bounce = Math.sin(e.animTimer * 4) * 2;
+        const isFlash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+
+        ctx.save();
+
+        // Slime body (blob shape)
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.lavaOrange;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.6 + bounce, w * 0.5, h * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner glow
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.moltenYellow;
+        ctx.globalAlpha = 0.6;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.55 + bounce, w * 0.3, h * 0.25, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Eyes
+        ctx.fillStyle = '#1A1A2E';
+        const eyeOff = e.facing > 0 ? 2 : -2;
+        ctx.beginPath(); ctx.arc(sx + w * 0.35 + eyeOff, sy + h * 0.45 + bounce, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + w * 0.65 + eyeOff, sy + h * 0.45 + bounce, 2.5, 0, Math.PI * 2); ctx.fill();
+
+        // Small = smaller marker
+        if (e.isSmallSlime) {
+            ctx.fillStyle = COLORS.volcano.darkRed;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath(); ctx.arc(sx + w / 2, sy + h * 0.3 + bounce, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore();
+    },
+
+    _renderFireBat(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const wingFlap = Math.sin(e.animTimer * 12) * 6;
+        const isFlash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+
+        ctx.save();
+
+        // Body
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h / 2, w * 0.25, h * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wings
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.lavaOrange;
+        // Left wing
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.35, sy + h * 0.4);
+        ctx.lineTo(sx - 2, sy + h * 0.2 + wingFlap);
+        ctx.lineTo(sx + 2, sy + h * 0.7);
+        ctx.closePath();
+        ctx.fill();
+        // Right wing
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.65, sy + h * 0.4);
+        ctx.lineTo(sx + w + 2, sy + h * 0.2 - wingFlap);
+        ctx.lineTo(sx + w - 2, sy + h * 0.7);
+        ctx.closePath();
+        ctx.fill();
+
+        // Eyes (glowing)
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.moltenYellow;
+        ctx.beginPath(); ctx.arc(sx + w * 0.4, sy + h * 0.4, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + w * 0.6, sy + h * 0.4, 2, 0, Math.PI * 2); ctx.fill();
+
+        // Ears
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.3, sy + h * 0.3);
+        ctx.lineTo(sx + w * 0.25, sy);
+        ctx.lineTo(sx + w * 0.45, sy + h * 0.25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.7, sy + h * 0.3);
+        ctx.lineTo(sx + w * 0.75, sy);
+        ctx.lineTo(sx + w * 0.55, sy + h * 0.25);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+    },
+
+    _renderObsidianKnight(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const isFlash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+
+        ctx.save();
+        if (e.facing === -1) {
+            ctx.translate(sx + w, sy);
+            ctx.scale(-1, 1);
+            sx = 0; sy = 0;
+        }
+
+        // Armor body
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkStone;
+        ctx.fillRect(sx + w * 0.2, sy + h * 0.2, w * 0.6, h * 0.6);
+
+        // Helmet
+        ctx.fillStyle = isFlash ? '#FFFFFF' : '#3A2A2A';
+        ctx.beginPath();
+        ctx.arc(sx + w / 2, sy + h * 0.2, w * 0.3, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(sx + w * 0.2, sy + h * 0.1, w * 0.6, h * 0.15);
+
+        // Visor slit (glowing red)
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.lavaOrange;
+        ctx.fillRect(sx + w * 0.3, sy + h * 0.2, w * 0.4, 3);
+
+        // Shield (on front side)
+        if (e.shielded) {
+            ctx.fillStyle = isFlash ? '#FFFFFF' : '#4A3A3A';
+            ctx.fillRect(sx + w * 0.7, sy + h * 0.15, w * 0.25, h * 0.55);
+            // Shield rivets
+            ctx.fillStyle = COLORS.volcano.lavaOrange;
+            ctx.beginPath(); ctx.arc(sx + w * 0.82, sy + h * 0.25, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(sx + w * 0.82, sy + h * 0.55, 2, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Legs
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkStone;
+        ctx.fillRect(sx + w * 0.25, sy + h * 0.75, 6, h * 0.25);
+        ctx.fillRect(sx + w * 0.55, sy + h * 0.75, 6, h * 0.25);
+
+        // Boots
+        ctx.fillStyle = '#2A1A1A';
+        ctx.fillRect(sx + w * 0.2, sy + h - 4, 10, 4);
+        ctx.fillRect(sx + w * 0.5, sy + h - 4, 10, 4);
+
+        ctx.restore();
+    },
+
+    // =============================================
+    // VOLCANO BOSS RENDERING
+    // =============================================
+
+    _renderLavaSerpent(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const isFlash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+
+        if (b.submerged) {
+            // Show lava bubbling at position
+            ctx.fillStyle = COLORS.volcano.lavaOrange;
+            ctx.globalAlpha = 0.6;
+            const t = b.animTimer * 3;
+            for (let i = 0; i < 5; i++) {
+                const bx = sx + w / 2 + Math.sin(t + i * 1.3) * 20;
+                const by = sy + h - 5 + Math.cos(t * 2 + i) * 5;
+                ctx.beginPath();
+                ctx.arc(bx, by, 3 + Math.sin(t + i) * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+            return;
+        }
+
+        // Serpent body — segmented
+        const segments = 6;
+        for (let i = 0; i < segments; i++) {
+            const segY = sy + (i / segments) * h;
+            const segW = w * (1 - i * 0.08);
+            const sway = Math.sin(b.animTimer * 3 + i * 0.8) * 4;
+            ctx.fillStyle = isFlash ? '#FFFFFF' : (i % 2 === 0 ? COLORS.volcano.darkRed : COLORS.volcano.lavaOrange);
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2 + sway, segY + h / (segments * 2), segW / 2, h / (segments * 1.5), 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Head
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.08, w * 0.4, h * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes (glowing)
+        ctx.fillStyle = COLORS.volcano.moltenYellow;
+        ctx.beginPath(); ctx.arc(sx + w * 0.35, sy + h * 0.05, 4, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + w * 0.65, sy + h * 0.05, 4, 0, Math.PI * 2); ctx.fill();
+
+        // Fangs
+        ctx.fillStyle = '#E8DCC8';
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.3, sy + h * 0.12);
+        ctx.lineTo(sx + w * 0.35, sy + h * 0.2);
+        ctx.lineTo(sx + w * 0.4, sy + h * 0.12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.6, sy + h * 0.12);
+        ctx.lineTo(sx + w * 0.65, sy + h * 0.2);
+        ctx.lineTo(sx + w * 0.7, sy + h * 0.12);
+        ctx.closePath();
+        ctx.fill();
+
+        // Phase 2 glow
+        if (b.phase === 2) {
+            ctx.strokeStyle = COLORS.volcano.moltenYellow;
+            ctx.globalAlpha = 0.4 + Math.sin(b.animTimer * 4) * 0.2;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2, sy + h / 2, w * 0.6, h * 0.6, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    _renderIronWarden(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const isFlash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+
+        ctx.save();
+        if (b.facing === -1) {
+            ctx.translate(sx + w, sy);
+            ctx.scale(-1, 1);
+            sx = 0; sy = 0;
+        }
+
+        // Heavy armor body
+        ctx.fillStyle = isFlash ? '#FFFFFF' : '#3A3A3A';
+        ctx.fillRect(sx + w * 0.15, sy + h * 0.25, w * 0.7, h * 0.55);
+
+        // Pauldrons
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkStone;
+        ctx.beginPath();
+        ctx.ellipse(sx + w * 0.2, sy + h * 0.3, w * 0.2, h * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(sx + w * 0.8, sy + h * 0.3, w * 0.2, h * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Helmet
+        ctx.fillStyle = isFlash ? '#FFFFFF' : '#2A2A2A';
+        ctx.beginPath();
+        ctx.arc(sx + w / 2, sy + h * 0.2, w * 0.3, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(sx + w * 0.2, sy + h * 0.1, w * 0.6, h * 0.15);
+
+        // Visor (red glow)
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.lavaOrange;
+        ctx.fillRect(sx + w * 0.3, sy + h * 0.18, w * 0.4, 4);
+
+        // Chain weapon
+        if (b.anchorActive) {
+            ctx.strokeStyle = '#8A8A8A';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.8, sy + h * 0.4);
+            ctx.lineTo(sx + w + 20, sy + h * 0.4);
+            ctx.stroke();
+        }
+
+        // Legs
+        ctx.fillStyle = isFlash ? '#FFFFFF' : '#3A3A3A';
+        ctx.fillRect(sx + w * 0.2, sy + h * 0.75, 8, h * 0.25);
+        ctx.fillRect(sx + w * 0.55, sy + h * 0.75, 8, h * 0.25);
+
+        // Boots
+        ctx.fillStyle = '#1A1A1A';
+        ctx.fillRect(sx + w * 0.15, sy + h - 6, 14, 6);
+        ctx.fillRect(sx + w * 0.5, sy + h - 6, 14, 6);
+
+        // Phase 2: glowing cracks
+        if (b.phase === 2) {
+            ctx.strokeStyle = COLORS.volcano.lavaOrange;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.6 + Math.sin(b.animTimer * 5) * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.3, sy + h * 0.3);
+            ctx.lineTo(sx + w * 0.5, sy + h * 0.5);
+            ctx.lineTo(sx + w * 0.4, sy + h * 0.7);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.6, sy + h * 0.35);
+            ctx.lineTo(sx + w * 0.7, sy + h * 0.55);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore();
+    },
+
+    _renderDragonCaldera(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const isFlash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+        const wingFlap = Math.sin(b.animTimer * 4) * 8;
+
+        ctx.save();
+        if (b.facing === -1) {
+            ctx.translate(sx + w, sy);
+            ctx.scale(-1, 1);
+            sx = 0; sy = 0;
+        }
+
+        // Wings
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        // Left wing
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.2, sy + h * 0.3);
+        ctx.lineTo(sx - 15, sy + h * 0.1 + wingFlap);
+        ctx.lineTo(sx - 5, sy + h * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        // Right wing
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.8, sy + h * 0.3);
+        ctx.lineTo(sx + w + 15, sy + h * 0.1 - wingFlap);
+        ctx.lineTo(sx + w + 5, sy + h * 0.6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Dragon body
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.5, w * 0.35, h * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Belly
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.lavaOrange;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.55, w * 0.2, h * 0.2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Head
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.beginPath();
+        ctx.ellipse(sx + w * 0.75, sy + h * 0.25, w * 0.2, h * 0.15, -0.3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Horns
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkStone;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.7, sy + h * 0.15);
+        ctx.lineTo(sx + w * 0.65, sy - 5);
+        ctx.lineTo(sx + w * 0.75, sy + h * 0.12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.82, sy + h * 0.15);
+        ctx.lineTo(sx + w * 0.88, sy - 5);
+        ctx.lineTo(sx + w * 0.85, sy + h * 0.12);
+        ctx.closePath();
+        ctx.fill();
+
+        // Eyes
+        ctx.fillStyle = COLORS.volcano.moltenYellow;
+        ctx.beginPath(); ctx.arc(sx + w * 0.72, sy + h * 0.22, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(sx + w * 0.82, sy + h * 0.22, 3, 0, Math.PI * 2); ctx.fill();
+
+        // Tail
+        ctx.strokeStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.2, sy + h * 0.5);
+        ctx.quadraticCurveTo(sx - 10, sy + h * 0.7, sx - 5, sy + h * 0.9);
+        ctx.stroke();
+
+        // Legs
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.volcano.darkRed;
+        ctx.fillRect(sx + w * 0.3, sy + h * 0.75, 6, h * 0.2);
+        ctx.fillRect(sx + w * 0.6, sy + h * 0.75, 6, h * 0.2);
+
+        // Fire from mouth when attacking
+        if (b.state === 'attacking' && b.attackTimer >= 25 && b.attackTimer <= 35) {
+            ctx.fillStyle = COLORS.volcano.lavaOrange;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.85, sy + h * 0.3);
+            ctx.lineTo(sx + w + 20, sy + h * 0.2);
+            ctx.lineTo(sx + w + 15, sy + h * 0.4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = COLORS.volcano.moltenYellow;
+            ctx.globalAlpha = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.85, sy + h * 0.3);
+            ctx.lineTo(sx + w + 12, sy + h * 0.25);
+            ctx.lineTo(sx + w + 10, sy + h * 0.35);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        // Phase 2 aura
+        if (b.phase === 2) {
+            ctx.strokeStyle = COLORS.volcano.moltenYellow;
+            ctx.globalAlpha = 0.3 + Math.sin(b.animTimer * 5) * 0.2;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2, sy + h / 2, w * 0.7, h * 0.7, 0, 0, Math.PI * 2);
+            ctx.stroke();
             ctx.globalAlpha = 1.0;
         }
 
