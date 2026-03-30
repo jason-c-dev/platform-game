@@ -15,25 +15,31 @@ const Physics = {
         }
     },
 
-    applyMovement(entity, inputDir) {
-        const accel = entity.onGround ? GROUND_ACCELERATION : AIR_ACCELERATION;
-        const friction = entity.onGround ? GROUND_FRICTION : AIR_DRAG;
+    applyMovement(entity, inputDir, maxSpeed) {
+        const max = maxSpeed || WALK_MAX_SPEED;
 
         if (inputDir !== 0) {
-            entity.vx += inputDir * accel;
+            if (entity.onGround) {
+                // Ground: approach-to-target model — player accelerates toward max speed
+                const targetVx = inputDir * max;
+                entity.vx += (targetVx - entity.vx) * GROUND_ACCELERATION * 0.2;
+            } else {
+                // Air: additive acceleration with drag — less control
+                entity.vx += inputDir * AIR_ACCELERATION;
+                entity.vx *= AIR_DRAG;
+                // Clamp to max speed in air
+                if (entity.vx > max) entity.vx = max;
+                if (entity.vx < -max) entity.vx = -max;
+            }
+        } else {
+            // No input: decelerate with friction
+            entity.vx *= (entity.onGround ? GROUND_FRICTION : AIR_DRAG);
         }
-
-        entity.vx *= friction;
 
         // Clamp small velocities to zero
         if (Math.abs(entity.vx) < 0.1) {
             entity.vx = 0;
         }
-
-        // Max horizontal speed
-        const maxSpeed = 5;
-        if (entity.vx > maxSpeed) entity.vx = maxSpeed;
-        if (entity.vx < -maxSpeed) entity.vx = -maxSpeed;
     },
 
     /**
@@ -200,5 +206,22 @@ const Physics = {
             }
         }
         return null;
+    },
+
+    /**
+     * Check if a rectangle overlaps any solid or breakable tile
+     */
+    checkRectOverlapsSolid(rx, ry, rw, rh) {
+        const left = Math.floor(rx / TILE_SIZE);
+        const right = Math.floor((rx + rw - 1) / TILE_SIZE);
+        const top = Math.floor(ry / TILE_SIZE);
+        const bottom = Math.floor((ry + rh - 1) / TILE_SIZE);
+        for (let r = top; r <= bottom; r++) {
+            for (let c = left; c <= right; c++) {
+                const t = Level.getTile(c, r);
+                if (t === TILE_SOLID || t === TILE_BREAKABLE) return true;
+            }
+        }
+        return false;
     }
 };

@@ -56,6 +56,11 @@ const Input = {
         return !!this.justPressed[key];
     },
 
+    isJustReleased(key) {
+        return !!this.justReleased[key];
+    },
+
+    // Direction helpers
     isLeft() {
         return this.isDown('ArrowLeft');
     },
@@ -64,11 +69,43 @@ const Input = {
         return this.isDown('ArrowRight');
     },
 
+    isDown_key(key) {
+        return this.isDown(key);
+    },
+
+    // Jump
     isJump() {
         return this.isJustPressed('z') || this.isJustPressed('Z');
     },
 
     isJumpHeld() {
         return this.isDown('z') || this.isDown('Z');
+    },
+
+    isJumpReleased() {
+        return this.isJustReleased('z') || this.isJustReleased('Z');
+    },
+
+    // Attack
+    isAttack() {
+        return this.isJustPressed('x') || this.isJustPressed('X');
+    },
+
+    isAttackHeld() {
+        return this.isDown('x') || this.isDown('X');
+    },
+
+    isAttackReleased() {
+        return this.isJustReleased('x') || this.isJustReleased('X');
+    },
+
+    // Run (Shift)
+    isRun() {
+        return this.isDown('Shift');
+    },
+
+    // Crouch (ArrowDown)
+    isCrouch() {
+        return this.isDown('ArrowDown');
     }
 };

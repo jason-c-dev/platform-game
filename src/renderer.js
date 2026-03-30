@@ -53,7 +53,6 @@ const Renderer = {
             const sx = m.x - offsetX;
             if (sx + m.width < -50 || sx > CANVAS_WIDTH + 50) continue;
 
-            // Mountain shape
             const shade = m.shade;
             const r = Math.floor(13 + shade * 15);
             const g = Math.floor(27 + shade * 30);
@@ -76,7 +75,6 @@ const Renderer = {
             ctx.fill();
         }
 
-        // Fill below mountains
         ctx.fillStyle = '#0D1B0E';
         ctx.fillRect(0, baseY, CANVAS_WIDTH, CANVAS_HEIGHT - baseY);
     },
@@ -90,11 +88,9 @@ const Renderer = {
             const sx = t.x - offsetX;
             if (sx + t.width < -20 || sx > CANVAS_WIDTH + 20) continue;
 
-            // Trunk
             ctx.fillStyle = '#3A2A15';
             ctx.fillRect(sx + t.width / 2 - t.trunk / 2, baseY - t.height * 0.4, t.trunk, t.height * 0.4);
 
-            // Canopy (triangle)
             ctx.fillStyle = layer.color1;
             ctx.beginPath();
             ctx.moveTo(sx, baseY - t.height * 0.3);
@@ -103,7 +99,6 @@ const Renderer = {
             ctx.closePath();
             ctx.fill();
 
-            // Second canopy layer
             ctx.fillStyle = layer.color2;
             ctx.globalAlpha = 0.5;
             ctx.beginPath();
@@ -125,17 +120,14 @@ const Renderer = {
             const sx = t.x - offsetX;
             if (sx + t.width < -30 || sx > CANVAS_WIDTH + 30) continue;
 
-            // Trunk
             ctx.fillStyle = '#5A4025';
             ctx.fillRect(sx + t.width / 2 - t.trunk / 2, baseY - t.height * 0.45, t.trunk, t.height * 0.45);
 
-            // Canopy — rounded
             ctx.fillStyle = layer.color1;
             ctx.beginPath();
             ctx.arc(sx + t.width / 2, baseY - t.height * 0.6, t.width / 2.2, 0, Math.PI * 2);
             ctx.fill();
 
-            // Lighter patch
             ctx.fillStyle = layer.color2;
             ctx.globalAlpha = 0.4;
             ctx.beginPath();
@@ -163,7 +155,6 @@ const Renderer = {
             ctx.translate(sx, sy);
             ctx.rotate(l.rotation + this.frameTime * l.drift * 10);
 
-            // Leaf shape
             ctx.beginPath();
             ctx.ellipse(0, 0, l.size / 2, l.size / 4, 0, 0, Math.PI * 2);
             ctx.fill();
@@ -181,7 +172,6 @@ const Renderer = {
         const camX = Camera.x;
         const camY = Camera.y;
 
-        // Calculate visible tile bounds (culling)
         const startCol = Math.max(0, Math.floor(camX / TILE_SIZE));
         const endCol = Math.min(Level.width - 1, Math.floor((camX + CANVAS_WIDTH) / TILE_SIZE));
         const startRow = Math.max(0, Math.floor(camY / TILE_SIZE));
@@ -223,26 +213,18 @@ const Renderer = {
     },
 
     _drawSolidTile(ctx, x, y, s, col, row) {
-        // Forest solid tile with texture
-        // Check if this is a surface tile (tile above is empty/non-solid)
         const tileAbove = Level.getTile(col, row - 1);
         const isSurface = (tileAbove === TILE_EMPTY || tileAbove === TILE_ONE_WAY ||
                            tileAbove === TILE_HAZARD || tileAbove === TILE_BOUNCE);
 
         if (isSurface) {
-            // Grass top
             ctx.fillStyle = COLORS.forest.leaf;
             ctx.fillRect(x, y, s, s);
-
-            // Grass tuft top
             ctx.fillStyle = COLORS.forest.highlight;
             ctx.fillRect(x, y, s, 4);
-
-            // Dirt body below grass
             ctx.fillStyle = COLORS.forest.bark;
             ctx.fillRect(x, y + 8, s, s - 8);
 
-            // Texture lines (hatching)
             ctx.strokeStyle = COLORS.forest.shadow;
             ctx.lineWidth = 1;
             ctx.globalAlpha = 0.3;
@@ -255,15 +237,12 @@ const Renderer = {
             }
             ctx.globalAlpha = 1.0;
 
-            // Dark outline bottom
             ctx.fillStyle = COLORS.forest.shadow;
             ctx.fillRect(x, y + s - 1, s, 1);
         } else {
-            // Underground / deep tile
             ctx.fillStyle = COLORS.forest.bark;
             ctx.fillRect(x, y, s, s);
 
-            // Texture — stippling
             ctx.fillStyle = COLORS.forest.shadow;
             ctx.globalAlpha = 0.4;
             const seed = col * 17 + row * 31;
@@ -274,7 +253,6 @@ const Renderer = {
             }
             ctx.globalAlpha = 1.0;
 
-            // Edge lines
             ctx.fillStyle = COLORS.forest.shadow;
             ctx.fillRect(x, y, 1, s);
             ctx.fillRect(x, y, s, 1);
@@ -282,11 +260,9 @@ const Renderer = {
     },
 
     _drawOneWayTile(ctx, x, y, s) {
-        // Wooden platform
         ctx.fillStyle = COLORS.forest.bark;
         ctx.fillRect(x, y, s, 10);
 
-        // Wood grain
         ctx.strokeStyle = '#6B5030';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -296,24 +272,20 @@ const Renderer = {
         ctx.lineTo(x + s - 3, y + 7);
         ctx.stroke();
 
-        // Top highlight
         ctx.fillStyle = '#A8854A';
         ctx.fillRect(x, y, s, 2);
 
-        // Shadow bottom
         ctx.fillStyle = COLORS.forest.shadow;
         ctx.globalAlpha = 0.4;
         ctx.fillRect(x, y + 8, s, 2);
         ctx.globalAlpha = 1.0;
 
-        // Support pegs
         ctx.fillStyle = '#5A4020';
         ctx.fillRect(x + 4, y + 10, 4, 6);
         ctx.fillRect(x + s - 8, y + 10, 4, 6);
     },
 
     _drawHazardTile(ctx, x, y, s) {
-        // Spikes — red/crimson
         ctx.fillStyle = COLORS.hazardRed;
         const spikeCount = 4;
         const spikeWidth = s / spikeCount;
@@ -328,7 +300,6 @@ const Renderer = {
             ctx.fill();
         }
 
-        // Spike highlights
         ctx.strokeStyle = '#FF8888';
         ctx.lineWidth = 1;
         for (let i = 0; i < spikeCount; i++) {
@@ -339,17 +310,14 @@ const Renderer = {
             ctx.stroke();
         }
 
-        // Base
         ctx.fillStyle = '#8B2222';
         ctx.fillRect(x, y + s - 4, s, 4);
     },
 
     _drawBreakableTile(ctx, x, y, s) {
-        // Cracked stone block
         ctx.fillStyle = '#7A7A6A';
         ctx.fillRect(x, y, s, s);
 
-        // Crack pattern
         ctx.strokeStyle = '#4A4A3A';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
@@ -361,40 +329,32 @@ const Renderer = {
         ctx.lineTo(x + s * 0.6, y + s);
         ctx.stroke();
 
-        // Highlight edges
         ctx.fillStyle = '#9A9A8A';
         ctx.fillRect(x, y, s, 2);
         ctx.fillRect(x, y, 2, s);
 
-        // Shadow edges
         ctx.fillStyle = '#5A5A4A';
         ctx.fillRect(x + s - 2, y, 2, s);
         ctx.fillRect(x, y + s - 2, s, 2);
     },
 
     _drawBounceTile(ctx, x, y, s) {
-        // Mushroom bounce pad — forest theme
-        // Background fill (dirt)
         ctx.fillStyle = COLORS.forest.bark;
         ctx.fillRect(x, y, s, s);
 
-        // Stem
         ctx.fillStyle = '#D4C4A0';
         ctx.fillRect(x + s * 0.3, y + s * 0.4, s * 0.4, s * 0.6);
 
-        // Cap — large red mushroom
         ctx.fillStyle = '#D94F4F';
         ctx.beginPath();
         ctx.ellipse(x + s / 2, y + s * 0.3, s * 0.55, s * 0.35, 0, Math.PI, 0);
         ctx.fill();
 
-        // Cap top surface
         ctx.fillStyle = '#E55F5F';
         ctx.beginPath();
         ctx.ellipse(x + s / 2, y + s * 0.25, s * 0.45, s * 0.2, 0, Math.PI, 0);
         ctx.fill();
 
-        // White spots on cap
         ctx.fillStyle = '#FFFFFF';
         ctx.globalAlpha = 0.8;
         ctx.beginPath();
@@ -408,7 +368,6 @@ const Renderer = {
         ctx.fill();
         ctx.globalAlpha = 1.0;
 
-        // Bounce indicator — animated gold glow
         ctx.strokeStyle = '#FFD700';
         ctx.lineWidth = 2;
         ctx.globalAlpha = 0.4 + Math.sin(this.frameTime * 5) * 0.3;
@@ -429,19 +388,15 @@ const Renderer = {
             const w = mp.width;
             const h = mp.height;
 
-            // Drop shadow
             ctx.fillStyle = 'rgba(0,0,0,0.25)';
             ctx.fillRect(x + 2, y + h, w - 4, 4);
 
-            // Platform body — log/plank style
             ctx.fillStyle = COLORS.forest.bark;
             ctx.fillRect(x, y, w, h);
 
-            // Top highlight
             ctx.fillStyle = '#B8956A';
             ctx.fillRect(x, y, w, 3);
 
-            // Wood grain lines
             ctx.strokeStyle = '#6B5030';
             ctx.lineWidth = 1;
             for (let i = 0; i < 3; i++) {
@@ -451,12 +406,10 @@ const Renderer = {
                 ctx.stroke();
             }
 
-            // Side edges (bark color darker)
             ctx.fillStyle = '#5A4020';
             ctx.fillRect(x, y, 2, h);
             ctx.fillRect(x + w - 2, y, 2, h);
 
-            // Metal brackets at corners
             ctx.fillStyle = '#888';
             ctx.fillRect(x + 2, y + 1, 5, 3);
             ctx.fillRect(x + w - 7, y + 1, 5, 3);
@@ -464,11 +417,9 @@ const Renderer = {
             ctx.fillRect(x + 3, y + h - 3, 4, 2);
             ctx.fillRect(x + w - 7, y + h - 3, 4, 2);
 
-            // Arrow indicator showing movement direction
             ctx.fillStyle = COLORS.mutedGold;
             ctx.globalAlpha = 0.5;
             if (mp.axis === 'x') {
-                // Horizontal arrows
                 const arrowY = y + h / 2;
                 ctx.beginPath();
                 ctx.moveTo(x + w / 2 - 12, arrowY);
@@ -483,7 +434,6 @@ const Renderer = {
                 ctx.closePath();
                 ctx.fill();
             } else {
-                // Vertical arrows
                 const arrowX = x + w / 2;
                 ctx.beginPath();
                 ctx.moveTo(arrowX, y + 1);
@@ -503,16 +453,21 @@ const Renderer = {
     },
 
     // =======================
-    // PLAYER ENTITY
+    // PLAYER ENTITY — State-based rendering
     // =======================
     renderPlayer(player) {
         const ctx = this.ctx;
         const x = player.x - Camera.x;
         const y = player.y - Camera.y;
 
-        // Invincibility flash
-        if (player.invincible && Math.floor(player.invincibleTimer * 10) % 2 === 0) {
-            return; // Skip rendering for flash effect
+        // Dead state — only show particles (handled by particle system)
+        if (player.state === 'dead') {
+            return;
+        }
+
+        // Invincibility flash — alternate visible/invisible
+        if (player.invincible && Math.floor(player.invincibleTimer * 8) % 2 === 0) {
+            return;
         }
 
         ctx.save();
@@ -528,13 +483,506 @@ const Renderer = {
         const w = player.width;
         const h = player.height;
 
-        // --- Character Drawing ---
+        // Dispatch to state-specific drawing
+        switch (player.state) {
+            case 'idle':
+                this._drawPlayerIdle(ctx, w, h, player);
+                break;
+            case 'walk':
+                this._drawPlayerWalk(ctx, w, h, player);
+                break;
+            case 'run':
+                this._drawPlayerRun(ctx, w, h, player);
+                break;
+            case 'jump':
+                this._drawPlayerJump(ctx, w, h, player);
+                break;
+            case 'fall':
+                this._drawPlayerFall(ctx, w, h, player);
+                break;
+            case 'wallSlide':
+                this._drawPlayerWallSlide(ctx, w, h, player);
+                break;
+            case 'crouch':
+                this._drawPlayerCrouch(ctx, w, h, player);
+                break;
+            case 'crouchSlide':
+                this._drawPlayerCrouchSlide(ctx, w, h, player);
+                break;
+            case 'attack':
+                this._drawPlayerAttack(ctx, w, h, player);
+                break;
+            case 'chargeAttack':
+                this._drawPlayerChargeAttack(ctx, w, h, player);
+                break;
+            case 'jumpAttack':
+                this._drawPlayerJumpAttack(ctx, w, h, player);
+                break;
+            case 'hurt':
+                this._drawPlayerHurt(ctx, w, h, player);
+                break;
+            default:
+                this._drawPlayerIdle(ctx, w, h, player);
+        }
+
+        ctx.restore();
+
+        // Render charge indicator if charging
+        if (player.isCharging && player.chargeTimer > 0) {
+            this._renderChargeIndicator(ctx, x, y, w, h, player);
+        }
+
+        // Render attack effect
+        if (player.state === 'attack' || player.state === 'chargeAttack' || player.state === 'jumpAttack') {
+            this._renderAttackEffect(ctx, x, y, w, h, player);
+        }
+    },
+
+    // =============================================
+    // IDLE — breathing animation (2 frames)
+    // =============================================
+    _drawPlayerIdle(ctx, w, h, player) {
+        const breathOffset = player.animFrame === 0 ? 0 : -1;
+
         // Body (blue tunic)
         ctx.fillStyle = COLORS.playerBlue;
-        ctx.fillRect(3, 10, w - 6, h - 16);
+        ctx.fillRect(3, 10 + breathOffset, w - 6, h - 16);
 
         // Body shading
-        ctx.fillStyle = '#2A5BA5';
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3, 10 + breathOffset, 3, h - 16);
+
+        // Head
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 7 + breathOffset, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 5 + breathOffset, 2.5, 3);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 4 + breathOffset, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7, 4 + breathOffset, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 14, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 14, 4, 3);
+
+        // Legs
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(5, h - 11, 4, 8);
+        ctx.fillRect(w - 9, h - 11, 4, 8);
+
+        // Boots
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(4, h - 4, 6, 4);
+        ctx.fillRect(w - 10, h - 4, 6, 4);
+
+        // Arms (slight sway for breathing)
+        const armOffset = breathOffset * 0.5;
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(0, 12 + armOffset, 3, 10);
+        ctx.fillRect(w - 3, 12 + armOffset, 3, 10);
+
+        // Hands
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(0, 21 + armOffset, 3, 3);
+        ctx.fillRect(w - 3, 21 + armOffset, 3, 3);
+    },
+
+    // =============================================
+    // WALK — 4-frame cycle
+    // =============================================
+    _drawPlayerWalk(ctx, w, h, player) {
+        const frame = player.animFrame;
+        const legOffsetsL = [0, -2, 0, 2];
+        const legOffsetsR = [0, 2, 0, -2];
+        const bodyBob = [0, -1, 0, -1];
+        const armSwing = [2, -2, -2, 2];
+
+        const bob = bodyBob[frame];
+
+        // Body
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3, 10 + bob, w - 6, h - 16);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3, 10 + bob, 3, h - 16);
+
+        // Head
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 7 + bob, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 5 + bob, 2.5, 3);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 4 + bob, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7, 4 + bob, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 14 + bob, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 14 + bob, 4, 3);
+
+        // Legs with walk offset
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(5, h - 11 + legOffsetsL[frame], 4, 8 - legOffsetsL[frame]);
+        ctx.fillRect(w - 9, h - 11 + legOffsetsR[frame], 4, 8 - legOffsetsR[frame]);
+
+        // Boots
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(4, h - 4 + legOffsetsL[frame], 6, 4);
+        ctx.fillRect(w - 10, h - 4 + legOffsetsR[frame], 6, 4);
+
+        // Arms with swing
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(0, 12 + armSwing[frame] + bob, 3, 10);
+        ctx.fillRect(w - 3, 12 - armSwing[frame] + bob, 3, 10);
+
+        // Hands
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(0, 21 + armSwing[frame] + bob, 3, 3);
+        ctx.fillRect(w - 3, 21 - armSwing[frame] + bob, 3, 3);
+    },
+
+    // =============================================
+    // RUN — 6-frame cycle with forward lean and cape
+    // =============================================
+    _drawPlayerRun(ctx, w, h, player) {
+        const frame = player.animFrame;
+        const legOffsetsL = [0, -3, -1, 0, 3, 1];
+        const legOffsetsR = [-1, 0, 3, 1, 0, -3];
+        const bodyBob = [0, -1, -1, 0, -1, -1];
+        const armSwingF = [4, -1, -4, -3, 1, 4];
+        const armSwingB = [-3, 1, 4, 4, -1, -4];
+
+        const bob = bodyBob[frame];
+        const lean = 1; // Forward lean for run
+
+        // Cape/scarf trail (red)
+        ctx.fillStyle = COLORS.emberRed;
+        ctx.globalAlpha = 0.7;
+        const capeWave = Math.sin(frame * 1.2) * 2;
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 4, 8 + bob);
+        ctx.lineTo(-3 + capeWave, 12 + bob);
+        ctx.lineTo(-5 + capeWave, 20 + bob);
+        ctx.lineTo(w / 2 - 2, 16 + bob);
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Body (leaning forward)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3 + lean, 10 + bob, w - 6, h - 16);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3 + lean, 10 + bob, 3, h - 16);
+
+        // Head
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2 + lean, 7 + bob, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye (determined expression — slightly narrower)
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2 + lean, 5 + bob, 3, 2.5);
+
+        // Hair (windswept)
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2 + lean, 4 + bob, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7 + lean, 4 + bob, 3, 6);
+        // Hair flowing back
+        ctx.fillRect(w / 2 - 8, 3 + bob, 3, 4);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 14 + bob, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 14 + bob, 4, 3);
+
+        // Legs — wider strides
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(5 + lean, h - 11 + legOffsetsL[frame], 4, 8 - Math.abs(legOffsetsL[frame]) * 0.5);
+        ctx.fillRect(w - 9, h - 11 + legOffsetsR[frame], 4, 8 - Math.abs(legOffsetsR[frame]) * 0.5);
+
+        // Boots
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(4 + lean, h - 4 + legOffsetsL[frame], 6, 4);
+        ctx.fillRect(w - 10, h - 4 + legOffsetsR[frame], 6, 4);
+
+        // Arms — wider swings
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(0, 12 + armSwingF[frame] + bob, 3, 10);
+        ctx.fillRect(w - 3, 12 + armSwingB[frame] + bob, 3, 10);
+
+        // Hands
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(0, 21 + armSwingF[frame] + bob, 3, 3);
+        ctx.fillRect(w - 3, 21 + armSwingB[frame] + bob, 3, 3);
+    },
+
+    // =============================================
+    // JUMP — arms up, legs tucked, eyes up
+    // =============================================
+    _drawPlayerJump(ctx, w, h, player) {
+        // Body
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3, 10, w - 6, h - 18);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3, 10, 3, h - 18);
+
+        // Head (looking up slightly)
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 6, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye (looking up)
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 3, 2.5, 2.5);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 3, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7, 3, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 16, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 16, 4, 3);
+
+        // Legs tucked up
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(5, h - 12, 4, 5);
+        ctx.fillRect(w - 9, h - 12, 4, 5);
+
+        // Boots (closer together)
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(5, h - 7, 5, 3);
+        ctx.fillRect(w - 10, h - 7, 5, 3);
+
+        // Arms raised up
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(-1, 6, 3, 8);
+        ctx.fillRect(w - 2, 6, 3, 8);
+
+        // Hands (raised)
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(-1, 4, 3, 3);
+        ctx.fillRect(w - 2, 4, 3, 3);
+    },
+
+    // =============================================
+    // FALL — arms spread, legs dangling, eyes down
+    // =============================================
+    _drawPlayerFall(ctx, w, h, player) {
+        // Body
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3, 10, w - 6, h - 16);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3, 10, 3, h - 16);
+
+        // Head (looking down)
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 8, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye (looking down)
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 7, 2.5, 3);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 5, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7, 5, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 14, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 14, 4, 3);
+
+        // Legs dangling (spread)
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(3, h - 11, 4, 9);
+        ctx.fillRect(w - 7, h - 11, 4, 9);
+
+        // Boots (spread apart)
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(2, h - 3, 6, 3);
+        ctx.fillRect(w - 8, h - 3, 6, 3);
+
+        // Arms spread out
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(-3, 11, 4, 9);
+        ctx.fillRect(w - 1, 11, 4, 9);
+
+        // Hands
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(-3, 19, 3, 3);
+        ctx.fillRect(w, 19, 3, 3);
+    },
+
+    // =============================================
+    // WALL SLIDE — body pressed against wall, asymmetric arms
+    // =============================================
+    _drawPlayerWallSlide(ctx, w, h, player) {
+        // Body pressed flat against wall
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(4, 10, w - 7, h - 16);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(4, 10, 3, h - 16);
+
+        // Head (turned slightly toward wall)
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2 + 1, 7, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye (looking at wall)
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 4, 5, 2, 3);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2 + 1, 4, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 6, 4, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(4, h - 14, w - 7, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 1, h - 14, 4, 3);
+
+        // One leg bent, one straight (pressed against wall)
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(5, h - 11, 4, 8);
+        ctx.fillRect(w - 8, h - 13, 4, 6); // Bent knee
+
+        // Boots
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(4, h - 4, 6, 4);
+        ctx.fillRect(w - 9, h - 7, 5, 3);
+
+        // Front arm (pressed up against wall)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(w - 2, 8, 3, 7);
+        // Back arm (hanging down)
+        ctx.fillRect(-1, 14, 3, 10);
+
+        // Hands
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(w - 2, 6, 3, 3);
+        ctx.fillRect(-1, 23, 3, 3);
+    },
+
+    // =============================================
+    // CROUCH — compressed body, ducked head, wider stance
+    // =============================================
+    _drawPlayerCrouch(ctx, w, h, player) {
+        // h = PLAYER_CROUCH_HEIGHT (20)
+
+        // Body (compressed)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(2, 5, w - 4, h - 10);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(2, 5, 3, h - 10);
+
+        // Head (ducked down, smaller arc)
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 4, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 2, 2, 3);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 2, 6, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 6, 2, 3, 4);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(2, h - 9, w - 4, 2);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 9, 4, 2);
+
+        // Legs bent/squatting (wider stance)
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(2, h - 7, 5, 5);
+        ctx.fillRect(w - 7, h - 7, 5, 5);
+
+        // Boots (wider apart)
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(1, h - 3, 6, 3);
+        ctx.fillRect(w - 7, h - 3, 6, 3);
+
+        // Arms (at sides, compressed)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(-1, 7, 3, 7);
+        ctx.fillRect(w - 2, 7, 3, 7);
+
+        // Hands
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(-1, 13, 3, 2);
+        ctx.fillRect(w - 2, 13, 3, 2);
+    },
+
+    // =============================================
+    // CROUCH SLIDE — similar to crouch but with motion blur
+    // =============================================
+    _drawPlayerCrouchSlide(ctx, w, h, player) {
+        // Motion blur trail
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.globalAlpha = 0.2;
+        ctx.fillRect(-4, 5, w + 4, h - 10);
+        ctx.globalAlpha = 1.0;
+
+        // Draw same as crouch
+        this._drawPlayerCrouch(ctx, w, h, player);
+    },
+
+    // =============================================
+    // ATTACK — 3-frame swing (wind-up, extend, retract)
+    // =============================================
+    _drawPlayerAttack(ctx, w, h, player) {
+        const frame = player.animFrame; // 0=wind-up, 1=full extend, 2=retract
+        const armExtensions = [4, 12, 8];
+        const ext = armExtensions[frame];
+
+        // Body
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3, 10, w - 6, h - 16);
+        ctx.fillStyle = COLORS.playerBlueDark;
         ctx.fillRect(3, 10, 3, h - 16);
 
         // Head
@@ -543,9 +991,9 @@ const Renderer = {
         ctx.arc(w / 2, 7, 7, 0, Math.PI * 2);
         ctx.fill();
 
-        // Eye
-        ctx.fillStyle = '#1A1A2E';
-        ctx.fillRect(w / 2 + 2, 5, 2.5, 3);
+        // Eye (focused)
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 5, 3, 2.5);
 
         // Hair
         ctx.fillStyle = '#4A3020';
@@ -558,39 +1006,324 @@ const Renderer = {
         ctx.fillStyle = COLORS.forest.bark;
         ctx.fillRect(3, h - 14, w - 6, 3);
         ctx.fillStyle = COLORS.mutedGold;
-        ctx.fillRect(w / 2 - 2, h - 14, 4, 3); // Belt buckle
+        ctx.fillRect(w / 2 - 2, h - 14, 4, 3);
 
         // Legs
         ctx.fillStyle = '#3A3A4A';
         ctx.fillRect(5, h - 11, 4, 8);
         ctx.fillRect(w - 9, h - 11, 4, 8);
 
-        // Walking animation — offset legs
-        if (Math.abs(player.vx) > 0.5 && player.onGround) {
-            const walkFrame = Math.floor(Date.now() / 100) % 4;
-            const legOffset = [0, -2, 0, 2][walkFrame];
-            ctx.fillStyle = '#3A3A4A';
-            ctx.fillRect(5, h - 11 + legOffset, 4, 8 - legOffset);
-            ctx.fillRect(w - 9, h - 11 - legOffset, 4, 8 + legOffset);
+        // Boots
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(4, h - 4, 6, 4);
+        ctx.fillRect(w - 10, h - 4, 6, 4);
+
+        // Front arm (attacking — extends forward)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(w - 3, 12, ext, 4);
+        // Fist/weapon tip
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(w - 3 + ext, 11, 4, 6);
+
+        // Weapon glow at full extension
+        if (frame === 1) {
+            ctx.fillStyle = COLORS.mutedGold;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.arc(w + ext, 14, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
         }
+
+        // Back arm
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(-1, 12, 3, 10);
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(-1, 21, 3, 3);
+    },
+
+    // =============================================
+    // CHARGE ATTACK — rotating weapon with gold glow
+    // =============================================
+    _drawPlayerChargeAttack(ctx, w, h, player) {
+        const progress = 1 - (player.attackTimer / 12);
+        const angle = progress * Math.PI * 1.5;
+
+        // Body
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3, 10, w - 6, h - 16);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3, 10, 3, h - 16);
+
+        // Head
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 7, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 5, 3, 2.5);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 4, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7, 4, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 14, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 14, 4, 3);
+
+        // Legs
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(5, h - 11, 4, 8);
+        ctx.fillRect(w - 9, h - 11, 4, 8);
 
         // Boots
         ctx.fillStyle = COLORS.forest.bark;
         ctx.fillRect(4, h - 4, 6, 4);
         ctx.fillRect(w - 10, h - 4, 6, 4);
 
-        // Arms
-        ctx.fillStyle = COLORS.playerBlue;
-        const armSwing = player.onGround && Math.abs(player.vx) > 0.5 ? Math.sin(Date.now() / 80) * 3 : 0;
-        ctx.fillRect(0, 12 + armSwing, 3, 10);
-        ctx.fillRect(w - 3, 12 - armSwing, 3, 10);
+        // Rotating weapon with gold glow
+        ctx.save();
+        ctx.translate(w + 5, 14);
+        ctx.rotate(angle);
 
-        // Hands
-        ctx.fillStyle = COLORS.playerSkin;
-        ctx.fillRect(0, 21 + armSwing, 3, 3);
-        ctx.fillRect(w - 3, 21 - armSwing, 3, 3);
+        // Weapon
+        ctx.fillStyle = '#888';
+        ctx.fillRect(-2, -8, 4, 16);
+
+        // Gold glow
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
 
         ctx.restore();
+
+        // Arms
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(w - 3, 10, 8, 4);
+        ctx.fillRect(-1, 12, 3, 10);
+
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(w + 4, 10, 3, 4);
+        ctx.fillRect(-1, 21, 3, 3);
+    },
+
+    // =============================================
+    // JUMP ATTACK — downward strike
+    // =============================================
+    _drawPlayerJumpAttack(ctx, w, h, player) {
+        // Body (angled down)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(3, 8, w - 6, h - 14);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(3, 8, 3, h - 14);
+
+        // Head
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2, 6, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye (looking down)
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(w / 2 + 2, 6, 2.5, 3);
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2, 3, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 7, 3, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 12, w - 6, 3);
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.fillRect(w / 2 - 2, h - 12, 4, 3);
+
+        // Legs together (diving down)
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(6, h - 9, 4, 6);
+        ctx.fillRect(w - 10, h - 9, 4, 6);
+
+        // Boots (pointed down)
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(6, h - 4, 5, 4);
+        ctx.fillRect(w - 11, h - 4, 5, 4);
+
+        // Weapon pointing down
+        ctx.fillStyle = '#888';
+        ctx.fillRect(w / 2 - 2, h - 2, 4, 12);
+        // Weapon glow
+        ctx.fillStyle = COLORS.mutedGold;
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(w / 2, h + 8, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Arms (holding weapon down)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(w / 2 - 5, h - 10, 3, 8);
+        ctx.fillRect(w / 2 + 2, h - 10, 3, 8);
+
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(w / 2 - 5, h - 3, 3, 3);
+        ctx.fillRect(w / 2 + 2, h - 3, 3, 3);
+    },
+
+    // =============================================
+    // HURT — leaning back, red tint, X-mark eyes, flailing
+    // =============================================
+    _drawPlayerHurt(ctx, w, h, player) {
+        // Red tint overlay
+        ctx.fillStyle = COLORS.emberRed;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = 1.0;
+
+        // Body (leaning back)
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(2, 11, w - 5, h - 17);
+        ctx.fillStyle = COLORS.playerBlueDark;
+        ctx.fillRect(2, 11, 3, h - 17);
+
+        // Head (tilted back)
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.beginPath();
+        ctx.arc(w / 2 - 1, 8, 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // X-mark eyes (pain)
+        ctx.strokeStyle = COLORS.deepCharcoal;
+        ctx.lineWidth = 1.5;
+        // Left X
+        ctx.beginPath();
+        ctx.moveTo(w / 2 - 1, 5);
+        ctx.lineTo(w / 2 + 3, 9);
+        ctx.moveTo(w / 2 + 3, 5);
+        ctx.lineTo(w / 2 - 1, 9);
+        ctx.stroke();
+
+        // Hair
+        ctx.fillStyle = '#4A3020';
+        ctx.beginPath();
+        ctx.arc(w / 2 - 1, 5, 7, Math.PI, 0);
+        ctx.fill();
+        ctx.fillRect(w / 2 - 8, 5, 3, 5);
+
+        // Belt
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(2, h - 14, w - 5, 3);
+
+        // Legs
+        ctx.fillStyle = '#3A3A4A';
+        ctx.fillRect(4, h - 11, 4, 8);
+        ctx.fillRect(w - 8, h - 11, 4, 8);
+
+        // Boots
+        ctx.fillStyle = COLORS.forest.bark;
+        ctx.fillRect(3, h - 4, 6, 4);
+        ctx.fillRect(w - 9, h - 4, 6, 4);
+
+        // Arms flailing
+        const flail = Math.sin(player.stateTimer * 0.5) * 4;
+        ctx.fillStyle = COLORS.playerBlue;
+        ctx.fillRect(-3, 10 + flail, 4, 8);
+        ctx.fillRect(w - 1, 10 - flail, 4, 8);
+
+        ctx.fillStyle = COLORS.playerSkin;
+        ctx.fillRect(-3, 17 + flail, 3, 3);
+        ctx.fillRect(w, 17 - flail, 3, 3);
+    },
+
+    // =============================================
+    // ATTACK EFFECTS (slash arc, hit sparks)
+    // =============================================
+    _renderAttackEffect(ctx, x, y, w, h, player) {
+        ctx.save();
+
+        if (player.state === 'attack') {
+            const frame = player.animFrame;
+            if (frame === 1) { // Full extension
+                const slashX = player.facing === 1 ? x + w : x;
+                const dir = player.facing;
+
+                // Slash arc
+                ctx.strokeStyle = COLORS.mutedGold;
+                ctx.lineWidth = 2;
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.arc(slashX + dir * 8, y + h / 2, 14, -Math.PI * 0.4, Math.PI * 0.4);
+                ctx.stroke();
+                ctx.globalAlpha = 1.0;
+            }
+        } else if (player.state === 'chargeAttack') {
+            // Wide gold slash
+            const cx = player.facing === 1 ? x + w + 10 : x - 10;
+            ctx.strokeStyle = COLORS.mutedGold;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.arc(cx, y + h / 2, 20, -Math.PI * 0.6, Math.PI * 0.6);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        } else if (player.state === 'jumpAttack') {
+            // Downward glow
+            ctx.fillStyle = COLORS.mutedGold;
+            ctx.globalAlpha = 0.3;
+            ctx.beginPath();
+            ctx.arc(x + w / 2, y + h + 5, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore();
+    },
+
+    // =============================================
+    // CHARGE INDICATOR (progress bar above player)
+    // =============================================
+    _renderChargeIndicator(ctx, x, y, w, h, player) {
+        const progress = player.chargeTimer / CHARGE_TIME;
+        const barW = 24;
+        const barH = 4;
+        const barX = x + w / 2 - barW / 2;
+        const barY = y - 10;
+
+        // Background
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(barX, barY, barW, barH);
+
+        // Fill
+        const fillColor = progress >= 1.0 ? COLORS.mutedGold : COLORS.steelBlue;
+        ctx.fillStyle = fillColor;
+        ctx.fillRect(barX, barY, barW * Math.min(progress, 1.0), barH);
+
+        // Pulsing glow when full
+        if (progress >= 1.0) {
+            ctx.strokeStyle = COLORS.mutedGold;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.5 + Math.sin(this.frameTime * 8) * 0.3;
+            ctx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    // =======================
+    // PARTICLES
+    // =======================
+    renderParticles() {
+        Particles.render(this.ctx);
     },
 
     // =======================
