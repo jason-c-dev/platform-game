@@ -84,6 +84,25 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        // Expose all game globals on window for test accessibility (C-27)
+        window.Game = Game;
+        window.GameState = GameState;
+        window.Renderer = Renderer;
+        window.Input = Input;
+        window.Level = Level;
+        window.Physics = Physics;
+        window.Camera = Camera;
+        window.Player = Player;
+        window.Particles = Particles;
+        window.Enemies = Enemies;
+        window.Transition = Transition;
+        window.HUD = HUD;
+        window.Menu = Menu;
+        window.SaveSystem = SaveSystem;
+        window.Collectibles = Collectibles;
+        window.WorldMap = WorldMap;
+        window.AudioManager = AudioManager;
+
         // Start the game
         Game.init();
     </script>
