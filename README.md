@@ -1,5 +1,10 @@
 # Kingdoms of the Canvas
 
+![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
+![Vanilla JS](https://img.shields.io/badge/Vanilla-JavaScript-yellow.svg)
+![No Dependencies](https://img.shields.io/badge/Dependencies-None-brightgreen.svg)
+![HTML5 Canvas](https://img.shields.io/badge/HTML5-Canvas-orange.svg)
+
 A fully browser-based 2D side-scrolling platformer built entirely with vanilla JavaScript and HTML5 Canvas. No game engine, no external assets, no server component -- every sprite, tile, background, and sound is generated programmatically through Canvas drawing commands and the Web Audio API.
 
 ![Title Screen](screenshot-title.png)
@@ -168,4 +173,4 @@ The game follows an **entity-component-style** architecture where game objects a
 
 ## License
 
-See [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
