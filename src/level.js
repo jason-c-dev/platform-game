@@ -21,6 +21,11 @@ const Level = {
     crumblingTiles: [],  // {col, row, timer, shaking}
     currentStageId: null,
 
+    // Citadel section tracking
+    citadelSections: null,
+    worldSections: null,
+    sections: null,
+
     init() {
         // Load stage based on current game state
         const stageId = GameState.currentStageId || '1-1';
@@ -103,6 +108,10 @@ const Level = {
         this.chainPoints = [];
         this.valves = [];
         this.levers = [];
+        // Citadel reset
+        this.citadelSections = null;
+        this.worldSections = null;
+        this.sections = null;
 
         switch (stageId) {
             case '1-1': this._buildStage1_1(); break;
@@ -117,6 +126,7 @@ const Level = {
             case '4-1': this._buildStage4_1(); break;
             case '4-2': this._buildStage4_2(); break;
             case '4-3': this._buildStage4_3(); break;
+            case '5-1': this._buildStage5_1(); break;
             default: this._buildStage1_1(); break;
         }
     },
@@ -2437,6 +2447,283 @@ const Level = {
             { x: 30 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
             { x: 75 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
             { x: 110 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 5-1: THE CITADEL (Final Stage, 220 tiles wide)
+    // 4 world-themed sections + boss arena
+    // The longest stage in the game
+    // =============================================
+    _buildStage5_1() {
+        const W = 220;
+        const H = 20;
+        this._initGrid(W, H);
+        this.name = 'The Citadel';
+        this.id = '5-1';
+
+        // =============================================
+        // CITADEL SECTION METADATA
+        // =============================================
+        this.citadelSections = [
+            { theme: 'forest', world: 0, type: 'forest', startCol: 0, endCol: 49 },
+            { theme: 'desert', world: 1, type: 'desert', startCol: 50, endCol: 99 },
+            { theme: 'tundra', world: 2, type: 'tundra', startCol: 100, endCol: 149 },
+            { theme: 'volcano', world: 3, type: 'volcano', startCol: 150, endCol: 189 }
+        ];
+        this.worldSections = this.citadelSections;
+        this.sections = this.citadelSections;
+
+        // =============================================
+        // SECTION 1: FOREST (cols 0-49)
+        // Green/brown palette, bark beetle, shroomba
+        // =============================================
+
+        // Ground floor (rows 18-19)
+        this._fill(0, 49, 18, H - 1, TILE_SOLID);
+
+        // Left wall boundary
+        this._fill(0, 0, 0, 17, TILE_SOLID);
+
+        // Canopy ceiling (bark beetle territory)
+        this._fill(5, 20, 0, 1, TILE_SOLID);
+        this._fill(25, 45, 0, 1, TILE_SOLID);
+
+        // Forest platforms
+        this._fill(5, 9, 14, 14, TILE_SOLID);      // Low platform
+        this._fill(12, 16, 11, 11, TILE_SOLID);     // Mid platform
+        this._fill(19, 23, 13, 13, TILE_SOLID);     // Stepping stone
+
+        // Gap in ground
+        this._fill(15, 17, 18, H - 1, TILE_EMPTY);
+        this._fill(16, 16, 17, 17, TILE_HAZARD);    // Spikes at bottom of gap
+
+        // More forest platforms
+        this._fill(25, 30, 15, 15, TILE_SOLID);     // Wide platform
+        this._fill(33, 36, 12, 12, TILE_SOLID);     // High platform
+        this._fill(38, 42, 14, 14, TILE_SOLID);     // Medium platform
+        this._fill(44, 48, 16, 16, TILE_SOLID);     // Low platform
+
+        // Another gap
+        this._fill(30, 32, 18, H - 1, TILE_EMPTY);
+        this._fill(31, 31, 17, 17, TILE_HAZARD);
+
+        // Breakable blocks hiding shortcut
+        this._fill(27, 28, 12, 12, TILE_BREAKABLE);
+
+        // =============================================
+        // SECTION 2: DESERT (cols 50-99)
+        // Sand palette, quicksand, dust devil
+        // =============================================
+
+        // Ground floor
+        this._fill(50, 99, 18, H - 1, TILE_SOLID);
+
+        // Transition wall (thin)
+        this._fill(49, 49, 5, 17, TILE_SOLID);
+
+        // Quicksand pit 1 (cols 55-59)
+        this._fill(55, 59, 18, 18, TILE_QUICKSAND);
+        this._fill(56, 58, 19, 19, TILE_QUICKSAND_DEEP);
+        for (let c = 55; c <= 59; c++) this.quicksandTiles.push({ x: c, y: 18 });
+        for (let c = 56; c <= 58; c++) this.quicksandTiles.push({ x: c, y: 19 });
+
+        // Desert platforms
+        this._fill(52, 54, 15, 15, TILE_SOLID);     // Entry platform
+        this._fill(61, 65, 14, 14, TILE_SOLID);     // Over quicksand
+        this._fill(67, 70, 11, 11, TILE_SOLID);     // High platform
+        this._fill(73, 76, 13, 13, TILE_SOLID);     // Mid platform
+
+        // Quicksand pit 2 (cols 78-83)
+        this._fill(78, 83, 18, 18, TILE_QUICKSAND);
+        this._fill(79, 82, 19, 19, TILE_QUICKSAND_DEEP);
+        for (let c = 78; c <= 83; c++) this.quicksandTiles.push({ x: c, y: 18 });
+        for (let c = 79; c <= 82; c++) this.quicksandTiles.push({ x: c, y: 19 });
+
+        // More desert platforms
+        this._fill(84, 87, 15, 15, TILE_SOLID);
+        this._fill(89, 93, 12, 12, TILE_SOLID);     // High stretch
+        this._fill(95, 98, 16, 16, TILE_SOLID);     // Low platform
+
+        // Ground gaps
+        this._fill(68, 70, 18, H - 1, TILE_EMPTY);
+        this._fill(69, 69, 17, 17, TILE_HAZARD);
+
+        // Crumbling blocks
+        for (let c = 90; c <= 93; c++) {
+            this.tiles[12][c] = TILE_CRUMBLE;
+            this.crumblingTiles.push({ col: c, row: 12, timer: 0, shaking: false });
+        }
+
+        // =============================================
+        // SECTION 3: TUNDRA (cols 100-149)
+        // Ice palette, ice physics, frost imp, ice golem
+        // =============================================
+
+        // Ground floor
+        this._fill(100, 149, 18, H - 1, TILE_SOLID);
+
+        // Ice floor zones (ice physics)
+        this._placeIce(103, 115, 17, 17);           // Ice surface layer 1
+        this._placeIce(120, 135, 17, 17);           // Ice surface layer 2
+        this._placeIce(140, 148, 17, 17);           // Ice surface layer 3
+
+        // Track ice zones for evaluator test
+        this.iceZones = [
+            { startCol: 103, endCol: 115, row: 17 },
+            { startCol: 120, endCol: 135, row: 17 },
+            { startCol: 140, endCol: 148, row: 17 }
+        ];
+
+        // Tundra platforms (some icy)
+        this._fill(105, 109, 14, 14, TILE_SOLID);
+        this._placeIce(106, 108, 13, 13);           // Ice platform
+        this._fill(112, 116, 11, 11, TILE_SOLID);
+        this._placeIce(113, 115, 10, 10);           // Ice platform high
+
+        this._fill(120, 124, 13, 13, TILE_SOLID);
+        this._fill(128, 133, 15, 15, TILE_SOLID);
+        this._placeIce(129, 132, 14, 14);           // Icy top
+        this._fill(136, 140, 12, 12, TILE_SOLID);
+        this._fill(143, 148, 14, 14, TILE_SOLID);
+
+        // Gaps
+        this._fill(117, 119, 18, H - 1, TILE_EMPTY);
+        this._fill(118, 118, 17, 17, TILE_HAZARD);
+        this._fill(134, 135, 18, H - 1, TILE_EMPTY);
+
+        // Crumble blocks
+        for (let c = 125; c <= 127; c++) {
+            this.tiles[13][c] = TILE_CRUMBLE;
+            this.crumblingTiles.push({ col: c, row: 13, timer: 0, shaking: false });
+        }
+
+        // =============================================
+        // SECTION 4: VOLCANO (cols 150-189)
+        // Dark stone/lava palette, rising lava, fire bat, magma slime
+        // =============================================
+
+        // Ground floor (limited — lava will rise!)
+        this._fill(150, 189, 18, H - 1, TILE_SOLID);
+
+        // Elevated platforms (escape from lava)
+        this._fill(152, 156, 14, 14, TILE_SOLID);   // Starting platform
+        this._fill(158, 161, 11, 11, TILE_SOLID);   // Mid-high
+        this._fill(163, 167, 13, 13, TILE_SOLID);   // Medium
+        this._fill(169, 172, 10, 10, TILE_SOLID);   // High
+        this._fill(174, 178, 12, 12, TILE_SOLID);   // Medium-high
+        this._fill(180, 184, 14, 14, TILE_SOLID);   // Lower
+        this._fill(186, 189, 11, 11, TILE_SOLID);   // Exit ledge
+
+        // Hazard tiles in lava section
+        this._fill(160, 162, 17, 17, TILE_HAZARD);
+        this._fill(170, 173, 17, 17, TILE_HAZARD);
+
+        // Volcano gaps (lava pits)
+        this._fill(157, 157, 18, H - 1, TILE_EMPTY);
+        this._fill(168, 168, 18, H - 1, TILE_EMPTY);
+        this._fill(179, 179, 18, H - 1, TILE_EMPTY);
+        this._fill(185, 185, 18, H - 1, TILE_EMPTY);
+
+        // Rising lava (starts low, rises slowly)
+        this.lavaLevel = 30;
+        this.risingLava = 30;
+        this.lavaRiseSpeed = 8;
+        this.lavaSpeed = 8;
+        this.lavaDirection = 1;
+        this.lavaMinLevel = 30;
+        this.lavaMaxLevel = 100;
+
+        // =============================================
+        // BOSS ARENA (cols 190-219)
+        // Flat arena for The Architect
+        // =============================================
+
+        // Arena ground
+        this._fill(190, 219, 18, H - 1, TILE_SOLID);
+
+        // Arena walls
+        this._fill(219, 219, 0, 17, TILE_SOLID);    // Right wall
+
+        // Arena ceiling (partial)
+        this._fill(190, 219, 0, 1, TILE_SOLID);
+
+        // Arena platforms for boss fight
+        this._fill(195, 200, 14, 14, TILE_SOLID);   // Left platform
+        this._fill(208, 213, 14, 14, TILE_SOLID);   // Right platform
+        this._fill(200, 208, 10, 10, TILE_SOLID);   // Center high platform
+
+        // =============================================
+        // BOSS DATA
+        // =============================================
+        this.bossArenaX = 190 * TILE_SIZE;
+        this.bossData = {
+            type: 'the_architect',
+            spawnX: 205 * TILE_SIZE,
+            spawnY: 7 * TILE_SIZE
+        };
+
+        // =============================================
+        // EXIT POINT (after boss)
+        // =============================================
+        this.exitX = 217 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        // =============================================
+        // PLAYER SPAWN
+        // =============================================
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 16 * TILE_SIZE;
+
+        // =============================================
+        // ENEMY SPAWNS (9 enemies from all 4 worlds)
+        // =============================================
+        this.enemySpawns = [
+            // Forest enemies
+            { type: 'barkbeetle', x: 10 * TILE_SIZE, y: 2 * TILE_SIZE },
+            { type: 'barkbeetle', x: 30 * TILE_SIZE, y: 2 * TILE_SIZE },
+            { type: 'shroomba', x: 40 * TILE_SIZE, y: 17 * TILE_SIZE },
+            // Desert enemies
+            { type: 'dust_devil', x: 63 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'sand_skitter', x: 88 * TILE_SIZE, y: 17 * TILE_SIZE },
+            // Tundra enemies
+            { type: 'frost_imp', x: 110 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'ice_golem', x: 130 * TILE_SIZE, y: 16 * TILE_SIZE },
+            // Volcano enemies
+            { type: 'fire_bat', x: 162 * TILE_SIZE, y: 8 * TILE_SIZE },
+            { type: 'magma_slime', x: 175 * TILE_SIZE, y: 17 * TILE_SIZE },
+        ];
+
+        // =============================================
+        // COINS (40 total — 10 per section)
+        // =============================================
+        const coinSpots = [
+            // Forest section (10 coins)
+            [3, 16], [7, 13], [14, 10], [20, 12], [26, 14],
+            [34, 11], [39, 13], [42, 13], [46, 15], [48, 15],
+            // Desert section (10 coins)
+            [53, 14], [58, 16], [62, 13], [68, 10], [74, 12],
+            [80, 16], [85, 14], [90, 11], [94, 11], [97, 15],
+            // Tundra section (10 coins)
+            [104, 13], [108, 13], [114, 10], [121, 12], [126, 12],
+            [131, 14], [137, 11], [141, 13], [145, 13], [148, 13],
+            // Volcano section (10 coins)
+            [153, 13], [157, 10], [165, 12], [170, 9], [175, 11],
+            [178, 11], [181, 13], [184, 13], [187, 10], [189, 10],
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // =============================================
+        // HEALTH PICKUPS (4 — one per section)
+        // =============================================
+        this.healthPositions = [
+            { x: 22 * TILE_SIZE + 8, y: 12 * TILE_SIZE },   // Forest
+            { x: 72 * TILE_SIZE + 8, y: 12 * TILE_SIZE },   // Desert
+            { x: 122 * TILE_SIZE + 8, y: 12 * TILE_SIZE },  // Tundra
+            { x: 176 * TILE_SIZE + 8, y: 11 * TILE_SIZE },  // Volcano
         ];
     }
 };
