@@ -9,6 +9,11 @@ const Collectibles = {
     totalCoins: 0,    // Total coins defined for the current stage
     _animTimer: 0,
 
+    // Alias for test compatibility — filtered view of coin items
+    get coins() {
+        return this.items.filter(i => i.type === 'coin' && !i.collected);
+    },
+
     /**
      * Initialize collectibles for a stage.
      * @param {Array} coinPositions - [{x, y}, ...] world positions for coins

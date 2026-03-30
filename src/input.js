@@ -107,5 +107,11 @@ const Input = {
     // Crouch (ArrowDown)
     isCrouch() {
         return this.isDown('ArrowDown');
-    }
+    },
+
+    // Aliases for test compatibility
+    get _keys() { return this.keys; },
+    set _keys(v) { this.keys = v; },
+    get _justPressed() { return this.justPressed; },
+    set _justPressed(v) { this.justPressed = v; }
 };
