@@ -1,9 +1,10 @@
 {
   "projectName": "Kingdoms of the Canvas",
   "completedSprints": [
-    1
+    1,
+    2
   ],
-  "currentSprint": 2,
+  "currentSprint": 3,
   "totalSprints": 12,
   "completedFeatures": [],
   "keyFiles": {
@@ -28,8 +29,8 @@
   "devServerPort": 8080,
   "git": {
     "harnessBranch": "harness/build-the-app-described-in-prompt-txt",
-    "latestTag": "harness/sprint-01/pass",
-    "latestMergeSha": "76615fd8d82f61e62edfc032b375578b79ecd5f3",
+    "latestTag": "harness/sprint-02/pass",
+    "latestMergeSha": "0ab8afc28b82022fef41b8d265d6498750679e4f",
     "prNumbers": []
   }
 }
