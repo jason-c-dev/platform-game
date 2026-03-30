@@ -54,7 +54,7 @@ const HUD = {
         this._renderCoinCounter(ctx);
         this._renderStageName(ctx);
 
-        if (this.bossActive) {
+        if (this.bossActive && Player.x + Player.width >= Level.bossArenaX) {
             this._renderBossHealthBar(ctx);
         }
     },
