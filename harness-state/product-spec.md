@@ -313,3 +313,73 @@ The game's visual identity is built on bold geometric shapes — rectangles, arc
 **Dependencies**: Sprint 11
 **Complexity**: Medium
 **Deliverable**: All 13 stages playable start to finish. 60fps maintained throughout. Coyote time, jump buffering, and all game-feel systems verified. Save/load works across full game. Collectible totals correct. Boss difficulty balanced. No softlocks or progression blockers.
+
+---
+
+## Extension: Playability Validation & Difficulty Rebalancing
+
+### Extended Feature Specification
+
+#### F24: Playability Validator System
+An automated validation system that tests every stage for traversability, arena integrity, and difficulty compliance. Accessible via debug mode (press "D" on the title screen) and programmatically via `window.runPlayabilityCheck()`.
+
+- **Why**: Manual playtesting can't cover every path through 13 stages consistently. An automated validator catches broken layouts, impassable sections, and mistuned difficulty parameters — and prevents regressions when future changes are made.
+- **Key Interactions**:
+  - **Debug Mode Entry**: Pressing "D" on the title screen opens a debug overlay that runs the validator across all 13 stages and displays results.
+  - **Path Validation**: For each stage, a BFS-based AI agent simulates player movement capabilities (walk left/right, jump height of 4 tiles, wall-jump reach of 3 tiles horizontal) to find a traversable path from the player spawn point to the boss trigger zone. Reports PASS/FAIL with coordinates of the first unreachable required section on failure.
+  - **Boss Arena Validation**: Every boss arena must be fully enclosed (solid walls on all 4 sides) except for the entry point. The entry point must be accessible from the left side without requiring wall-jumps or precision moves. Boss entity X position must be clamped to arena bounds at all times. Boss must reset to center of arena when player dies/respawns.
+  - **Difficulty Scaling Validation**: Checks concrete per-world parameters against a difficulty table:
+    - Boss vulnerability window (seconds): World 1 = 3.0, World 2 = 2.5, World 3 = 2.0, World 4 = 1.5, Citadel = 1.5
+    - Boss hits to defeat (max): World 1 = 5-7, World 2 = 6-8, World 3 = 7-9, World 4 = 7-11, Citadel = 19
+    - Enemy density (max per screen): World 1 = 2, World 2 = 3, World 3 = 4, World 4 = 5, Citadel = 5
+    - Hazard tile percentage (max): World 1 = 5%, World 2 = 10%, World 3 = 15%, World 4 = 20%, Citadel = 20%
+    - Minimum safe platform width: World 1 = 3 tiles, World 2 = 2 tiles, World 3 = 2 tiles, World 4 = 1 tile, Citadel = 1 tile
+  - **Evaluator Integration**: `window.runPlayabilityCheck()` returns a JSON report with per-stage results, each reporting PASS or FAIL with specific failure reasons. This becomes a regression criterion for all future changes.
+- **Dependencies**: All world content features (F15-F19), Level system (F2), Enemy/Boss framework (F12, F13).
+
+#### F25: Difficulty Curve Rebalancing
+A comprehensive rebalancing pass across all 13 stages to create a fair, progressive difficulty curve — fixing known broken levels and tuning all boss/enemy/hazard parameters to match the difficulty specification.
+
+- **Why**: The current build has known issues: Stage 1-1's Elder Shroomba vulnerability window is too short for a tutorial boss, Stage 1-2 appears impassable, and boss parameters weren't tuned against a unified difficulty curve. Players should feel a clear progression from World 1 (forgiving) to World 4 (demanding), not random difficulty spikes.
+- **Key Interactions**:
+  - **Stage 1-1 Fix**: Elder Shroomba vulnerability window increased to 3.0 seconds (180 frames). Recovery after jump landing made obvious and generous.
+  - **Stage 1-2 Fix**: Layout redesigned to ensure passability from the initial section. Wall-jump mechanics introduced clearly with visual cues and forgiving spacing.
+  - **Boss Vulnerability Window Tuning**: All bosses adjusted to match the difficulty table — World 1 bosses get 3.0s windows, World 2 gets 2.5s, World 3 gets 2.0s, World 4 and Citadel get 1.5s.
+  - **Boss HP Tuning**: All boss HP adjusted to fall within specified ranges per world.
+  - **Enemy Density Enforcement**: No screen in any stage exceeds the per-world enemy density limit.
+  - **Hazard Percentage Enforcement**: Hazard tiles (spikes, lava) don't exceed per-world percentage limits.
+  - **Platform Width Enforcement**: Every platform a player must stand on meets the per-world minimum width.
+  - **Mechanics Gating**: No stage requires mechanics not yet introduced. World 1: walk, jump, basic attack (wall-jump introduced in 1-2). Swimming introduced in 2-3. Ice physics in 3-1.
+  - **Boss Arena Standards**: Every boss arena has at least 2 platforms for positioning, minimum 15 tiles wide, clear entry from the left side.
+  - **Boss Reset Behavior**: Boss resets to center of arena when player dies/respawns.
+- **Dependencies**: F24 (validator provides the data for what needs fixing), all world content features.
+
+### Extended Sprint Decomposition
+
+### Sprint 13: Playability Validator — Path Validation Engine
+**Theme**: BFS pathfinding engine, debug mode UI, `window.runPlayabilityCheck()` API
+**Features**: F24 (path validation portion)
+**Dependencies**: Sprint 12
+**Complexity**: High
+**Deliverable**: Pressing "D" on the title screen runs automated path validation across all 13 stages. A BFS engine simulates player physics (gravity, jump height of 4 tiles = 128px, wall-jump reach of 3 tiles = 96px horizontal) to find traversable paths from spawn to boss trigger zone. `window.runPlayabilityCheck()` returns a JSON report with per-stage path validation results (PASS/FAIL with coordinates). The debug overlay displays results in a scrollable list. The pathfinder correctly handles one-way platforms, ladders, bounce pads, and crumbling platforms as valid traversal nodes.
+
+### Sprint 14: Arena Validation & Difficulty Parameter Checks
+**Theme**: Boss arena enclosure validation, difficulty table compliance checks
+**Features**: F24 (arena validation + difficulty parameters)
+**Dependencies**: Sprint 13
+**Complexity**: Medium
+**Deliverable**: The validator now additionally checks: (1) Boss arena enclosure — all 4 walls solid except entry point; (2) Boss arena minimum width of 15 tiles; (3) Boss arena has at least 2 platforms for player positioning; (4) Arena entry accessible from left without wall-jumps; (5) Difficulty scaling parameters per world — vulnerability windows, HP ranges, enemy density per screen, hazard tile percentages, and minimum safe platform widths all checked against the difficulty table. The JSON report from `window.runPlayabilityCheck()` includes all these checks with specific failure details. Each check category is clearly labeled in the report.
+
+### Sprint 15: Level Layout Fixes & Boss Rebalancing
+**Theme**: Fix broken stages, tune boss parameters to match the difficulty curve
+**Features**: F25 (level fixes + boss tuning)
+**Dependencies**: Sprint 14
+**Complexity**: High
+**Deliverable**: Stage 1-1 Elder Shroomba vulnerability window increased to 3.0s (180 frames phase 1, 150 frames phase 2). Stage 1-2 layout fixed to be clearly passable — wall-jump sections widened, safe landing platforms added, progression path made obvious. All boss vulnerability windows adjusted to match the difficulty table: World 1 bosses = 3.0s (180 frames), World 2 = 2.5s (150 frames), World 3 = 2.0s (120 frames), World 4 = 1.5s (90 frames), Architect = 1.5s (90 frames base, decreasing per phase). Boss HP adjusted where outside specified ranges. Boss arena entry points reviewed and fixed for accessibility. Boss arenas widened to minimum 15 tiles where needed. At least 2 player platforms added to any boss arena that lacks them. Boss X position clamped to arena bounds. Boss resets to center of arena on player death.
+
+### Sprint 16: Enemy & Hazard Rebalancing + Full Validation Pass
+**Theme**: Enemy density, hazard percentages, platform widths, final validation sweep
+**Features**: F25 (enemy/hazard tuning), F24 + F25 (integration validation)
+**Dependencies**: Sprint 15
+**Complexity**: Medium
+**Deliverable**: Enemy density per visible screen capped to per-world limits (World 1: 2, World 2: 3, World 3: 4, World 4: 5, Citadel: 5). Hazard tile percentages verified and reduced where they exceed per-world limits. Minimum safe platform widths enforced per world. No stage requires mechanics not yet introduced (verified: World 1 = walk/jump/attack only, wall-jump introduced 1-2; swimming in 2-3; ice in 3-1). `window.runPlayabilityCheck()` reports PASS for all 13 stages across all validation categories (path, arena, difficulty). The full validation serves as a regression criterion for any future changes.

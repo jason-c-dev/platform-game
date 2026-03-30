@@ -131,6 +131,47 @@
       ],
       "dependsOn": [10, 11],
       "estimatedComplexity": "medium"
+    },
+    {
+      "number": 13,
+      "name": "Playability Validator — Path Validation Engine",
+      "theme": "BFS pathfinding engine, debug mode UI, window.runPlayabilityCheck() API, per-stage path validation",
+      "features": [
+        "F24: Playability Validator System (path validation)"
+      ],
+      "dependsOn": [12],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 14,
+      "name": "Arena Validation & Difficulty Parameter Checks",
+      "theme": "Boss arena enclosure validation, difficulty table compliance checks, complete validation report",
+      "features": [
+        "F24: Playability Validator System (arena validation + difficulty parameters)"
+      ],
+      "dependsOn": [13],
+      "estimatedComplexity": "medium"
+    },
+    {
+      "number": 15,
+      "name": "Level Layout Fixes & Boss Rebalancing",
+      "theme": "Fix broken stages (1-1, 1-2), tune all boss vulnerability windows and HP to difficulty curve",
+      "features": [
+        "F25: Difficulty Curve Rebalancing (level fixes + boss tuning)"
+      ],
+      "dependsOn": [14],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 16,
+      "name": "Enemy & Hazard Rebalancing + Full Validation Pass",
+      "theme": "Enemy density caps, hazard percentage limits, platform width enforcement, full validation sweep",
+      "features": [
+        "F25: Difficulty Curve Rebalancing (enemy/hazard tuning)",
+        "F24 + F25: Integration validation — all 13 stages PASS"
+      ],
+      "dependsOn": [15],
+      "estimatedComplexity": "medium"
     }
   ]
 }
