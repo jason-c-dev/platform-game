@@ -17,6 +17,18 @@ const Enemies = {
         this._hitCooldowns = {};
     },
 
+    resetBossFight() {
+        if (this.boss) {
+            const idx = this.enemies.indexOf(this.boss);
+            if (idx !== -1) this.enemies.splice(idx, 1);
+            this.boss = null;
+        }
+        this.projectiles = [];
+        this._hitCooldowns = {};
+        HUD.bossActive = false;
+        AudioManager.stopBossMusic();
+    },
+
     // =============================================
     // SPAWN METHODS
     // =============================================
@@ -1292,6 +1304,9 @@ const Enemies = {
     },
 
     _updateElderShroomba(b) {
+        // Pause AI when player is dead
+        if (Player.state === 'dead') return;
+
         // Elder Shroomba: jumps, lands → shockwave, then vulnerable
         const vulnDuration = b.phase === 1 ? 90 : 60;
 
@@ -1367,6 +1382,12 @@ const Enemies = {
             b.x += dir * b.speed * 0.5;
             b.facing = dir;
         }
+
+        // Clamp boss within arena bounds
+        const arenaLeft = (Level.bossArenaX || 0) + TILE_SIZE;
+        const arenaRight = (Level.width - 1) * TILE_SIZE - b.width;
+        if (b.x < arenaLeft) b.x = arenaLeft;
+        if (b.x > arenaRight) b.x = arenaRight;
     },
 
     _updateVineMother(b) {
@@ -2712,6 +2733,7 @@ const Enemies = {
         for (const e of this.enemies) {
             if (e.state === 'dying' || e.state === 'dead') continue;
             if (e.state === 'intro') continue;
+            if (e.isBoss && e.vulnerable) continue;
 
             if (this._aabb(e, Player)) {
                 Player.takeDamage();

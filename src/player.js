@@ -957,6 +957,21 @@ const Player = {
         this.animFrame = 0;
         this.animTimer = 0;
         this.stateTimer = 0;
+
+        // Reset boss fight state if active
+        if (Level.bossTriggered) {
+            Level.bossTriggered = false;
+            Enemies.resetBossFight();
+            Camera.unlock();
+            // Unseal arena entry wall (restore only the rows that were sealed)
+            if (Level.bossSealedRows && Level.bossSealedRows.length > 0) {
+                const wallCol = Math.floor(Level.bossArenaX / TILE_SIZE);
+                for (const r of Level.bossSealedRows) {
+                    Level.setTile(wallCol, r, TILE_EMPTY);
+                }
+                Level.bossSealedRows = [];
+            }
+        }
     },
 
     // =============================================

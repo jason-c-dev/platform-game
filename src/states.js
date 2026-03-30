@@ -378,9 +378,11 @@ const GameState = {
 
             // Place a wall tile at arena entrance to prevent exit
             const wallCol = Math.floor(Level.bossArenaX / TILE_SIZE);
+            Level.bossSealedRows = [];
             for (let r = 0; r < Level.height - 3; r++) {
                 if (Level.getTile(wallCol, r) === TILE_EMPTY) {
                     Level.setTile(wallCol, r, TILE_SOLID);
+                    Level.bossSealedRows.push(r);
                 }
             }
 
