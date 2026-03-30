@@ -47,6 +47,20 @@ const Enemies = {
             shootCooldown: 120,
             // Bark beetle specific
             ceilingY: y,
+            // Sand Skitter specific
+            chargeSpeed: defaults.speed * 2.5,
+            detectRange: 200,
+            charging: false,
+            chargeTimer: 0,
+            // Dust Devil specific
+            invincible: (type === 'dust_devil' || type === 'dustdevil'),
+            sineOffset: Math.random() * Math.PI * 2,
+            baseY: y,
+            // Mummy specific
+            revived: false,
+            canRevive: (type === 'mummy'),
+            reviveCount: 0,
+            reviveTimer: 0,
         };
         if (config) Object.assign(enemy, config);
         this.enemies.push(enemy);
@@ -69,6 +83,22 @@ const Enemies = {
                 health: 7, maxHealth: 7, width: 44, height: 48, speed: 2.5,
                 attackPattern: 'charge', attackType: 'charge',
                 patterns: ['charge', 'ceiling_rocks']
+            },
+            // Desert bosses
+            'sand_wyrm': {
+                health: 6, maxHealth: 6, width: 48, height: 40, speed: 0,
+                attackPattern: 'emerge', attackType: 'emerge',
+                patterns: ['emerge']
+            },
+            'pharaoh_specter': {
+                health: 8, maxHealth: 8, width: 36, height: 44, speed: 0,
+                attackPattern: 'teleport', attackType: 'teleport',
+                patterns: ['teleport', 'summon']
+            },
+            'hydra_cactus': {
+                health: 12, maxHealth: 12, width: 52, height: 56, speed: 0,
+                attackPattern: 'multi_head', attackType: 'multi_head',
+                patterns: ['multi_head']
             },
         };
 
@@ -117,13 +147,35 @@ const Enemies = {
         HUD.bossHP = boss.health;
         HUD.bossMaxHP = boss.maxHealth;
 
+        // Desert boss extras
+        if (type === 'sand_wyrm') {
+            boss.submerged = true;
+            boss.emergeTimer = 0;
+        }
+        if (type === 'pharaoh_specter') {
+            boss.teleportTimer = 0;
+            boss.summonTimer = 0;
+        }
+        if (type === 'hydra_cactus') {
+            boss.heads = [
+                { health: 4, maxHealth: 4, active: true, y: 0 },
+                { health: 4, maxHealth: 4, active: true, y: -16 },
+                { health: 4, maxHealth: 4, active: true, y: -32 }
+            ];
+            boss.headCount = 3;
+        }
+
         // Set boss name
         const names = {
             'elder_shroomba': 'Elder Shroomba',
             'vine_mother': 'Vine Mother',
             'stag_king': 'Stag King',
+            'sand_wyrm': 'Sand Wyrm',
+            'pharaoh_specter': 'Pharaoh Specter',
+            'hydra_cactus': 'Hydra Cactus',
         };
         HUD.bossName = names[type] || type;
+        boss.name = names[type] || type;
 
         return boss;
     },
@@ -136,6 +188,15 @@ const Enemies = {
                 return { width: 20, height: 32, health: 2, speed: 0, behavior: 'stationary_shooter' };
             case 'barkbeetle':
                 return { width: 24, height: 16, health: 1, speed: 0.8, behavior: 'ceiling_patrol' };
+            // Desert enemies
+            case 'sand_skitter':
+            case 'sandskitter':
+                return { width: 26, height: 18, health: 1, speed: 1.2, behavior: 'charge' };
+            case 'dust_devil':
+            case 'dustdevil':
+                return { width: 22, height: 30, health: Infinity, speed: 0.8, behavior: 'sine_wave' };
+            case 'mummy':
+                return { width: 22, height: 28, health: 2, speed: 0.6, behavior: 'patrol_revive' };
             default:
                 return { width: 24, height: 24, health: 1, speed: 1, behavior: 'patrol' };
         }
@@ -172,6 +233,19 @@ const Enemies = {
                     } else {
                         this.enemies.splice(i, 1);
                     }
+                }
+                continue;
+            }
+
+            // Handle reviving state for mummies
+            if (e.state === 'reviving') {
+                e.reviveTimer--;
+                e.hitFlash = e.reviveTimer % 6 < 3 ? 1 : 0;
+                if (e.reviveTimer <= 0) {
+                    e.state = 'active';
+                    e.health = e.maxHealth;
+                    e.revived = true;
+                    e.hitFlash = 12;
                 }
                 continue;
             }
@@ -231,6 +305,11 @@ const Enemies = {
             case 'shroomba': this._updateShroomba(e); break;
             case 'thornvine': this._updateThornVine(e); break;
             case 'barkbeetle': this._updateBarkBeetle(e); break;
+            case 'sand_skitter':
+            case 'sandskitter': this._updateSandSkitter(e); break;
+            case 'dust_devil':
+            case 'dustdevil': this._updateDustDevil(e); break;
+            case 'mummy': this._updateMummy(e); break;
             default: this._updateShroomba(e); break;
         }
     },
@@ -376,6 +455,178 @@ const Enemies = {
     },
 
     // =============================================
+    // DESERT ENEMY AI
+    // =============================================
+
+    _updateSandSkitter(e) {
+        // Sand Skitter: charges toward player when in range
+        const dx = Player.x - e.x;
+        const dy = Player.y - e.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < e.detectRange && !e.charging) {
+            e.charging = true;
+            e.chargeTimer = 60;
+            e.facing = dx > 0 ? 1 : -1;
+        }
+
+        if (e.charging) {
+            e.chargeTimer--;
+            e.vx = e.chargeSpeed * e.facing;
+            e.x += e.vx;
+
+            if (e.chargeTimer <= 0) {
+                e.charging = false;
+            }
+        } else {
+            // Normal patrol
+            e.vx = e.speed * e.facing;
+            e.x += e.vx;
+        }
+
+        // Gravity
+        e.vy += GRAVITY;
+        if (e.vy > TERMINAL_VELOCITY) e.vy = TERMINAL_VELOCITY;
+        e.y += e.vy;
+
+        // Floor collision
+        const footRow = Math.floor((e.y + e.height) / TILE_SIZE);
+        const leftCol = Math.floor(e.x / TILE_SIZE);
+        const rightCol = Math.floor((e.x + e.width - 1) / TILE_SIZE);
+        let onGround = false;
+        for (let c = leftCol; c <= rightCol; c++) {
+            const tile = Level.getTile(c, footRow);
+            if (Level.isSolid(c, footRow)) {
+                e.y = footRow * TILE_SIZE - e.height;
+                e.vy = 0;
+                onGround = true;
+                break;
+            }
+        }
+
+        // Wall collision
+        if (e.facing > 0) {
+            const wallCol = Math.floor((e.x + e.width) / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.isSolid(wallCol, midRow)) {
+                e.x = wallCol * TILE_SIZE - e.width;
+                e.facing = -1;
+                e.charging = false;
+            }
+        } else {
+            const wallCol = Math.floor(e.x / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.isSolid(wallCol, midRow)) {
+                e.x = (wallCol + 1) * TILE_SIZE;
+                e.facing = 1;
+                e.charging = false;
+            }
+        }
+
+        // Edge detection (no charge off cliffs)
+        if (onGround && !e.charging) {
+            const lookAheadCol = e.facing > 0
+                ? Math.floor((e.x + e.width + 4) / TILE_SIZE)
+                : Math.floor((e.x - 4) / TILE_SIZE);
+            const floorBelow = Level.getTile(lookAheadCol, footRow);
+            if (floorBelow === TILE_EMPTY || floorBelow === TILE_HAZARD) {
+                e.facing *= -1;
+            }
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 6) % 4;
+    },
+
+    _updateDustDevil(e) {
+        // Dust Devil: sine-wave movement, invincible, pushes player on contact
+        e.x += e.speed * e.facing;
+        e.y = e.baseY + Math.sin(e.animTimer * 2 + e.sineOffset) * 40;
+
+        // Wall collision: reverse
+        if (e.facing > 0) {
+            const wallCol = Math.floor((e.x + e.width) / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.isSolid(wallCol, midRow)) {
+                e.x = wallCol * TILE_SIZE - e.width;
+                e.facing = -1;
+            }
+        } else {
+            const wallCol = Math.floor(e.x / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.isSolid(wallCol, midRow)) {
+                e.x = (wallCol + 1) * TILE_SIZE;
+                e.facing = 1;
+            }
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 8) % 4;
+    },
+
+    _updateMummy(e) {
+        // Mummy: patrol, revives once after death
+        if (e.state === 'reviving') {
+            e.reviveTimer--;
+            if (e.reviveTimer <= 0) {
+                e.state = 'active';
+                e.health = e.maxHealth;
+                e.revived = true;
+                e.hitFlash = 12;
+            }
+            return;
+        }
+
+        // Normal patrol (like shroomba but slower)
+        e.vx = e.speed * e.facing;
+        e.x += e.vx;
+
+        e.vy += GRAVITY;
+        if (e.vy > TERMINAL_VELOCITY) e.vy = TERMINAL_VELOCITY;
+        e.y += e.vy;
+
+        const footRow = Math.floor((e.y + e.height) / TILE_SIZE);
+        const leftCol = Math.floor(e.x / TILE_SIZE);
+        const rightCol = Math.floor((e.x + e.width - 1) / TILE_SIZE);
+        let onGround = false;
+        for (let c = leftCol; c <= rightCol; c++) {
+            if (Level.isSolid(c, footRow)) {
+                e.y = footRow * TILE_SIZE - e.height;
+                e.vy = 0;
+                onGround = true;
+                break;
+            }
+        }
+
+        // Wall collision
+        if (e.facing > 0) {
+            const wallCol = Math.floor((e.x + e.width) / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.isSolid(wallCol, midRow)) {
+                e.x = wallCol * TILE_SIZE - e.width;
+                e.facing = -1;
+            }
+        } else {
+            const wallCol = Math.floor(e.x / TILE_SIZE);
+            const midRow = Math.floor((e.y + e.height / 2) / TILE_SIZE);
+            if (Level.isSolid(wallCol, midRow)) {
+                e.x = (wallCol + 1) * TILE_SIZE;
+                e.facing = 1;
+            }
+        }
+
+        if (onGround) {
+            const lookAheadCol = e.facing > 0
+                ? Math.floor((e.x + e.width + 4) / TILE_SIZE)
+                : Math.floor((e.x - 4) / TILE_SIZE);
+            const floorBelow = Level.getTile(lookAheadCol, footRow);
+            if (floorBelow === TILE_EMPTY || floorBelow === TILE_HAZARD) {
+                e.facing *= -1;
+            }
+        }
+
+        e.animFrame = Math.floor(e.animTimer * 3) % 2;
+    },
+
+    // =============================================
     // BOSS AI
     // =============================================
 
@@ -414,10 +665,13 @@ const Enemies = {
             case 'elder_shroomba': this._updateElderShroomba(b); break;
             case 'vine_mother': this._updateVineMother(b); break;
             case 'stag_king': this._updateStagKing(b); break;
+            case 'sand_wyrm': this._updateSandWyrm(b); break;
+            case 'pharaoh_specter': this._updatePharaohSpecter(b); break;
+            case 'hydra_cactus': this._updateHydraCactus(b); break;
         }
 
         // Apply gravity to bosses that use it
-        if (b.type !== 'vine_mother') {
+        if (b.type !== 'vine_mother' && b.type !== 'pharaoh_specter' && b.type !== 'hydra_cactus') {
             b.vy += GRAVITY;
             if (b.vy > TERMINAL_VELOCITY) b.vy = TERMINAL_VELOCITY;
             b.y += b.vy;
@@ -660,6 +914,287 @@ const Enemies = {
     },
 
     // =============================================
+    // DESERT BOSS AI
+    // =============================================
+
+    _updateSandWyrm(b) {
+        // Sand Wyrm: emerges from below, attacks, then submerges
+        const vulnDuration = b.phase === 1 ? 80 : 55;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            if (b.attackTimer === 1) {
+                b.submerged = true;
+                // Move to player's X position
+                b.targetX = Player.x;
+            }
+
+            // Submerged phase: move underground toward player
+            if (b.attackTimer < 30) {
+                if (b.submerged) {
+                    const dx = b.targetX - b.x;
+                    b.x += Math.sign(dx) * 3;
+                }
+            }
+
+            // Emerge!
+            if (b.attackTimer === 30) {
+                b.submerged = false;
+                b.vy = -12;
+                // Spawn projectiles (sand spray)
+                for (let i = -2; i <= 2; i++) {
+                    this.projectiles.push({
+                        x: b.x + b.width / 2 + i * 15,
+                        y: b.y + b.height,
+                        vx: i * 1.5,
+                        vy: -3 - Math.random() * 2,
+                        width: 12, height: 12,
+                        life: 1.2, hostile: true,
+                        type: 'sand_spray', ignoreWalls: true,
+                        gravity: 0.15,
+                        animTimer: 0,
+                    });
+                }
+                Particles.spawnLandingDust(b.x + b.width / 2, b.y + b.height);
+            }
+
+            // Phase 2: additional sand burst
+            if (b.phase === 2 && b.attackTimer === 50) {
+                for (let i = -3; i <= 3; i++) {
+                    this.projectiles.push({
+                        x: b.x + b.width / 2 + i * 12,
+                        y: b.y,
+                        vx: i * 2,
+                        vy: -4,
+                        width: 10, height: 10,
+                        life: 1.5, hostile: true,
+                        type: 'sand_spray', ignoreWalls: true,
+                        gravity: 0.12,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            const attackDuration = b.phase === 1 ? 65 : 75;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.submerged = false;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+    },
+
+    _updatePharaohSpecter(b) {
+        // Pharaoh Specter: teleports and summons minions/projectiles
+        const vulnDuration = b.phase === 1 ? 90 : 60;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Teleport at start of attack
+            if (b.attackTimer === 1) {
+                b.teleportTimer = 0;
+                // Teleport to random position in arena
+                const arenaLeft = (Level.bossArenaX || 0) + TILE_SIZE * 2;
+                const arenaRight = Level.width * TILE_SIZE - TILE_SIZE * 3;
+                b.x = arenaLeft + Math.random() * (arenaRight - arenaLeft);
+                b.y = (Level.height * 0.3 + Math.random() * Level.height * 0.3) * TILE_SIZE;
+                b.facing = Player.x > b.x ? 1 : -1;
+                // Teleport particles
+                for (let i = 0; i < 8; i++) {
+                    Particles.particles.push({
+                        x: b.x + b.width / 2 + (Math.random() - 0.5) * 30,
+                        y: b.y + b.height / 2 + (Math.random() - 0.5) * 30,
+                        vx: (Math.random() - 0.5) * 3,
+                        vy: -1 - Math.random() * 2,
+                        gravity: 0,
+                        size: 3 + Math.random() * 3,
+                        color: COLORS.desert.bleachedBone,
+                        life: 0.6,
+                        maxLife: 0.6,
+                        shrink: true,
+                        shape: 'circle'
+                    });
+                }
+            }
+
+            // Fire projectiles
+            if (b.attackTimer === 25) {
+                const dx = Player.x - b.x;
+                const dy = Player.y - b.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 0) {
+                    const count = b.phase === 1 ? 3 : 5;
+                    for (let i = 0; i < count; i++) {
+                        const angle = Math.atan2(dy, dx) + (i - Math.floor(count / 2)) * 0.3;
+                        this.projectiles.push({
+                            x: b.x + b.width / 2,
+                            y: b.y + b.height / 2,
+                            vx: Math.cos(angle) * 2.5,
+                            vy: Math.sin(angle) * 2.5,
+                            width: 10, height: 10,
+                            life: 2.5, hostile: true,
+                            type: 'spectre_orb', ignoreWalls: false,
+                            animTimer: 0,
+                        });
+                    }
+                }
+            }
+
+            // Phase 2: second teleport + attack
+            if (b.phase === 2 && b.attackTimer === 45) {
+                const arenaLeft = (Level.bossArenaX || 0) + TILE_SIZE * 2;
+                const arenaRight = Level.width * TILE_SIZE - TILE_SIZE * 3;
+                b.x = arenaLeft + Math.random() * (arenaRight - arenaLeft);
+                b.y = (Level.height * 0.25) * TILE_SIZE;
+                // Another volley
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    this.projectiles.push({
+                        x: b.x + b.width / 2,
+                        y: b.y + b.height / 2,
+                        vx: Math.cos(angle) * 2,
+                        vy: Math.sin(angle) * 2,
+                        width: 10, height: 10,
+                        life: 2.5, hostile: true,
+                        type: 'spectre_orb', ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            const attackDuration = b.phase === 1 ? 60 : 70;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vulnerableTimer--;
+            // Hover slightly
+            b.y += Math.sin(b.stateTimer * 0.1) * 0.3;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+    },
+
+    _updateHydraCactus(b) {
+        // Hydra Cactus: 3 heads, each with 4 HP, total 12
+        const vulnDuration = b.phase === 1 ? 90 : 65;
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+
+            // Each head attacks independently
+            if (b.attackTimer === 20 && b.heads[0].active) {
+                // Head 1: spray left
+                this.projectiles.push({
+                    x: b.x - 10, y: b.y + 10,
+                    vx: -2.5, vy: -1,
+                    width: 10, height: 10,
+                    life: 2.0, hostile: true,
+                    type: 'cactus_thorn', ignoreWalls: false,
+                    gravity: 0.08, animTimer: 0,
+                });
+            }
+            if (b.attackTimer === 30 && b.heads[1].active) {
+                // Head 2: spray at player
+                const dx = Player.x - b.x;
+                const dy = Player.y - b.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                this.projectiles.push({
+                    x: b.x + b.width / 2, y: b.y - 10,
+                    vx: (dx / dist) * 3, vy: (dy / dist) * 3,
+                    width: 10, height: 10,
+                    life: 2.0, hostile: true,
+                    type: 'cactus_thorn', ignoreWalls: false,
+                    animTimer: 0,
+                });
+            }
+            if (b.attackTimer === 40 && b.heads[2].active) {
+                // Head 3: spray right
+                this.projectiles.push({
+                    x: b.x + b.width + 10, y: b.y + 10,
+                    vx: 2.5, vy: -1,
+                    width: 10, height: 10,
+                    life: 2.0, hostile: true,
+                    type: 'cactus_thorn', ignoreWalls: false,
+                    gravity: 0.08, animTimer: 0,
+                });
+            }
+
+            // Phase 2: additional thorns
+            if (b.phase === 2 && b.attackTimer === 50) {
+                for (let i = 0; i < 4; i++) {
+                    const angle = (i / 4) * Math.PI * 2;
+                    this.projectiles.push({
+                        x: b.x + b.width / 2, y: b.y + b.height / 2,
+                        vx: Math.cos(angle) * 2, vy: Math.sin(angle) * 2,
+                        width: 8, height: 8,
+                        life: 2.0, hostile: true,
+                        type: 'cactus_thorn', ignoreWalls: false,
+                        animTimer: 0,
+                    });
+                }
+            }
+
+            const attackDuration = b.phase === 1 ? 65 : 75;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vulnerableTimer--;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+            }
+        }
+
+        // Update head states based on health
+        if (b.heads) {
+            // Distribute damage across heads
+            let totalDamage = b.maxHealth - b.health;
+            for (let i = 0; i < b.heads.length; i++) {
+                const headDamage = Math.min(totalDamage, b.heads[i].maxHealth);
+                b.heads[i].health = b.heads[i].maxHealth - headDamage;
+                totalDamage -= headDamage;
+                if (totalDamage < 0) totalDamage = 0;
+                b.heads[i].active = b.heads[i].health > 0;
+            }
+        }
+    },
+
+    // =============================================
     // BOSS DEFEAT
     // =============================================
 
@@ -765,6 +1300,9 @@ const Enemies = {
     // =============================================
 
     _damageEnemy(e, amount) {
+        // Dust Devil is invincible
+        if (e.invincible || e.health === Infinity) return;
+
         e.health -= amount;
         e.hitFlash = 8;
 
@@ -778,6 +1316,16 @@ const Enemies = {
         Particles.spawnAttackSparks(e.x + e.width / 2, e.y + e.height / 2);
 
         if (e.health <= 0) {
+            // Mummy revive check
+            if (e.canRevive && !e.revived && e.reviveCount === 0) {
+                e.health = 0;
+                e.state = 'reviving';
+                e.reviveTimer = 90; // 1.5 seconds
+                e.reviveCount = 1;
+                e.hitFlash = 15;
+                return;
+            }
+
             e.health = 0;
             e.state = 'dying';
             e.deathTimer = e.isBoss ? 1.5 : 0.5;
@@ -793,7 +1341,10 @@ const Enemies = {
                     vy: Math.sin(angle) * speed - 1,
                     gravity: 0.08,
                     size: 2 + Math.random() * 3,
-                    color: e.isBoss ? COLORS.mutedGold : COLORS.forest.leaf,
+                    color: e.isBoss ? COLORS.mutedGold : (
+                        (e.type === 'sand_skitter' || e.type === 'sandskitter' || e.type === 'mummy') ? COLORS.desert.sand :
+                        COLORS.forest.leaf
+                    ),
                     life: 0.6,
                     maxLife: 0.6,
                     shrink: true,
@@ -848,6 +1399,11 @@ const Enemies = {
             case 'shroomba': this._renderShroomba(ctx, e, sx, sy); break;
             case 'thornvine': this._renderThornVine(ctx, e, sx, sy); break;
             case 'barkbeetle': this._renderBarkBeetle(ctx, e, sx, sy); break;
+            case 'sand_skitter':
+            case 'sandskitter': this._renderSandSkitter(ctx, e, sx, sy); break;
+            case 'dust_devil':
+            case 'dustdevil': this._renderDustDevil(ctx, e, sx, sy); break;
+            case 'mummy': this._renderMummy(ctx, e, sx, sy); break;
             default: this._renderShroomba(ctx, e, sx, sy); break;
         }
     },
@@ -987,6 +1543,180 @@ const Enemies = {
     },
 
     // =============================================
+    // DESERT ENEMY RENDERING
+    // =============================================
+
+    _renderSandSkitter(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const isFlash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+        const legAnim = Math.sin(e.animTimer * 10) * 3;
+
+        // Body (low, wide scorpion-like)
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.darkSand;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.5, w * 0.48, h * 0.35, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Shell segments
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.sand;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.45, w * 0.35, h * 0.25, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Legs
+        ctx.strokeStyle = isFlash ? '#FFFFFF' : '#5A4020';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 3; i++) {
+            const lx = sx + w * 0.2 + i * w * 0.25;
+            ctx.beginPath();
+            ctx.moveTo(lx, sy + h * 0.6);
+            ctx.lineTo(lx - 5, sy + h - 1 + legAnim * (i % 2 === 0 ? 1 : -1));
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(sx + w - (lx - sx), sy + h * 0.6);
+            ctx.lineTo(sx + w - (lx - sx) + 5, sy + h - 1 + legAnim * (i % 2 === 0 ? -1 : 1));
+            ctx.stroke();
+        }
+
+        // Pincers
+        ctx.strokeStyle = isFlash ? '#FFFFFF' : COLORS.desert.sand;
+        ctx.lineWidth = 2;
+        const pincerSide = e.facing > 0 ? w : 0;
+        ctx.beginPath();
+        ctx.moveTo(sx + pincerSide, sy + h * 0.4);
+        ctx.lineTo(sx + pincerSide + e.facing * 8, sy + h * 0.2);
+        ctx.lineTo(sx + pincerSide + e.facing * 5, sy + h * 0.4);
+        ctx.stroke();
+
+        // Eyes (red when charging)
+        ctx.fillStyle = e.charging ? '#FF4444' : '#1A1A2E';
+        const eyeX = e.facing > 0 ? w * 0.6 : w * 0.25;
+        ctx.beginPath();
+        ctx.arc(sx + eyeX, sy + h * 0.35, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + eyeX + 6, sy + h * 0.35, 2, 0, Math.PI * 2);
+        ctx.fill();
+    },
+
+    _renderDustDevil(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const spin = e.animTimer * 6;
+
+        // Swirling vortex
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+
+        // Multiple swirling layers
+        for (let i = 0; i < 5; i++) {
+            const layerY = sy + h * (0.1 + i * 0.18);
+            const layerW = w * (0.3 + i * 0.15);
+            const offset = Math.sin(spin + i * 1.2) * (layerW * 0.3);
+
+            ctx.fillStyle = i % 2 === 0 ? COLORS.desert.sand : COLORS.desert.lightStone;
+            ctx.globalAlpha = 0.4 + Math.sin(spin + i) * 0.15;
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2 + offset, layerY, layerW / 2, h * 0.08, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Core funnel shape
+        ctx.globalAlpha = 0.35;
+        ctx.fillStyle = COLORS.desert.darkSand;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.3, sy);
+        ctx.quadraticCurveTo(sx + w / 2 + Math.sin(spin) * 6, sy + h * 0.5, sx + w * 0.15, sy + h);
+        ctx.lineTo(sx + w * 0.85, sy + h);
+        ctx.quadraticCurveTo(sx + w / 2 - Math.sin(spin) * 6, sy + h * 0.5, sx + w * 0.7, sy);
+        ctx.closePath();
+        ctx.fill();
+
+        // Sand particles inside
+        ctx.fillStyle = COLORS.desert.bleachedBone;
+        ctx.globalAlpha = 0.7;
+        for (let i = 0; i < 6; i++) {
+            const px = sx + w / 2 + Math.sin(spin * 2 + i * 1.5) * (w * 0.3);
+            const py = sy + h * (i / 6);
+            ctx.beginPath();
+            ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.globalAlpha = 1.0;
+        ctx.restore();
+    },
+
+    _renderMummy(ctx, e, sx, sy) {
+        const w = e.width;
+        const h = e.height;
+        const isFlash = e.hitFlash > 0 && e.hitFlash % 2 === 0;
+        const sway = Math.sin(e.animTimer * 2) * 1.5;
+
+        ctx.save();
+
+        // Bandage body
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.lightStone;
+        ctx.fillRect(sx + w * 0.2 + sway, sy + h * 0.2, w * 0.6, h * 0.8);
+
+        // Head
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.bleachedBone;
+        ctx.beginPath();
+        ctx.arc(sx + w / 2, sy + h * 0.2, w * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bandage wrapping lines
+        ctx.strokeStyle = isFlash ? '#FFFFFF' : COLORS.desert.darkSand;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 5; i++) {
+            const ly = sy + h * 0.25 + i * h * 0.14;
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.15, ly + sway * (i % 2 === 0 ? 1 : -1));
+            ctx.lineTo(sx + w * 0.85, ly);
+            ctx.stroke();
+        }
+
+        // Eyes (glowing)
+        ctx.fillStyle = e.state === 'reviving' ? '#FFFFFF' : '#44FF44';
+        ctx.globalAlpha = 0.7 + Math.sin(e.animTimer * 3) * 0.3;
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.35, sy + h * 0.18, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.65, sy + h * 0.18, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+
+        // Arms (dangling)
+        ctx.strokeStyle = isFlash ? '#FFFFFF' : COLORS.desert.lightStone;
+        ctx.lineWidth = 3;
+        // Left arm
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.15 + sway, sy + h * 0.35);
+        ctx.lineTo(sx - 3 + sway, sy + h * 0.7 + Math.sin(e.animTimer * 1.5) * 3);
+        ctx.stroke();
+        // Right arm
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.85 + sway, sy + h * 0.35);
+        ctx.lineTo(sx + w + 3 + sway, sy + h * 0.7 + Math.sin(e.animTimer * 1.5 + 1) * 3);
+        ctx.stroke();
+
+        // Reviving effect
+        if (e.state === 'reviving') {
+            ctx.strokeStyle = '#44FF44';
+            ctx.globalAlpha = 0.4 + Math.sin(e.animTimer * 5) * 0.2;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(sx + w / 2, sy + h / 2, w * 0.8, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+
+        ctx.restore();
+    },
+
+    // =============================================
     // BOSS RENDERING
     // =============================================
 
@@ -995,6 +1725,9 @@ const Enemies = {
             case 'elder_shroomba': this._renderElderShroomba(ctx, b, sx, sy); break;
             case 'vine_mother': this._renderVineMother(ctx, b, sx, sy); break;
             case 'stag_king': this._renderStagKing(ctx, b, sx, sy); break;
+            case 'sand_wyrm': this._renderSandWyrm(ctx, b, sx, sy); break;
+            case 'pharaoh_specter': this._renderPharaohSpecter(ctx, b, sx, sy); break;
+            case 'hydra_cactus': this._renderHydraCactus(ctx, b, sx, sy); break;
         }
 
         // Vulnerability indicator
@@ -1207,6 +1940,254 @@ const Enemies = {
     },
 
     // =============================================
+    // DESERT BOSS RENDERING
+    // =============================================
+
+    _renderSandWyrm(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const isFlash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+
+        if (b.submerged) {
+            // Show sand mound moving
+            ctx.fillStyle = COLORS.desert.sand;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2, sy + h, w * 0.8, h * 0.3, 0, Math.PI, 0);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            // Sand particles
+            for (let i = 0; i < 3; i++) {
+                ctx.fillStyle = COLORS.desert.lightStone;
+                ctx.beginPath();
+                ctx.arc(
+                    sx + w / 2 + (Math.random() - 0.5) * w,
+                    sy + h - Math.random() * 10,
+                    2, 0, Math.PI * 2
+                );
+                ctx.fill();
+            }
+            return;
+        }
+
+        // Segmented worm body
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.darkSand;
+        const segments = 5;
+        for (let i = 0; i < segments; i++) {
+            const segY = sy + h * (i / segments);
+            const segW = w * (1 - i * 0.1);
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2, segY + h / (segments * 2), segW / 2, h / (segments * 1.5), 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Head
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.sand;
+        ctx.beginPath();
+        ctx.ellipse(sx + w / 2, sy + h * 0.1, w * 0.45, h * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Mandibles
+        ctx.strokeStyle = isFlash ? '#FFFFFF' : '#3A2A1A';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.2, sy);
+        ctx.lineTo(sx + w * 0.1, sy - 10);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.8, sy);
+        ctx.lineTo(sx + w * 0.9, sy - 10);
+        ctx.stroke();
+
+        // Eyes
+        ctx.fillStyle = '#FF4444';
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.35, sy + h * 0.05, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.65, sy + h * 0.05, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Phase 2 glow
+        if (b.phase === 2) {
+            ctx.strokeStyle = COLORS.desert.sand;
+            ctx.globalAlpha = 0.4 + Math.sin(b.animTimer * 4) * 0.2;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(sx + w / 2, sy + h / 2, w * 0.6, h * 0.6, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    _renderPharaohSpecter(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const isFlash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+        const hover = Math.sin(b.animTimer * 2) * 4;
+
+        ctx.save();
+
+        // Ghostly body (semi-transparent)
+        ctx.globalAlpha = 0.75;
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.bleachedBone;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.2, sy + h * 0.3 + hover);
+        ctx.lineTo(sx + w * 0.5, sy + hover);
+        ctx.lineTo(sx + w * 0.8, sy + h * 0.3 + hover);
+        ctx.lineTo(sx + w * 0.9, sy + h + hover);
+        ctx.quadraticCurveTo(sx + w * 0.7, sy + h * 0.85 + hover, sx + w * 0.5, sy + h + hover);
+        ctx.quadraticCurveTo(sx + w * 0.3, sy + h * 0.85 + hover, sx + w * 0.1, sy + h + hover);
+        ctx.closePath();
+        ctx.fill();
+
+        // Face
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.shadow;
+        // Eyes
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.35, sy + h * 0.35 + hover, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.65, sy + h * 0.35 + hover, 4, 0, Math.PI * 2);
+        ctx.fill();
+        // Eye glow
+        ctx.fillStyle = '#44AAFF';
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.35, sy + h * 0.35 + hover, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.65, sy + h * 0.35 + hover, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Crown/headdress
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.mutedGold;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.25, sy + h * 0.15 + hover);
+        ctx.lineTo(sx + w * 0.5, sy - 8 + hover);
+        ctx.lineTo(sx + w * 0.75, sy + h * 0.15 + hover);
+        ctx.closePath();
+        ctx.fill();
+        // Crown jewel
+        ctx.fillStyle = '#FF4444';
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.5, sy + h * 0.08 + hover, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Staff
+        ctx.strokeStyle = COLORS.mutedGold;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sx + w * 0.85, sy + h * 0.3 + hover);
+        ctx.lineTo(sx + w + 5, sy + h * 0.8 + hover);
+        ctx.stroke();
+        // Staff orb
+        ctx.fillStyle = '#44AAFF';
+        ctx.globalAlpha = 0.6 + Math.sin(b.animTimer * 3) * 0.3;
+        ctx.beginPath();
+        ctx.arc(sx + w * 0.85, sy + h * 0.25 + hover, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = 1.0;
+        ctx.restore();
+    },
+
+    _renderHydraCactus(ctx, b, sx, sy) {
+        const w = b.width;
+        const h = b.height;
+        const isFlash = b.hitFlash > 0 && b.hitFlash % 2 === 0;
+
+        // Main trunk
+        ctx.fillStyle = isFlash ? '#FFFFFF' : '#3A6B2E';
+        ctx.fillRect(sx + w * 0.3, sy + h * 0.3, w * 0.4, h * 0.7);
+        // Trunk texture
+        ctx.strokeStyle = '#2A5A1E';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+            ctx.beginPath();
+            ctx.moveTo(sx + w * 0.3, sy + h * 0.35 + i * h * 0.15);
+            ctx.lineTo(sx + w * 0.7, sy + h * 0.38 + i * h * 0.15);
+            ctx.stroke();
+        }
+
+        // Three heads
+        if (b.heads) {
+            const headPositions = [
+                { x: sx + w * 0.1, y: sy + h * 0.1 },
+                { x: sx + w * 0.4, y: sy - h * 0.05 },
+                { x: sx + w * 0.7, y: sy + h * 0.1 },
+            ];
+
+            for (let i = 0; i < 3; i++) {
+                const head = b.heads[i];
+                const hp = headPositions[i];
+                const sway = Math.sin(b.animTimer * 2 + i * 2) * 3;
+
+                // Neck/arm
+                ctx.strokeStyle = isFlash ? '#FFFFFF' : '#3A6B2E';
+                ctx.lineWidth = 6;
+                ctx.beginPath();
+                ctx.moveTo(sx + w * 0.5, sy + h * 0.35);
+                ctx.quadraticCurveTo(hp.x + sway, sy + h * 0.2, hp.x + sway, hp.y);
+                ctx.stroke();
+
+                if (head.active) {
+                    // Head bulb
+                    ctx.fillStyle = isFlash ? '#FFFFFF' : '#4A8C3F';
+                    ctx.beginPath();
+                    ctx.arc(hp.x + sway, hp.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Spines
+                    ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.sand;
+                    for (let j = 0; j < 3; j++) {
+                        const angle = (j / 3) * Math.PI - Math.PI / 2;
+                        ctx.beginPath();
+                        ctx.moveTo(hp.x + sway + Math.cos(angle) * 8, hp.y + Math.sin(angle) * 8);
+                        ctx.lineTo(hp.x + sway + Math.cos(angle) * 14, hp.y + Math.sin(angle) * 14);
+                        ctx.lineTo(hp.x + sway + Math.cos(angle + 0.3) * 8, hp.y + Math.sin(angle + 0.3) * 8);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    // Eyes
+                    ctx.fillStyle = '#FF4444';
+                    ctx.beginPath();
+                    ctx.arc(hp.x + sway - 3, hp.y - 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(hp.x + sway + 3, hp.y - 2, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Dead head (wilted)
+                    ctx.fillStyle = '#6B5A3A';
+                    ctx.globalAlpha = 0.5;
+                    ctx.beginPath();
+                    ctx.arc(hp.x + sway, hp.y + 5, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+
+        // Pot/base
+        ctx.fillStyle = isFlash ? '#FFFFFF' : COLORS.desert.darkSand;
+        ctx.fillRect(sx + w * 0.15, sy + h * 0.85, w * 0.7, h * 0.15);
+        ctx.fillStyle = COLORS.desert.sand;
+        ctx.fillRect(sx + w * 0.15, sy + h * 0.85, w * 0.7, 3);
+
+        // Phase 2 indicator: thorns glow
+        if (b.phase === 2) {
+            ctx.strokeStyle = '#FF6B2A';
+            ctx.globalAlpha = 0.3 + Math.sin(b.animTimer * 4) * 0.2;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(sx + w / 2, sy + h * 0.4, w * 0.6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    // =============================================
     // PROJECTILE RENDERING
     // =============================================
 
@@ -1256,6 +2237,43 @@ const Enemies = {
                 ctx.fillStyle = '#5A5A4A';
                 ctx.fillRect(sx + 2, sy + 2, p.width - 4, 3);
                 ctx.fillRect(sx, sy, 3, p.height);
+                break;
+
+            case 'sand_spray':
+                ctx.fillStyle = COLORS.desert.sand;
+                ctx.globalAlpha = Math.min(1, p.life);
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, p.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                break;
+
+            case 'spectre_orb':
+                ctx.fillStyle = '#44AAFF';
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, p.width / 2 + Math.sin((p.animTimer || 0) * 8) * 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#88CCFF';
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, p.width / 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                break;
+
+            case 'cactus_thorn':
+                ctx.fillStyle = '#3A6B2E';
+                ctx.beginPath();
+                ctx.moveTo(sx, sy + p.height / 2);
+                ctx.lineTo(sx + p.width / 2, sy);
+                ctx.lineTo(sx + p.width, sy + p.height / 2);
+                ctx.lineTo(sx + p.width / 2, sy + p.height);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = COLORS.desert.sand;
+                ctx.beginPath();
+                ctx.arc(sx + p.width / 2, sy + p.height / 2, 2, 0, Math.PI * 2);
+                ctx.fill();
                 break;
 
             default:
