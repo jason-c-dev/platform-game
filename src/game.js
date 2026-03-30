@@ -10,6 +10,7 @@ const Game = {
     running: false,
     frameTimes: [],
     lastFrameTimestamp: 0,
+    timeScale: 1.0,
 
     init() {
         Renderer.init();
@@ -231,11 +232,12 @@ const Game = {
 
         this.accumulator += dt;
 
-        // Fixed-timestep updates
+        // Fixed-timestep updates (scaled by timeScale for slow-motion C-23)
+        const scaledTimestep = FIXED_TIMESTEP / this.timeScale;
         let updates = 0;
-        while (this.accumulator >= FIXED_TIMESTEP && updates < MAX_FRAME_SKIP) {
+        while (this.accumulator >= scaledTimestep && updates < MAX_FRAME_SKIP) {
             this._update();
-            this.accumulator -= FIXED_TIMESTEP;
+            this.accumulator -= scaledTimestep;
             this.updateCount++;
             updates++;
         }

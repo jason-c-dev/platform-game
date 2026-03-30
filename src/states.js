@@ -461,6 +461,13 @@ const GameState = {
     // STAGE RENDER (shared by STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE)
     // =============================================
     _renderStage(ctx) {
+        // Apply screen shake offset to all game rendering
+        const shaking = Camera.shakeX !== 0 || Camera.shakeY !== 0;
+        if (shaking) {
+            ctx.save();
+            ctx.translate(Camera.shakeX, Camera.shakeY);
+        }
+
         Renderer.renderParallax();
         Renderer.renderTiles();
         // Tundra-specific renders
@@ -482,8 +489,18 @@ const GameState = {
         Renderer.updateAndRenderSnow();
         // Ember overlay for volcano (above everything except HUD)
         Renderer.updateAndRenderEmbers();
+        // Forest leaf overlay
+        Renderer.updateAndRenderLeaves();
+        // Desert sand overlay
+        Renderer.updateAndRenderSand();
         // Dark room overlay (after everything else, before HUD)
         if (Level.isDark) Renderer.renderDarkOverlay(ctx);
+
+        // Restore canvas state before rendering HUD (HUD should not shake)
+        if (shaking) {
+            ctx.restore();
+        }
+
         HUD.render(ctx);
     }
 };

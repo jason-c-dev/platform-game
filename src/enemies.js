@@ -1339,7 +1339,8 @@ const Enemies = {
                     animTimer: 0,
                 });
 
-                // Screen shake
+                // Screen shake + dust on shockwave slam
+                Camera.shake(8, 0.4);
                 Particles.spawnLandingDust(b.x + b.width / 2, b.y + b.height);
 
                 // Transition to vulnerable
@@ -2320,13 +2321,33 @@ const Enemies = {
         HUD.bossActive = false;
         AudioManager.stopBossMusic();
 
-        // Spawn celebration particles
+        // Determine world-specific colors for boss defeat particles (C-16)
+        const stageId = GameState.currentStageId || '1-1';
+        const worldNum = parseInt(stageId.charAt(0));
+        let bossColors;
+        if (worldNum === 1) {
+            // Forest — greens/browns
+            bossColors = [COLORS.forest.leaf, COLORS.forest.deepCanopy, COLORS.forest.highlight, COLORS.forest.bark, '#6BC060'];
+        } else if (worldNum === 2) {
+            // Desert — sands/golds
+            bossColors = [COLORS.desert.sand, COLORS.desert.darkSand, COLORS.desert.lightStone, COLORS.desert.bleachedBone, COLORS.mutedGold];
+        } else if (worldNum === 3) {
+            // Tundra — blues/whites
+            bossColors = [COLORS.tundra.iceBlue, COLORS.tundra.snowWhite, COLORS.tundra.deepIce, COLORS.tundra.auroraGreen, '#FFFFFF'];
+        } else if (worldNum === 4) {
+            // Volcano — reds/oranges
+            bossColors = [COLORS.volcano.lavaOrange, COLORS.volcano.moltenYellow, COLORS.volcano.darkRed, '#FF4444', '#FFB030'];
+        } else {
+            // Citadel (5) — multi-colored celebration
+            bossColors = [COLORS.mutedGold, COLORS.forest.leaf, COLORS.tundra.iceBlue, COLORS.volcano.lavaOrange, COLORS.desert.sand, '#FF69B4', '#FFFFFF'];
+        }
+
+        // Spawn celebration particles with world-appropriate colors
         const cx = Level.bossArenaX ? Level.bossArenaX + 8 * TILE_SIZE : CANVAS_WIDTH / 2 + Camera.x;
         const cy = Camera.y + CANVAS_HEIGHT / 2;
         for (let i = 0; i < 30; i++) {
             const angle = (i / 30) * Math.PI * 2;
             const speed = 2 + Math.random() * 4;
-            const colors = [COLORS.mutedGold, COLORS.mossGreen, COLORS.softCream, '#FF6B6B', COLORS.forest.highlight];
             Particles.particles.push({
                 x: cx + (Math.random() - 0.5) * 40,
                 y: cy + (Math.random() - 0.5) * 40,
@@ -2334,13 +2355,22 @@ const Enemies = {
                 vy: Math.sin(angle) * speed - 2,
                 gravity: 0.08,
                 size: 3 + Math.random() * 4,
-                color: colors[i % colors.length],
+                color: bossColors[i % bossColors.length],
                 life: 1.5,
                 maxLife: 1.5,
                 shrink: false,
                 shape: Math.random() > 0.5 ? 'rect' : 'circle'
             });
         }
+
+        // Strong screen shake on boss defeat (C-17) — design spec: 8px explosion, 400ms (2x+ boss hit)
+        Camera.shake(12, 0.5);
+
+        // Slow-motion effect on boss defeat (C-14)
+        Game.timeScale = 0.3;
+        setTimeout(() => {
+            Game.timeScale = 1.0;
+        }, 1000);
 
         // Unlock camera
         Camera.locked = false;
@@ -2710,6 +2740,8 @@ const Enemies = {
         // Audio feedback
         if (e.isBoss) {
             AudioManager.playBossHit();
+            // Screen shake on boss hit (C-03) — design spec: 6px, 300ms
+            Camera.shake(6, 0.3);
         } else {
             AudioManager.playEnemyHit();
         }

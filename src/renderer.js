@@ -29,6 +29,14 @@ const Renderer = {
     _emberParticles: [],
     _emberInitialized: false,
 
+    // Leaf particles for forest world (C-07)
+    _leafParticles: [],
+    _leafInitialized: false,
+
+    // Sand particles for desert world (C-08)
+    _sandParticles: [],
+    _sandInitialized: false,
+
     clear() {
         const world = this._getCurrentWorld();
         if (world === 3) {
@@ -1309,6 +1317,14 @@ const Renderer = {
                 this._drawPlayerIdle(ctx, w, h, player);
         }
 
+        // Player hit flash — white overlay on damage frame (C-05)
+        if (player.hitFlash > 0) {
+            ctx.globalCompositeOperation = 'source-atop';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, w, h);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
         ctx.restore();
 
         // Render charge indicator if charging
@@ -2539,6 +2555,129 @@ const Renderer = {
             // Render — glowing ember
             ctx.fillStyle = p.color;
             ctx.globalAlpha = p.alpha * (0.5 + Math.sin(this.frameTime * 3 + p.wobble) * 0.5);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+    },
+
+    // =======================
+    // LEAF PARTICLES (Forest foreground effect) (C-07)
+    // =======================
+    _initLeafParticles() {
+        this._leafParticles = [];
+        const leafColors = [COLORS.forest.leaf, COLORS.forest.deepCanopy, COLORS.forest.highlight, COLORS.forest.bark, '#6BC060'];
+        for (let i = 0; i < 30; i++) {
+            this._leafParticles.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * CANVAS_HEIGHT,
+                size: 2 + Math.random() * 3,
+                speedY: 0.2 + Math.random() * 0.5,
+                speedX: -0.1 + Math.random() * 0.2,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.8 + Math.random() * 1.5,
+                alpha: 0.4 + Math.random() * 0.4,
+                color: leafColors[Math.floor(Math.random() * leafColors.length)],
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.05,
+            });
+        }
+        this._leafInitialized = true;
+    },
+
+    updateAndRenderLeaves() {
+        const world = this._getCurrentWorld();
+        if (world !== 0) {
+            this._leafInitialized = false;
+            return;
+        }
+
+        if (!this._leafInitialized) this._initLeafParticles();
+
+        const ctx = this.ctx;
+        for (const p of this._leafParticles) {
+            // Update — drift downward with sinusoidal sway
+            p.y += p.speedY;
+            p.wobble += p.wobbleSpeed * (1 / 60);
+            p.x += p.speedX + Math.sin(p.wobble) * 0.5;
+            p.rotation += p.rotSpeed;
+
+            // Wrap around
+            if (p.y > CANVAS_HEIGHT + 10) {
+                p.y = -10;
+                p.x = Math.random() * CANVAS_WIDTH;
+            }
+            if (p.x < -10) p.x = CANVAS_WIDTH + 10;
+            if (p.x > CANVAS_WIDTH + 10) p.x = -10;
+
+            // Render — leaf shape (small elongated oval)
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rotation);
+            ctx.beginPath();
+            ctx.ellipse(0, 0, p.size * 1.5, p.size * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        ctx.globalAlpha = 1.0;
+    },
+
+    // =======================
+    // SAND PARTICLES (Desert foreground effect) (C-08)
+    // =======================
+    _initSandParticles() {
+        this._sandParticles = [];
+        const sandColors = [COLORS.desert.sand, COLORS.desert.darkSand, COLORS.desert.lightStone, COLORS.desert.bleachedBone];
+        for (let i = 0; i < 35; i++) {
+            this._sandParticles.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * CANVAS_HEIGHT,
+                size: 1 + Math.random() * 2,
+                speedX: 0.5 + Math.random() * 1.2,  // Windblown horizontal
+                speedY: 0.05 + Math.random() * 0.15, // Slight downward drift
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.5 + Math.random() * 1.5,
+                alpha: 0.2 + Math.random() * 0.4,
+                color: sandColors[Math.floor(Math.random() * sandColors.length)],
+            });
+        }
+        this._sandInitialized = true;
+    },
+
+    updateAndRenderSand() {
+        const world = this._getCurrentWorld();
+        if (world !== 1) {
+            this._sandInitialized = false;
+            return;
+        }
+
+        if (!this._sandInitialized) this._initSandParticles();
+
+        const ctx = this.ctx;
+        for (const p of this._sandParticles) {
+            // Update — drift primarily horizontally (windblown) with slight vertical variation
+            p.x += p.speedX;
+            p.wobble += p.wobbleSpeed * (1 / 60);
+            p.y += p.speedY + Math.sin(p.wobble) * 0.15;
+
+            // Wrap around
+            if (p.x > CANVAS_WIDTH + 10) {
+                p.x = -10;
+                p.y = Math.random() * CANVAS_HEIGHT;
+            }
+            if (p.y > CANVAS_HEIGHT + 5) {
+                p.y = -5;
+            }
+            if (p.y < -5) {
+                p.y = CANVAS_HEIGHT + 5;
+            }
+
+            // Render — small sand grain (circle)
+            ctx.fillStyle = p.color;
+            ctx.globalAlpha = p.alpha;
             ctx.beginPath();
             ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();

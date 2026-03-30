@@ -10,6 +10,9 @@ const Camera = {
     targetY: 0,
     shakeX: 0,
     shakeY: 0,
+    shakeIntensity: 0,
+    shakeDuration: 0,
+    shakeTimer: 0,
 
     // Arena lock for boss fights
     locked: false,
@@ -114,6 +117,37 @@ const Camera = {
         this.maxX = null;
     },
 
+    shake(intensity, duration) {
+        // Only override if the new shake is stronger or current has faded
+        if (intensity >= this.shakeIntensity) {
+            this.shakeIntensity = intensity;
+            this.shakeDuration = duration;
+            this.shakeTimer = duration;
+        }
+    },
+
+    updateShake() {
+        if (this.shakeTimer > 0) {
+            this.shakeTimer -= 1 / 60;
+            // Linear decay: intensity reduces proportionally to remaining time
+            const progress = Math.max(0, this.shakeTimer / this.shakeDuration);
+            const currentIntensity = this.shakeIntensity * progress;
+            this.shakeX = (Math.random() * 2 - 1) * currentIntensity;
+            this.shakeY = (Math.random() * 2 - 1) * currentIntensity;
+
+            if (this.shakeTimer <= 0) {
+                this.shakeTimer = 0;
+                this.shakeIntensity = 0;
+                this.shakeDuration = 0;
+                this.shakeX = 0;
+                this.shakeY = 0;
+            }
+        } else {
+            this.shakeX = 0;
+            this.shakeY = 0;
+        }
+    },
+
     update(targetEntity) {
         // Auto-scroll mode (stage 3-3)
         if (this.autoScroll && !this.locked) {
@@ -144,6 +178,8 @@ const Camera = {
                     targetEntity.takeDamage();
                 }
             }
+            // Update screen shake in auto-scroll mode too
+            this.updateShake();
             return;
         }
 
@@ -180,6 +216,9 @@ const Camera = {
         if (this.x > levelMaxX) this.x = levelMaxX;
         if (this.y < 0) this.y = 0;
         if (this.y > levelMaxY) this.y = levelMaxY;
+
+        // Update screen shake
+        this.updateShake();
     },
 
     _generateMountains() {
