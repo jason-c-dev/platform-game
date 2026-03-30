@@ -338,6 +338,17 @@ const GameState = {
         Particles.update();
         Camera.update(Player);
 
+        // Auto-scroll kill boundary (C-23: stage 3-3 Avalanche Peak)
+        if (Camera.autoScroll && !Camera.locked) {
+            const killBoundary = Camera.autoScrollX - TILE_SIZE;
+            if (Player.x + Player.width < killBoundary) {
+                // Player fell behind the auto-scroll — take damage
+                if (!Player.invincible && Player.state !== 'dead' && Player.state !== 'hurt') {
+                    Player.takeDamage();
+                }
+            }
+        }
+
         // Check boss arena trigger
         this._checkBossArena();
 

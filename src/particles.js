@@ -4,6 +4,7 @@
 
 const Particles = {
     particles: [],
+    MAX_PARTICLES: 300, // Hard cap to prevent unbounded growth
 
     init() {
         this.particles = [];
@@ -22,6 +23,11 @@ const Particles = {
             if (p.life <= 0 || p.size < 0.3) {
                 this.particles.splice(i, 1);
             }
+        }
+
+        // Enforce hard cap — remove oldest particles if over limit
+        while (this.particles.length > this.MAX_PARTICLES) {
+            this.particles.shift();
         }
     },
 
