@@ -145,11 +145,14 @@ const Game = {
             transitionTo: (state) => {
                 GameState.transitionTo(state);
             },
-            // Sprint 5: Enemy/Boss debug API
+            // Sprint 5/6: Enemy/Boss debug API
             getEnemyCount: () => Enemies.enemies.length,
             getEnemies: () => Enemies.enemies.map(e => ({
                 type: e.type, x: e.x, y: e.y, health: e.health,
-                speed: e.speed, state: e.state, isBoss: e.isBoss
+                speed: e.speed, state: e.state, isBoss: e.isBoss,
+                invincible: e.invincible, behavior: e.behavior,
+                revived: e.revived, canRevive: e.canRevive,
+                reviveCount: e.reviveCount, charging: e.charging
             })),
             getBoss: () => {
                 const b = Enemies.boss;
@@ -157,7 +160,10 @@ const Game = {
                 return {
                     type: b.type, health: b.health, maxHealth: b.maxHealth,
                     phase: b.phase, vulnerable: b.vulnerable,
-                    state: b.state, attackPattern: b.attackPattern
+                    state: b.state, attackPattern: b.attackPattern,
+                    name: b.name || HUD.bossName,
+                    heads: b.heads, headCount: b.headCount,
+                    submerged: b.submerged
                 };
             },
             spawnEnemy: (type, x, y) => Enemies.spawn(type, x, y),
