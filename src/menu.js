@@ -93,13 +93,16 @@ const Menu = {
         // Navigate menu
         if (Input.isJustPressed('ArrowDown')) {
             this.selectedIndex = (this.selectedIndex + 1) % this._titleOptions.length;
+            AudioManager.playMenuSelect();
         }
         if (Input.isJustPressed('ArrowUp')) {
             this.selectedIndex = (this.selectedIndex - 1 + this._titleOptions.length) % this._titleOptions.length;
+            AudioManager.playMenuSelect();
         }
 
         // Handle input
         if (Input.isJustPressed('Enter')) {
+            AudioManager.playMenuConfirm();
             const selected = this._titleOptions[this.selectedIndex];
             if (selected === 'Continue') {
                 // Continue — load save and go to world map
@@ -128,12 +131,15 @@ const Menu = {
     _updateNewGameConfirm() {
         if (Input.isJustPressed('ArrowLeft') || Input.isJustPressed('ArrowRight')) {
             this._confirmSelectedIndex = this._confirmSelectedIndex === 0 ? 1 : 0;
+            AudioManager.playMenuSelect();
         }
         if (Input.isJustPressed('ArrowUp') || Input.isJustPressed('ArrowDown')) {
             this._confirmSelectedIndex = this._confirmSelectedIndex === 0 ? 1 : 0;
+            AudioManager.playMenuSelect();
         }
 
         if (Input.isJustPressed('Enter')) {
+            AudioManager.playMenuConfirm();
             if (this._confirmSelectedIndex === 0) {
                 // Yes — clear save and start new
                 SaveSystem.clearSave();
@@ -507,14 +513,21 @@ const Menu = {
     // =============================================
     // PAUSE MENU
     // =============================================
-    _pauseOptions: ['Resume', 'Restart Stage', 'Return to World Map', 'Quit to Title'],
+    _pauseOptions: ['Resume', 'Volume', 'Mute: OFF', 'Restart Stage', 'Return to World Map', 'Quit to Title'],
 
     initPause() {
         this.selectedIndex = 0;
+        // Update mute label to reflect current state
+        this._pauseOptions[2] = AudioManager.muted ? 'Mute: ON' : 'Mute: OFF';
     },
 
     updatePause() {
         this.animTimer += 1 / 60;
+
+        // Update dynamic labels
+        const volPct = Math.round(AudioManager.masterVolume * 100);
+        this._pauseOptions[1] = 'Volume: ' + volPct + '%';
+        this._pauseOptions[2] = AudioManager.muted ? 'Mute: ON' : 'Mute: OFF';
 
         // Escape to resume
         if (Input.isJustPressed('Escape')) {
@@ -525,28 +538,54 @@ const Menu = {
         // Navigate
         if (Input.isJustPressed('ArrowDown')) {
             this.selectedIndex = (this.selectedIndex + 1) % this._pauseOptions.length;
+            AudioManager.playMenuSelect();
         }
         if (Input.isJustPressed('ArrowUp')) {
             this.selectedIndex = (this.selectedIndex - 1 + this._pauseOptions.length) % this._pauseOptions.length;
+            AudioManager.playMenuSelect();
+        }
+
+        // Volume adjustment (left/right on Volume option)
+        if (this.selectedIndex === 1) {
+            if (Input.isJustPressed('ArrowLeft')) {
+                AudioManager.masterVolume = Math.max(0, AudioManager.masterVolume - 0.1);
+                AudioManager.playMenuSelect();
+            }
+            if (Input.isJustPressed('ArrowRight')) {
+                AudioManager.masterVolume = Math.min(1, AudioManager.masterVolume + 0.1);
+                AudioManager.playMenuSelect();
+            }
         }
 
         // Select
         if (Input.isJustPressed('Enter')) {
+            AudioManager.playMenuConfirm();
             switch (this.selectedIndex) {
                 case 0: // Resume
                     GameState.changeTo(GameState.STAGE);
                     break;
-                case 1: // Restart Stage
+                case 1: // Volume — Enter does nothing (use left/right)
+                    break;
+                case 2: // Mute toggle
+                    AudioManager.muted = !AudioManager.muted;
+                    break;
+                case 3: // Restart Stage
+                    AudioManager.stopAmbient();
+                    AudioManager.stopBossMusic();
                     GameState.transitionTo(GameState.STAGE, () => {
                         GameState.restartStage();
                     });
                     break;
-                case 2: // Return to World Map
+                case 4: // Return to World Map
+                    AudioManager.stopAmbient();
+                    AudioManager.stopBossMusic();
                     GameState.transitionTo(GameState.WORLD_MAP, () => {
                         GameState.setupWorldMap();
                     });
                     break;
-                case 3: // Quit to Title
+                case 5: // Quit to Title
+                    AudioManager.stopAmbient();
+                    AudioManager.stopBossMusic();
                     GameState.transitionTo(GameState.TITLE, () => {
                         GameState.setupTitle();
                     });
@@ -562,15 +601,15 @@ const Menu = {
 
         // "PAUSED" title
         this._drawTextWithOutline(ctx, 'PAUSED',
-            CANVAS_WIDTH / 2, 180,
+            CANVAS_WIDTH / 2, 140,
             'bold 28px sans-serif',
             COLORS.mutedGold, COLORS.deepCharcoal, 'center');
 
         // Menu panel
-        const panelW = 260;
-        const panelH = this._pauseOptions.length * 48 + 32;
+        const panelW = 280;
+        const panelH = this._pauseOptions.length * 44 + 32;
         const panelX = (CANVAS_WIDTH - panelW) / 2;
-        const panelY = 210;
+        const panelY = 165;
 
         ctx.fillStyle = 'rgba(45, 45, 68, 0.9)';
         this._roundRect(ctx, panelX, panelY, panelW, panelH, 8);
@@ -598,19 +637,26 @@ const Menu = {
 
         if (Input.isJustPressed('ArrowDown')) {
             this.selectedIndex = (this.selectedIndex + 1) % this._gameOverOptions.length;
+            AudioManager.playMenuSelect();
         }
         if (Input.isJustPressed('ArrowUp')) {
             this.selectedIndex = (this.selectedIndex - 1 + this._gameOverOptions.length) % this._gameOverOptions.length;
+            AudioManager.playMenuSelect();
         }
 
         if (Input.isJustPressed('Enter')) {
+            AudioManager.playMenuConfirm();
             switch (this.selectedIndex) {
                 case 0: // Continue — restart stage with refreshed lives/HP
+                    AudioManager.stopAmbient();
+                    AudioManager.stopBossMusic();
                     GameState.transitionTo(GameState.STAGE, () => {
                         GameState.restartStage();
                     });
                     break;
                 case 1: // Quit to Title
+                    AudioManager.stopAmbient();
+                    AudioManager.stopBossMusic();
                     GameState.transitionTo(GameState.TITLE, () => {
                         GameState.setupTitle();
                     });
@@ -666,6 +712,8 @@ const Menu = {
         this.animTimer += 1 / 60;
 
         if (Input.isJustPressed('Enter')) {
+            AudioManager.playMenuConfirm();
+            AudioManager.stopAmbient();
             // Return to world map (not title)
             GameState.transitionTo(GameState.WORLD_MAP, () => {
                 GameState.setupWorldMap();
@@ -786,6 +834,8 @@ const Menu = {
 
         // Return to title on Enter
         if (Input.isJustPressed('Enter')) {
+            AudioManager.playMenuConfirm();
+            AudioManager.stopAmbient();
             GameState.transitionTo(GameState.TITLE, () => {
                 GameState.setupTitle();
             });

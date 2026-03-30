@@ -98,6 +98,7 @@ const Collectibles = {
             GameState.coinsCollected++;
             // Spawn collection particles
             Particles.spawnCoinCollect(item.x + item.width / 2, item.y + item.height / 2);
+            AudioManager.playCoinCollect();
         } else if (item.type === 'health') {
             // Only collect if player is damaged
             if (Player.hp < PLAYER_MAX_HP) {
@@ -105,6 +106,7 @@ const Collectibles = {
                 Player.hp = Math.min(Player.hp + 1, PLAYER_MAX_HP);
                 // Spawn health collect particles
                 Particles.spawnHealthCollect(item.x + item.width / 2, item.y + item.height / 2);
+                AudioManager.playHealthPickup();
             }
             // If at full HP, don't collect — item stays
         }
