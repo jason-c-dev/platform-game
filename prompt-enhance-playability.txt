@@ -1,0 +1,62 @@
+Add a playability validation system and rebalance all stages for a fair difficulty
+  curve. This extends the existing 4-world, 13-stage platformer.
+
+  ## Playability Validator
+
+  Add a debug mode (accessible via a key press on the title screen, e.g. press "D")
+  that runs an automated validation of every stage:
+
+  ### Path Validation
+  - For each stage, simulate a simple AI agent that can: walk left/right, jump,
+    wall-jump, and attack. The agent uses breadth-first search on the tile map to
+    find a traversable path from the player spawn point to the boss trigger zone.
+  - A tile is "reachable" if the player can stand on it given normal physics
+    (gravity, jump height of 4 tiles, wall-jump reach of 3 tiles horizontal).
+  - Report: for each stage, PASS if a path exists, FAIL with the coordinates of
+    the first unreachable required section.
+  - The boss arena must have a clear entry point that the player can walk into
+    from the left side without requiring wall-jumps or precision moves.
+
+  ### Boss Arena Validation
+  - Every boss arena must be fully enclosed (solid walls on all 4 sides) except
+    for the entry point.
+  - Boss entity X position must be clamped to the arena bounds at all times.
+  - Boss must reset to center of arena when player dies/respawns.
+
+  ### Difficulty Scaling Parameters
+  The validator checks these concrete values per world:
+
+  | Parameter | World 1 | World 2 | World 3 | World 4 | Citadel |
+  |-----------|---------|---------|---------|---------|---------|
+  | Boss vulnerability window (seconds) | 3.0 | 2.5 | 2.0 | 1.5 | 1.5 |
+  | Boss hits to defeat (max) | 5-7 | 6-8 | 7-9 | 7-11 | 19 |
+  | Enemy density (max per screen) | 2 | 3 | 4 | 5 | 5 |
+  | Hazard tile percentage (max) | 5% | 10% | 15% | 20% | 20% |
+  | Minimum safe platform width | 3 tiles | 2 tiles | 2 tiles | 1 tile | 1 tile |
+
+  ### Known Broken Levels (from play-testing)
+  - Stage 1-1: Elder Shroomba vulnerability window too short, feels unfair for
+    a tutorial boss. Recovery after jump landing should be obvious and generous.
+  - Stage 1-2 (Hollow Depths): Layout appears impassable or requires unknown
+    mechanics to progress past the initial section.
+  - All boss arenas should be reviewed for: entry accessibility, boss containment,
+    and whether the boss can be defeated using only the mechanics introduced up to
+    that point.
+
+  ## Level Layout Fixes
+  - Fix any stage where the validator reports FAIL.
+  - Ensure no stage requires mechanics not yet introduced. World 1 should only
+    need walk, jump, and basic attack. Wall-jump is introduced in Stage 1-2.
+    Swimming is introduced in Stage 2-3. Ice physics start in Stage 3-1.
+  - Boss arenas must have at least 2 platforms for the player to use for
+    positioning, and enough horizontal space (minimum 15 tiles wide) to dodge
+    attacks.
+
+  ## Evaluator Integration
+  - The validator runs as a Playwright-callable function: window.runPlayabilityCheck()
+    returns a JSON report with per-stage results.
+  - The evaluator must call this function and verify all 13 stages report PASS.
+  - This becomes a regression criterion for all future changes.
+
+  This gives the planner concrete numbers to decompose into sprints and the evaluator clear pass/fail criteria. The difficulty table alone
+  prevents the "technically works but impossible to play" problem.
