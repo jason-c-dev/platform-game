@@ -1,0 +1,180 @@
+{
+  "sprint": 11,
+  "decision": "accepted",
+  "reviewDate": "2026-03-30",
+  "summary": "Strong, comprehensive contract. 28 criteria cover all F23 deliverables with testable thresholds and clear test steps. Coverage is thorough across screen shake, hit flash, ambient particles, death animation, boss defeat effects, iris-wipe transitions, and integration checks. Minor suggestions noted but none rise to blocking.",
+  "featureCoverage": {
+    "F23: Visual Effects & Screen Polish": {
+      "covered": true,
+      "details": "All F23 sub-features are covered: screen shake (C-01 through C-04, C-17, C-28), hit flash (C-05, C-06), ambient particles per world (C-07 through C-11), death animation (C-12, C-13), boss defeat slow-mo + explosion (C-14 through C-17), iris-wipe transitions (C-18, C-19), movement particles (C-20 through C-22), block destruction (C-24), time scale system (C-23), integration/perf (C-25 through C-27)."
+    }
+  },
+  "sprintPlanAlignment": {
+    "aligned": true,
+    "themeItems": {
+      "Particles": "Covered by C-07 through C-13, C-15, C-16, C-20 through C-22, C-24",
+      "Screen shake": "Covered by C-01 through C-04, C-17, C-28",
+      "Hit flash": "Covered by C-05, C-06",
+      "Death animation": "Covered by C-12, C-13",
+      "Boss defeat slow-mo": "Covered by C-14, C-23",
+      "Iris-wipe transitions": "Covered by C-18, C-19",
+      "World ambient particles": "Covered by C-07 through C-11"
+    }
+  },
+  "criteriaReview": [
+    {
+      "id": "C-01",
+      "verdict": "ok",
+      "notes": "Testable. Test steps assume Camera is globally accessible — generator should ensure Camera is exposed on window/Game for console testing."
+    },
+    {
+      "id": "C-02",
+      "verdict": "ok",
+      "notes": "Code inspection is appropriate. Threshold is clear — shake offsets must be applied to the render pass."
+    },
+    {
+      "id": "C-03",
+      "verdict": "ok",
+      "notes": "Gameplay test. Boss fight context (Elder Shroomba) is specific enough to locate the test scenario."
+    },
+    {
+      "id": "C-04",
+      "verdict": "ok",
+      "notes": "Gameplay test. Threshold adds useful specificity: smaller intensity than boss hit."
+    },
+    {
+      "id": "C-05",
+      "verdict": "ok",
+      "notes": "Design spec says 'white for 2 frames'; contract allows 2-4 frames which is reasonable implementation flexibility."
+    },
+    {
+      "id": "C-06",
+      "verdict": "ok",
+      "notes": "Broad scope (all enemy types + bosses) but code-inspection method makes this feasible — search for hitFlash usage across all render functions."
+    },
+    {
+      "id": "C-07",
+      "verdict": "ok",
+      "notes": "Threshold of 20 particles aligns with design spec's '20-40 particles on screen at any time.'"
+    },
+    {
+      "id": "C-08",
+      "verdict": "ok",
+      "notes": "Desert sand/dust is not explicitly named in F23 spec text but is implied by design spec's world-specific ambient particles requirement. Good addition."
+    },
+    {
+      "id": "C-09",
+      "verdict": "ok",
+      "notes": "Marked as already implemented — verification criterion. Appropriate for a polish sprint."
+    },
+    {
+      "id": "C-10",
+      "verdict": "ok",
+      "notes": "Marked as already implemented — verification criterion. Appropriate."
+    },
+    {
+      "id": "C-11",
+      "verdict": "ok",
+      "notes": "Important isolation test. Prevents ambient particle bleed between worlds."
+    },
+    {
+      "id": "C-12",
+      "verdict": "ok",
+      "notes": "Matches design spec: 'Death break: 4 pieces, 1.0s, gravity-affected.' Threshold is clear."
+    },
+    {
+      "id": "C-13",
+      "verdict": "ok",
+      "notes": "Threshold says 3 colors but test steps list 4 color categories. Minor inconsistency but 'at least 3' is the operative requirement. Acceptable."
+    },
+    {
+      "id": "C-14",
+      "verdict": "ok",
+      "notes": "Good tolerance ranges (0.2-0.4 for scale, 0.7-1.5s for duration) around the spec's 0.3x for 1s target."
+    },
+    {
+      "id": "C-15",
+      "verdict": "ok",
+      "notes": "Threshold of 20 particles is lower than design spec's 30+. Consider bumping to 30 to match spec, but 20 is still a reasonable minimum bar."
+    },
+    {
+      "id": "C-16",
+      "verdict": "ok",
+      "notes": "Good specificity — requires world-appropriate colors AND multi-colored explosion for the Architect."
+    },
+    {
+      "id": "C-17",
+      "verdict": "ok",
+      "notes": "'At least 2x intensity' is a clear, testable multiplier threshold."
+    },
+    {
+      "id": "C-18",
+      "verdict": "ok",
+      "notes": "Tests both player-centered (gameplay) and screen-centered (menus) scenarios."
+    },
+    {
+      "id": "C-19",
+      "verdict": "ok",
+      "notes": "Matches design spec timing (250ms close + 250ms open) and easing (ease-in/ease-out)."
+    },
+    {
+      "id": "C-20",
+      "verdict": "ok",
+      "notes": "Already implemented — cross-world verification. Good regression coverage."
+    },
+    {
+      "id": "C-21",
+      "verdict": "ok",
+      "notes": "Already implemented — verification criterion."
+    },
+    {
+      "id": "C-22",
+      "verdict": "ok",
+      "notes": "Test step assumes Shift is the run key — generator should adapt if the control scheme differs."
+    },
+    {
+      "id": "C-23",
+      "verdict": "ok",
+      "notes": "Foundation criterion for C-14. Appropriately tests the mechanism separately from the trigger."
+    },
+    {
+      "id": "C-24",
+      "verdict": "ok",
+      "notes": "Already partially implemented — verification and completion criterion."
+    },
+    {
+      "id": "C-25",
+      "verdict": "ok",
+      "notes": "50+ FPS threshold is lenient vs spec's 60fps target, but reasonable during peak visual load. Sprint 12 can tighten this."
+    },
+    {
+      "id": "C-26",
+      "verdict": "ok",
+      "notes": "Straightforward — zero errors during full playthrough. Good catch-all for integration issues."
+    },
+    {
+      "id": "C-27",
+      "verdict": "ok",
+      "notes": "Basic smoke test. Automation method is appropriate — can be tested with Playwright or simple fetch."
+    },
+    {
+      "id": "C-28",
+      "verdict": "ok",
+      "notes": "Matches design spec: 'decays linearly.' Allows both multiplicative and linear decay, which is good flexibility."
+    }
+  ],
+  "suggestions": [
+    "C-15: Design spec says '30+ particles' for boss defeat explosion, but threshold is 20. Consider bumping to match spec. Not blocking since 20 is still meaningful.",
+    "C-01/C-23: Ensure Camera and Game objects are globally accessible (e.g., on window) for console-based testing. Generator should expose them.",
+    "C-08: Desert ambient particles are implied by design spec but not explicitly named in F23. This is a good addition — just noting the provenance.",
+    "Missing minor: Design spec mentions 'Explosion: 8px offset, 400ms duration' as a screen shake category, but no criterion tests shake on block destruction specifically. This is very minor and could be deferred to Sprint 12.",
+    "C-22: The run key might not be Shift — test steps should reference whatever the actual run control is. Generator should adapt."
+  ],
+  "regressionCheck": {
+    "listed": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "complete": true,
+    "notes": "All 10 prior sprints listed. Comprehensive regression coverage for a late-stage polish sprint."
+  },
+  "blockingIssues": [],
+  "overallAssessment": "This is a well-structured contract with 28 testable criteria covering all of F23's deliverables. Thresholds are specific and measurable. The mix of code-inspection and gameplay test methods is appropriate — code inspection for implementation correctness, gameplay for visible behavior. The contract appropriately marks several features as 'already implemented' requiring verification, which is honest and sets the right expectations. Regression coverage is complete. No blocking issues found. Accepted as-is."
+}

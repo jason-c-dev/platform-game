@@ -1,0 +1,417 @@
+{
+  "sprintNumber": 3,
+  "name": "Game Structure & UI",
+  "theme": "State machine, title screen, pause menu, HUD, game over, and screen transitions",
+  "features": ["F8: Game State Machine", "F9: HUD", "F10: Menu System"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "state-machine",
+      "description": "A game state machine exists managing at least these states: TITLE, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE. The current state is tracked and drives what is updated and rendered.",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the codebase for a state machine or game state tracking system",
+        "Verify at least 5 distinct states are defined: TITLE, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE",
+        "Verify the current state determines which update and render logic executes",
+        "Verify state transitions use a clean function/method (not ad-hoc flag toggling)",
+        "Verify each state has proper setup/initialization when entered"
+      ],
+      "threshold": "At least 5 game states with a central state variable driving update/render logic and clean transition functions"
+    },
+    {
+      "id": "C-02",
+      "category": "title-screen",
+      "description": "The game starts by showing a title screen with the game name 'Kingdoms of the Canvas' prominently displayed",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html in the browser",
+        "Wait 1 second for initialization",
+        "Take a screenshot of the canvas",
+        "Verify the title screen is displayed (not the gameplay stage)",
+        "Verify the text 'Kingdoms of the Canvas' (or a recognizable portion) is rendered on the canvas",
+        "Verify the player is NOT visible and gameplay is NOT active"
+      ],
+      "threshold": "Game opens to a title screen showing the game name; gameplay is not active"
+    },
+    {
+      "id": "C-03",
+      "category": "title-screen",
+      "description": "The title screen displays 'Press Enter to Start' text that is animated (pulsing, blinking, or fading)",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and view the title screen",
+        "Take a screenshot at time T",
+        "Take another screenshot at time T+500ms",
+        "Verify 'Press Enter to Start' or similar prompt text is visible",
+        "Verify the text appearance changes between screenshots (pulsing opacity, size, or color)"
+      ],
+      "threshold": "A 'Press Enter to Start' prompt is visible on the title screen with animated appearance"
+    },
+    {
+      "id": "C-04",
+      "category": "title-screen",
+      "description": "The title screen has an animated scrolling background — not a static solid color",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game to the title screen",
+        "Take a screenshot at time T",
+        "Wait 2 seconds",
+        "Take a screenshot at time T+2000ms",
+        "Compare the two screenshots — verify the background has changed/moved (scrolling parallax, animated elements, or similar)"
+      ],
+      "threshold": "Title screen background is animated (scrolling, moving particles, or other visual motion)"
+    },
+    {
+      "id": "C-05",
+      "category": "title-screen",
+      "description": "Pressing Enter on the title screen transitions to gameplay (STAGE state) — the player appears and is controllable",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game to the title screen",
+        "Press Enter",
+        "Wait 2 seconds for any transition animation to complete",
+        "Verify the game state has changed from TITLE to STAGE",
+        "Verify the player character is visible on screen",
+        "Verify the player responds to input (e.g., pressing ArrowRight moves the player)"
+      ],
+      "threshold": "Pressing Enter on the title screen starts gameplay with a visible, controllable player"
+    },
+    {
+      "id": "C-06",
+      "category": "title-screen",
+      "description": "The title screen has a Controls option — pressing C or selecting it shows a controls/bindings screen",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game to the title screen",
+        "Verify a 'Controls' option or hint is visible on the title screen",
+        "Press the key to access controls (e.g., C)",
+        "Verify a controls screen appears showing keyboard bindings",
+        "Verify the controls screen lists at minimum: Arrow keys, Z (jump), X (attack), Shift (run), Escape (pause)"
+      ],
+      "threshold": "A controls screen is accessible from the title screen showing all key bindings"
+    },
+    {
+      "id": "C-07",
+      "category": "controls-screen",
+      "description": "The controls screen can be dismissed to return to the title screen",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the controls screen from the title screen",
+        "Press Escape or Enter (or a back button) to dismiss the controls screen",
+        "Verify the game returns to the title screen",
+        "Verify the title screen is fully functional again (Enter to start works)"
+      ],
+      "threshold": "Controls screen can be dismissed, returning to a fully functional title screen"
+    },
+    {
+      "id": "C-08",
+      "category": "pause-menu",
+      "description": "Pressing Escape during gameplay (STAGE state) pauses the game and shows a pause menu overlay",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and enter the STAGE state",
+        "Press Escape",
+        "Verify a pause menu overlay appears on screen",
+        "Verify gameplay is frozen (player does not move, enemies/physics stop, timer pauses)",
+        "Take a screenshot confirming the pause menu is visible over the game"
+      ],
+      "threshold": "Pressing Escape during gameplay shows a visible pause menu and freezes game updates"
+    },
+    {
+      "id": "C-09",
+      "category": "pause-menu",
+      "description": "The pause menu displays at least three options: Resume, Restart Stage, and Quit to Title",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Pause the game with Escape",
+        "Take a screenshot of the pause menu",
+        "Verify at least three menu items are visible: Resume (or Continue), Restart Stage (or Retry), and Quit to Title (or Return to Title)",
+        "Verify the menu items are selectable (one is highlighted/selected by default)"
+      ],
+      "threshold": "Pause menu shows at least 3 options including Resume, Restart, and Quit to Title"
+    },
+    {
+      "id": "C-10",
+      "category": "pause-menu",
+      "description": "Selecting Resume (or pressing Escape again) closes the pause menu and resumes gameplay",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Pause the game with Escape",
+        "Verify the pause menu is visible",
+        "Select Resume or press Escape again",
+        "Verify the pause menu disappears",
+        "Verify gameplay resumes (player is controllable, physics active)"
+      ],
+      "threshold": "Resume option or Escape closes pause menu and returns to active gameplay"
+    },
+    {
+      "id": "C-11",
+      "category": "pause-menu",
+      "description": "Selecting Restart Stage resets the current stage — player returns to spawn with full HP and the level resets",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start gameplay and move the player away from spawn, take some damage",
+        "Pause the game and select Restart Stage",
+        "Verify the player returns to the level spawn position",
+        "Verify player health is restored to full (3 HP)",
+        "Verify any consumed breakable blocks or changed level state is reset"
+      ],
+      "threshold": "Restart Stage resets player position, health, and level state to initial values"
+    },
+    {
+      "id": "C-12",
+      "category": "pause-menu",
+      "description": "Selecting Quit to Title returns the game to the title screen",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start gameplay, then pause the game",
+        "Navigate to and select the Quit to Title option",
+        "Verify the game transitions to the title screen",
+        "Verify the title screen is fully displayed (game title, Press Enter prompt)",
+        "Verify pressing Enter starts a new game session"
+      ],
+      "threshold": "Quit to Title returns to a fully functional title screen"
+    },
+    {
+      "id": "C-13",
+      "category": "pause-menu",
+      "description": "Pause menu options are navigable with arrow keys (Up/Down) and selectable with Enter",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Pause the game with Escape",
+        "Verify one menu option is highlighted by default",
+        "Press ArrowDown — verify the highlight moves to the next option",
+        "Press ArrowUp — verify the highlight moves back",
+        "Press Enter on a highlighted option — verify it activates"
+      ],
+      "threshold": "Menu options can be navigated with Up/Down arrows and activated with Enter"
+    },
+    {
+      "id": "C-14",
+      "category": "hud-health",
+      "description": "During gameplay, health hearts are displayed in the top-left corner — filled hearts for current HP, empty hearts for missing HP",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and enter gameplay",
+        "Take a screenshot — verify heart icons are visible in the top-left area",
+        "Verify 3 filled hearts are shown (player starts with 3 HP)",
+        "Cause the player to take damage (1 hit)",
+        "Take another screenshot — verify 2 filled hearts and 1 empty/outline heart"
+      ],
+      "threshold": "Health hearts in top-left show filled hearts for current HP and empty outlines for lost HP"
+    },
+    {
+      "id": "C-15",
+      "category": "hud-coins",
+      "description": "During gameplay, a coin counter is displayed in the top-center area with a coin icon and count starting at 0",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and enter gameplay",
+        "Take a screenshot of the HUD area",
+        "Verify a coin icon (yellow circle, star, or similar) is visible in the top-center",
+        "Verify a numeric counter is displayed next to the coin icon",
+        "Verify the counter starts at 0 (or displays 'x0' / '0')"
+      ],
+      "threshold": "Coin counter with icon is visible in the top-center HUD, starting at 0"
+    },
+    {
+      "id": "C-16",
+      "category": "hud-stage",
+      "description": "During gameplay, the current stage name is displayed in the top-right corner of the HUD",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and enter gameplay",
+        "Take a screenshot of the HUD area",
+        "Verify text is displayed in the top-right corner",
+        "Verify the text represents a stage name or identifier (e.g., 'Test Stage', 'World 1-1', or similar)"
+      ],
+      "threshold": "A stage name/identifier is visible in the top-right area of the HUD during gameplay"
+    },
+    {
+      "id": "C-17",
+      "category": "hud-visual",
+      "description": "All HUD elements have semi-transparent dark backgrounds for readability against any game background",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and take a screenshot during gameplay",
+        "Inspect the HUD elements (hearts, coins, stage name) visually",
+        "Verify each HUD element group has a dark semi-transparent background panel behind it",
+        "Verify the text/icons are clearly readable against the backdrop"
+      ],
+      "threshold": "HUD elements sit on semi-transparent dark background panels, ensuring readability"
+    },
+    {
+      "id": "C-18",
+      "category": "game-over",
+      "description": "When the player loses all lives, a Game Over screen is displayed with options to Continue or Quit",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and reduce player lives to 1 (via debug API or repeated deaths)",
+        "Kill the player to trigger the final death",
+        "Wait for the death animation and any transition to complete",
+        "Verify a Game Over screen/overlay appears",
+        "Verify at least two options are shown: Continue (restart) and Quit (return to title)"
+      ],
+      "threshold": "Game Over screen appears when lives reach 0, showing Continue and Quit options"
+    },
+    {
+      "id": "C-19",
+      "category": "game-over",
+      "description": "Selecting Continue on the Game Over screen restarts the stage with refreshed lives and health",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Trigger the Game Over screen",
+        "Select the Continue option",
+        "Verify the game transitions back to the STAGE state",
+        "Verify the player is at the spawn point with full HP (3) and refreshed lives (5 or starting amount)",
+        "Verify the level is reset"
+      ],
+      "threshold": "Continue restarts the stage with full health and refreshed lives"
+    },
+    {
+      "id": "C-20",
+      "category": "game-over",
+      "description": "Selecting Quit on the Game Over screen returns to the title screen",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Trigger the Game Over screen",
+        "Navigate to and select the Quit option",
+        "Verify the game transitions back to the TITLE state",
+        "Verify the title screen is displayed correctly"
+      ],
+      "threshold": "Quit returns to a fully functional title screen from the Game Over screen"
+    },
+    {
+      "id": "C-21",
+      "category": "stage-complete",
+      "description": "A Stage Complete screen can be triggered (via debug API or reaching a level exit) showing completion info",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and enter gameplay",
+        "Trigger stage completion (via reaching an exit zone, debug API, or equivalent mechanism)",
+        "Verify a Stage Complete screen/overlay appears",
+        "Verify it displays at least: a congratulatory message, elapsed time, and coins collected",
+        "Verify an option to continue (return to title or proceed) is available"
+      ],
+      "threshold": "Stage Complete screen shows time, coins collected, and a way to proceed"
+    },
+    {
+      "id": "C-22",
+      "category": "transitions",
+      "description": "Screen transitions between states use an iris-wipe effect — a circular mask that shrinks to black and expands on the new scene",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game on the title screen",
+        "Press Enter to start gameplay",
+        "Take rapid screenshots during the transition (every 100ms for 1 second)",
+        "Verify at least one mid-transition frame shows a partially obscured screen (circular black mask)",
+        "Verify the transition is not an instant cut — there is a visible animated period"
+      ],
+      "threshold": "State transitions include a visible iris-wipe (circular mask) animation, not instant cuts"
+    },
+    {
+      "id": "C-23",
+      "category": "transitions",
+      "description": "The iris-wipe transition completes fully — screen goes fully black at midpoint, then reveals the new scene",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the transition/iris-wipe implementation code",
+        "Verify the transition has two phases: closing (circle shrinks to zero) and opening (circle expands from zero)",
+        "Verify the state change happens at the midpoint (when screen is fully black)",
+        "Verify the transition has a configurable or fixed duration (approximately 0.5-1.5 seconds total)",
+        "Verify gameplay input is blocked during the transition"
+      ],
+      "threshold": "Iris-wipe has close and open phases with state change at the black midpoint; input blocked during transition"
+    },
+    {
+      "id": "C-24",
+      "category": "state-machine",
+      "description": "Game state is exposed via the debug API (window.__gameDebug) for testability — includes current state and state transition method",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game",
+        "Check window.__gameDebug for a game state property (e.g., gameState, currentState, or state)",
+        "Verify the initial state is 'TITLE' or equivalent",
+        "Press Enter to start, wait for transition",
+        "Verify the debug state has changed to 'STAGE' or equivalent"
+      ],
+      "threshold": "Debug API exposes the current game state, reflecting actual state transitions"
+    },
+    {
+      "id": "C-25",
+      "category": "hud-boss",
+      "description": "A boss health bar component exists in the HUD system — visible at bottom-center when a boss is active, hidden otherwise",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the HUD rendering code",
+        "Verify a boss health bar rendering function exists",
+        "Verify it renders at the bottom-center of the screen",
+        "Verify it only renders when a boss is active (conditional on boss state/data)",
+        "Verify it includes the boss name and a proportional health bar"
+      ],
+      "threshold": "Boss health bar code exists with conditional rendering, boss name label, and proportional fill"
+    },
+    {
+      "id": "C-26",
+      "category": "architecture",
+      "description": "Menu and HUD systems are implemented in separate, modular files — not inlined in the game loop",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the project file structure",
+        "Verify HUD rendering is in a dedicated file or clearly separated module (e.g., hud.js)",
+        "Verify menu/state logic is in a dedicated file or module (e.g., states.js, menu.js)",
+        "Verify these modules are loaded in index.html",
+        "Verify the game loop delegates to these modules rather than containing their logic inline"
+      ],
+      "threshold": "HUD and menu/state logic are in dedicated modules, separate from the main game loop"
+    },
+    {
+      "id": "C-27",
+      "category": "regression",
+      "description": "All Sprint 1 & 2 player mechanics work within the STAGE state: movement (walk, run, jump, wall slide, wall jump, coyote time, crouch), combat (melee, charge, jump attack), health/lives, and all animations",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start the game and enter gameplay (press Enter on title screen)",
+        "Verify the player falls under gravity and lands on solid tiles",
+        "Verify ArrowLeft/ArrowRight moves the player; Shift increases speed",
+        "Verify Z triggers a jump with variable height",
+        "Verify X triggers a melee attack with visible animation",
+        "Verify ArrowDown on ground triggers crouch with reduced hitbox",
+        "Verify the camera follows the player with parallax backgrounds",
+        "Verify hazard tiles deal damage and invincibility frames work",
+        "Verify the player has 3 HP and 5 lives"
+      ],
+      "threshold": "All Sprint 1 engine and Sprint 2 player mechanics remain fully functional in the STAGE state"
+    },
+    {
+      "id": "C-28",
+      "category": "regression",
+      "description": "Canvas renders at 960x540 logical pixels, game loop runs at ~60 FPS, and no JavaScript errors in the console",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html",
+        "Verify canvas.width === 960 and canvas.height === 540",
+        "Let the game run for 3 seconds",
+        "Verify the average FPS is >= 55",
+        "Check the browser console for any JavaScript errors",
+        "Verify no errors are present"
+      ],
+      "threshold": "960x540 canvas, >= 55 FPS average, zero JS console errors"
+    }
+  ],
+  "outOfScope": [
+    "World Map screen and stage selection navigation — Sprint 4",
+    "Save/load system via localStorage — Sprint 4",
+    "Collectible (coin) pickup mechanics and spawning — Sprint 4",
+    "Enemy AI, enemy entities, and boss fights — Sprint 5",
+    "Boss health bar being testable with actual boss data — Sprint 5 (code structure only in Sprint 3)",
+    "Sound effects and music (menu select sounds, ambient audio) — Sprint 10",
+    "Advanced visual effects (screen shake, particle explosions beyond existing) — Sprint 11",
+    "Victory screen with scrolling credits and final stats — deferred until content exists (Sprint 9+)",
+    "Stage Complete triggered by a real level exit with door/goal — Sprint 5 (debug/API trigger for now)",
+    "Coin incrementing during gameplay (no coin pickups exist yet) — Sprint 4/5",
+    "Return to World Map option in pause menu — Sprint 4 (only Resume, Restart, Quit to Title for now)"
+  ],
+  "regressionSprints": [1, 2],
+  "notes": "This sprint adds the game structure layer on top of the existing engine (Sprint 1) and player character (Sprint 2). The game now starts at a title screen instead of dropping directly into gameplay. A complete state machine manages transitions between Title, Stage (gameplay), Paused, Game Over, and Stage Complete states. The HUD overlays health hearts, a coin counter (starting at 0 — coins are not yet collectable until Sprint 4/5), and stage name during gameplay. A boss health bar component is implemented in code but only renders when boss data is present (Sprint 5). Iris-wipe transitions provide polished scene changes. Since the World Map doesn't exist until Sprint 4, the title screen transitions directly to the test stage. The Stage Complete state is triggerable via a debug API or simple exit zone for now — real level exits with doors will come with actual level content in Sprint 5+. The pause menu supports Resume, Restart Stage, and Quit to Title. Game Over provides Continue and Quit options."
+}

@@ -1,0 +1,117 @@
+// ============================================================
+// input.js — Keyboard input handling
+// ============================================================
+
+const Input = {
+    keys: {},
+    _pressQueue: {},   // Keys pressed since last update (survives rapid press/release)
+    _releaseQueue: {},
+    justPressed: {},
+    justReleased: {},
+    _prevKeys: {},
+
+    init() {
+        this.keys = {};
+        this._pressQueue = {};
+        this._releaseQueue = {};
+        this.justPressed = {};
+        this.justReleased = {};
+        this._prevKeys = {};
+
+        window.addEventListener('keydown', (e) => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                 'z', 'Z', 'x', 'X', 'c', 'C', 'Shift', 'Escape', 'Enter', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+            if (!this.keys[e.key]) {
+                this._pressQueue[e.key] = true;
+            }
+            this.keys[e.key] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+            this._releaseQueue[e.key] = true;
+            this.keys[e.key] = false;
+        });
+    },
+
+    update() {
+        // justPressed = keys that were pressed since last update
+        this.justPressed = Object.assign({}, this._pressQueue);
+        this.justReleased = Object.assign({}, this._releaseQueue);
+
+        // Clear queues
+        this._pressQueue = {};
+        this._releaseQueue = {};
+
+        // Store previous state
+        this._prevKeys = Object.assign({}, this.keys);
+    },
+
+    isDown(key) {
+        return !!this.keys[key];
+    },
+
+    isJustPressed(key) {
+        return !!this.justPressed[key];
+    },
+
+    isJustReleased(key) {
+        return !!this.justReleased[key];
+    },
+
+    // Direction helpers
+    isLeft() {
+        return this.isDown('ArrowLeft');
+    },
+
+    isRight() {
+        return this.isDown('ArrowRight');
+    },
+
+    isDown_key(key) {
+        return this.isDown(key);
+    },
+
+    // Jump
+    isJump() {
+        return this.isJustPressed('z') || this.isJustPressed('Z');
+    },
+
+    isJumpHeld() {
+        return this.isDown('z') || this.isDown('Z');
+    },
+
+    isJumpReleased() {
+        return this.isJustReleased('z') || this.isJustReleased('Z');
+    },
+
+    // Attack
+    isAttack() {
+        return this.isJustPressed('x') || this.isJustPressed('X');
+    },
+
+    isAttackHeld() {
+        return this.isDown('x') || this.isDown('X');
+    },
+
+    isAttackReleased() {
+        return this.isJustReleased('x') || this.isJustReleased('X');
+    },
+
+    // Run (Shift)
+    isRun() {
+        return this.isDown('Shift');
+    },
+
+    // Crouch (ArrowDown)
+    isCrouch() {
+        return this.isDown('ArrowDown');
+    },
+
+    // Aliases for test compatibility
+    get _keys() { return this.keys; },
+    set _keys(v) { this.keys = v; },
+    get _justPressed() { return this.justPressed; },
+    set _justPressed(v) { this.justPressed = v; }
+};

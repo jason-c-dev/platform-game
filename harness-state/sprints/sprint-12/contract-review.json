@@ -1,0 +1,188 @@
+{
+  "sprint": 12,
+  "decision": "accepted",
+  "reviewDate": "2026-03-30",
+  "summary": "Thorough and well-structured integration contract with 30 criteria spanning all major subsystems. Criteria are specific, testable, and cover the sprint theme comprehensively: loading, stage structure, progression/softlock prevention, save system integrity, game feel mechanics, performance, boss balance, world-specific mechanics, audio integration, state machine completeness, error-free operation, HUD, and collectibles. Regression coverage lists all 11 prior sprints. The mix of automation (17 criteria) and code-inspection (13 criteria) is appropriate for a final integration sprint.",
+  "criteriaAnalysis": [
+    {
+      "id": "C-01",
+      "assessment": "PASS — Testable. Loads page, checks console for errors, verifies canvas and title text. Clear threshold.",
+      "issues": []
+    },
+    {
+      "id": "C-02",
+      "assessment": "PASS — Testable. Iterates all 13 stage IDs, calls loadStage, checks width/height > 0. Exhaustive.",
+      "issues": []
+    },
+    {
+      "id": "C-03",
+      "assessment": "PASS — Testable with minor weakness. Spawn/exit point validation is solid. The 'exitX > spawnX' reachability proxy is simplistic but pragmatic for an integration test.",
+      "issues": ["Reachability check (exitX > spawnX) is a weak proxy — doesn't prove path exists. Acceptable for integration-level validation."]
+    },
+    {
+      "id": "C-04",
+      "assessment": "PASS — Testable. Checks bossData, type string, spawn coords, and bossArenaX for all 13 stages.",
+      "issues": []
+    },
+    {
+      "id": "C-05",
+      "assessment": "PASS — Testable. Cross-references coin positions against WorldMap.STAGES totalCoins. Good data integrity check.",
+      "issues": []
+    },
+    {
+      "id": "C-06",
+      "assessment": "PASS — Testable. Validates enemy spawn entries have type/x/y for all stages.",
+      "issues": []
+    },
+    {
+      "id": "C-07",
+      "assessment": "PASS — Testable. Tests linear unlock chain from clean save through multiple stages.",
+      "issues": []
+    },
+    {
+      "id": "C-08",
+      "assessment": "PASS — Code inspection is pragmatic here. Automating a full boss fight would be extremely complex. The four inspection steps cover the critical flow: exit zone gating, boss arena walls, boss defeat enabling exit, and state transition.",
+      "issues": ["Runtime automation would be ideal but code inspection is a reasonable compromise for boss-defeat-to-exit flow."]
+    },
+    {
+      "id": "C-09",
+      "assessment": "PASS — Code inspection for victory state reachability. Checks state transition, stat calculation, and rendering.",
+      "issues": []
+    },
+    {
+      "id": "C-10",
+      "assessment": "PASS — Testable automation. Tests save round-trip for two stages with specific values.",
+      "issues": []
+    },
+    {
+      "id": "C-11",
+      "assessment": "PASS — Excellent test. Validates both directions: worse values don't overwrite, better values do. Three-step test pattern.",
+      "issues": []
+    },
+    {
+      "id": "C-12",
+      "assessment": "PASS — Testable. Verifies clearSave resets all save data including lives.",
+      "issues": []
+    },
+    {
+      "id": "C-13",
+      "assessment": "PASS — Pinned constant (COYOTE_FRAMES=6) with behavioral verification through code inspection.",
+      "issues": []
+    },
+    {
+      "id": "C-14",
+      "assessment": "PASS — Pinned constant (JUMP_BUFFER_FRAMES=8) with behavioral verification through code inspection.",
+      "issues": []
+    },
+    {
+      "id": "C-15",
+      "assessment": "PASS — Pinned constant (VARIABLE_JUMP_MULTIPLIER=0.4) with behavioral verification.",
+      "issues": []
+    },
+    {
+      "id": "C-16",
+      "assessment": "PASS — Pinned constant (WALL_SLIDE_SPEED=2) with state entry and wall jump verification.",
+      "issues": []
+    },
+    {
+      "id": "C-17",
+      "assessment": "PASS — Testable. Depends on window.__gameDebug API (documented in game.js). Threshold of 50 FPS is reasonable for title screen.",
+      "issues": ["Depends on __gameDebug existing; if missing, test fails. This is acceptable since game.js provides a debug API."]
+    },
+    {
+      "id": "C-18",
+      "assessment": "PASS — Testable. 45 FPS during gameplay is a reasonable threshold accounting for stage complexity.",
+      "issues": []
+    },
+    {
+      "id": "C-19",
+      "assessment": "PASS — Code inspection for particle lifecycle management. Checks lifetime, removal, and optional cap.",
+      "issues": []
+    },
+    {
+      "id": "C-20",
+      "assessment": "PASS — Excellent specificity. All 13 boss maxHealth values enumerated. The +-1 tolerance is slightly generous but acceptable for balance tuning.",
+      "issues": ["+-1 tolerance could mask off-by-one bugs. Consider exact match only."]
+    },
+    {
+      "id": "C-21",
+      "assessment": "PASS — Testable. Complements C-04 by testing actual spawn function rather than just data.",
+      "issues": []
+    },
+    {
+      "id": "C-22",
+      "assessment": "PASS — Pinned constants (ICE_FRICTION=0.97, ICE_ACCELERATION=0.04) with physics integration verification.",
+      "issues": []
+    },
+    {
+      "id": "C-23",
+      "assessment": "PASS — Code inspection for auto-scroll in stage 3-3. Checks mechanism and player penalty.",
+      "issues": []
+    },
+    {
+      "id": "C-24",
+      "assessment": "PASS — Testable. Enumerates all 11 required audio methods by name.",
+      "issues": []
+    },
+    {
+      "id": "C-25",
+      "assessment": "PASS — Testable. Lists all 8 game states and verifies update/render handlers for each.",
+      "issues": []
+    },
+    {
+      "id": "C-26",
+      "assessment": "PASS — Code inspection for pause/resume toggle. Verifies stage renders behind pause overlay.",
+      "issues": []
+    },
+    {
+      "id": "C-27",
+      "assessment": "PASS — Testable. Enumerates all 17 global objects by name.",
+      "issues": []
+    },
+    {
+      "id": "C-28",
+      "assessment": "PASS — Excellent end-to-end flow test. Covers title -> map -> stage -> pause -> resume -> map. Zero-error threshold is appropriately strict for a final sprint.",
+      "issues": []
+    },
+    {
+      "id": "C-29",
+      "assessment": "PASS — Code inspection for HUD rendering: hearts, coins, stage name, conditional boss HP bar.",
+      "issues": []
+    },
+    {
+      "id": "C-30",
+      "assessment": "PASS — Code inspection for collectible pickup flow: collision, removal, counter increment, sound.",
+      "issues": []
+    }
+  ],
+  "coverageAnalysis": {
+    "sprintThemeElements": {
+      "60fps optimization": "Covered by C-17, C-18 (performance thresholds) and C-19 (particle bounds)",
+      "game feel verification": "Covered by C-13 (coyote time), C-14 (jump buffer), C-15 (variable jump), C-16 (wall slide)",
+      "full playthrough validation": "Covered by C-01 (load), C-02 (all stages), C-07 (progression), C-08 (no softlocks), C-09 (victory), C-28 (full flow)",
+      "save/load integrity": "Covered by C-10, C-11, C-12",
+      "collectible accuracy": "Covered by C-05 (coin placement), C-30 (collection mechanics)",
+      "boss balance": "Covered by C-04 (boss data), C-20 (health values), C-21 (spawning)",
+      "no softlocks": "Covered by C-03 (spawn/exit), C-07 (unlock chain), C-08 (boss-to-exit flow), C-09 (victory reachable)"
+    },
+    "gaps": [
+      "No explicit criterion for death/respawn/lives system — covered by regression from sprints 2-3",
+      "No explicit criterion for iris-wipe transitions — covered by regression from sprint 11",
+      "No explicit criterion for controls screen functionality — covered by regression from sprint 3"
+    ],
+    "verdict": "All sprint theme elements are covered. Identified gaps are appropriately delegated to regression testing."
+  },
+  "regressionAnalysis": {
+    "listed": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "expected": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "missing": [],
+    "verdict": "Complete — all 11 prior sprints included in regression testing."
+  },
+  "outOfScopeAnalysis": "Appropriate. Excludes new content creation, mechanic changes, audio redesign, visual effect changes, mobile/multiplayer, and resolution changes. Correctly scoped to integration/validation only.",
+  "notes": [
+    "30 criteria is high count but appropriate for the final integration sprint covering all subsystems.",
+    "Good balance of automation (17) vs code-inspection (13) — automation for data-driven checks, inspection for behavioral flow analysis.",
+    "C-20's +-1 health tolerance is slightly generous; evaluator should prefer exact match and only use tolerance if values are clearly intentional rounding.",
+    "C-28 is the most valuable criterion — an end-to-end flow test that exercises state transitions, rendering, input handling, and lifecycle management in one pass."
+  ]
+}

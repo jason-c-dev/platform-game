@@ -1,0 +1,449 @@
+{
+  "sprintNumber": 4,
+  "name": "World Map & Progression",
+  "theme": "Top-down world map, stage selection, save/load, collectible tracking",
+  "features": [
+    "F11: World Map",
+    "F20: Collectible System",
+    "F21: Save System"
+  ],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "world-map-state",
+      "description": "A WORLD_MAP game state exists and is integrated into the state machine. After pressing Enter on the title screen, the game transitions to the WORLD_MAP state (not directly to STAGE). The world map renders a top-down navigable screen — not gameplay.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game to the title screen",
+        "Press Enter to start the game",
+        "Wait for the iris-wipe transition to complete (~1 second)",
+        "Check window.__gameDebug.gameState for 'WORLD_MAP' or equivalent",
+        "Verify the canvas shows a top-down map view, not a side-scrolling stage",
+        "Verify the player character (blue platformer sprite) is NOT visible in gameplay form"
+      ],
+      "threshold": "WORLD_MAP state exists in the state machine. Title screen Enter transitions to world map, not directly to gameplay."
+    },
+    {
+      "id": "C-02",
+      "category": "world-map-nodes",
+      "description": "The world map displays at least 13 stage nodes arranged in 4 world clusters (3 stages each) plus 1 Citadel node, connected by visible path lines. Nodes are drawn as circles (~28px diameter) with paths between them.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the WORLD_MAP state",
+        "Take a screenshot of the world map",
+        "Verify at least 13 distinct circular node elements are visible on the canvas",
+        "Verify nodes are grouped into recognizable clusters (not all in a line)",
+        "Verify path/line segments connect nodes within clusters and between clusters",
+        "Verify the overall layout suggests a journey from one world cluster to the next"
+      ],
+      "threshold": "13+ node circles visible in 4 cluster groupings connected by path lines, with a final Citadel node"
+    },
+    {
+      "id": "C-03",
+      "category": "world-map-nodes",
+      "description": "Each world cluster uses a distinct color palette matching the design spec world palettes — Forest (greens), Desert (sandy/gold), Tundra (ice blue/white), Volcano (dark/red/orange). The world areas are visually distinguishable.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map",
+        "Take a screenshot",
+        "Verify the first cluster area uses green tones (Forest: #2D5A27, #4A8C3F range)",
+        "Verify the second cluster area uses sandy/gold tones (Desert: #C4943A range)",
+        "Verify the third cluster area uses blue/white tones (Tundra: #A8D4E6 range)",
+        "Verify the fourth cluster area uses dark/red tones (Volcano: #2A1A1A, #FF6A2A range)",
+        "Verify the 4 areas are visually distinct from each other"
+      ],
+      "threshold": "4 world clusters have visually distinct palettes matching their world themes"
+    },
+    {
+      "id": "C-04",
+      "category": "world-map-nodes",
+      "description": "Stage nodes display visual states as specified in the design spec: completed nodes show a Moss Green checkmark, the currently selected node has a pulsing animation with Muted Gold glow, and locked nodes use Steel Blue at reduced opacity.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map on a fresh game (no save data)",
+        "Verify the first stage node (1-1) is pulsing/animated (selected state)",
+        "Verify all other nodes appear visually muted/locked (Steel Blue, lower opacity)",
+        "Take two screenshots 500ms apart and verify the selected node's appearance changes (pulse)",
+        "Verify locked nodes do NOT pulse or glow"
+      ],
+      "threshold": "Selected node visibly pulses, locked nodes are muted Steel Blue, visual distinction is clear"
+    },
+    {
+      "id": "C-05",
+      "category": "world-map-navigation",
+      "description": "The player can navigate between unlocked nodes on the world map using arrow keys. A player icon or selection indicator moves along the paths between nodes.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map",
+        "Record the current selected node position",
+        "Press ArrowRight or ArrowDown to move to an adjacent node (if available/unlocked)",
+        "Verify the selection moved to a different node",
+        "Verify navigation does not move to locked nodes (selection stays on current node)",
+        "Verify the selection indicator is visible and clearly shows which node is selected"
+      ],
+      "threshold": "Arrow keys move selection between connected unlocked nodes; locked nodes cannot be selected as targets"
+    },
+    {
+      "id": "C-06",
+      "category": "world-map-navigation",
+      "description": "Pressing Enter on a selected unlocked stage node transitions to the STAGE state and loads that stage. The stage should have a name matching the selected node.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map with stage 1-1 selected",
+        "Press Enter to start the stage",
+        "Wait for the iris-wipe transition to complete",
+        "Verify window.__gameDebug.gameState is 'STAGE'",
+        "Verify the player character is visible and controllable",
+        "Verify the HUD displays a stage name that corresponds to the selected node (e.g., 'Canopy Trail' or '1-1')"
+      ],
+      "threshold": "Enter on an unlocked node transitions to STAGE with the correct stage loaded and named in HUD"
+    },
+    {
+      "id": "C-07",
+      "category": "world-map-info",
+      "description": "When a stage node is selected, an info panel appears showing: stage name, best time (or '---' if unplayed), coin count (collected/total, or '???'), and difficulty rating (1-3 star display). The panel is styled per the design spec (Deep Charcoal bg, Muted Gold border, 260x160px, bottom-right).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map and select stage 1-1",
+        "Take a screenshot",
+        "Verify an info panel is visible in the lower-right area of the canvas",
+        "Verify the panel displays the stage name",
+        "Verify the panel displays a time field (showing '---' or '???' for unplayed stages)",
+        "Verify the panel displays a coin count field",
+        "Verify the panel displays difficulty stars (at least 1-3 star indicators)",
+        "Verify the panel has a dark background with gold/muted border"
+      ],
+      "threshold": "Info panel visible at bottom-right with stage name, time, coins, difficulty stars, and proper design spec styling"
+    },
+    {
+      "id": "C-08",
+      "category": "world-map-info",
+      "description": "Locked stage nodes show different info panel content: the stage name is shown but other stats show 'LOCKED' in Steel Blue with a message like 'Complete [previous stage] to unlock'.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map on a fresh game",
+        "Navigate selection to a locked node (e.g., stage 1-2 if only 1-1 is unlocked) — or examine the info panel for the initially locked node if navigation to locked nodes is possible",
+        "Verify the info panel shows the stage name",
+        "Verify the info panel displays a 'LOCKED' indicator or lock message",
+        "Verify the panel does not show gameplay stats (time, coins) for locked stages"
+      ],
+      "threshold": "Locked stage info panel shows stage name and a locked indicator, not gameplay stats"
+    },
+    {
+      "id": "C-09",
+      "category": "world-map-unlock",
+      "description": "On a fresh game (no save data), only the first stage (World 1, Stage 1 — 'Canopy Trail') is unlocked. All other nodes are locked. Stages unlock linearly: completing stage N unlocks stage N+1.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear localStorage to ensure fresh game state",
+        "Open the game and navigate to the world map",
+        "Verify only one stage node is unlocked/selectable (the first one)",
+        "Verify all other 12+ nodes appear in the locked visual state",
+        "Verify the debug API or save data confirms only stage 1-1 is unlocked"
+      ],
+      "threshold": "Fresh game has exactly 1 unlocked stage (1-1); all others are locked"
+    },
+    {
+      "id": "C-10",
+      "category": "world-map-unlock",
+      "description": "Completing a stage (triggering stage complete) unlocks the next stage in sequence. After returning to the world map, the newly unlocked node is visible as unlocked, and the completed stage shows a completion checkmark.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Start stage 1-1 from the world map",
+        "Trigger stage completion via debug API (window.__gameDebug.triggerStageComplete())",
+        "Continue back to the world map",
+        "Verify stage 1-1 now shows a completion indicator (checkmark, filled state)",
+        "Verify stage 1-2 is now unlocked (not locked visual state)",
+        "Verify the selection can navigate to stage 1-2"
+      ],
+      "threshold": "Completing a stage marks it as complete and unlocks the next sequential stage"
+    },
+    {
+      "id": "C-11",
+      "category": "world-map-pause",
+      "description": "The pause menu during STAGE state now includes a 'Return to World Map' option. Selecting it transitions back to the WORLD_MAP state.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage from the world map",
+        "Press Escape to pause the game",
+        "Verify the pause menu includes an option labeled 'Return to World Map' or 'World Map'",
+        "Select the Return to World Map option",
+        "Wait for the transition to complete",
+        "Verify window.__gameDebug.gameState is 'WORLD_MAP'",
+        "Verify the world map is displayed"
+      ],
+      "threshold": "Pause menu contains a 'Return to World Map' option that transitions to the WORLD_MAP state"
+    },
+    {
+      "id": "C-12",
+      "category": "collectibles-coins",
+      "description": "Collectible coins exist in the stage as golden circular objects at predefined positions. When the player's hitbox overlaps a coin, it is collected (disappears), and the HUD coin counter increments.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage that has coins placed in it",
+        "Record the initial coin count from the HUD (should be 0)",
+        "Move the player to overlap with a coin's position",
+        "Verify the coin disappears from the stage",
+        "Verify the HUD coin counter has incremented by 1",
+        "Verify the coin does not reappear after collection"
+      ],
+      "threshold": "Coins are visible in stages, disappear on player contact, and increment the HUD coin counter"
+    },
+    {
+      "id": "C-13",
+      "category": "collectibles-coins",
+      "description": "Coins are rendered as golden circles with the design spec gold color (#FFD700) and a glint/shine effect (#FFF8DC). They have a subtle idle animation (bobbing or spinning).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage with coins",
+        "Take a screenshot showing coins",
+        "Verify coins are rendered as small golden circular shapes",
+        "Take a second screenshot 500ms later",
+        "Verify the coin appearance has changed slightly (animation: bobbing, spinning, or shimmer)"
+      ],
+      "threshold": "Coins are golden circles with visible shine effect and idle animation"
+    },
+    {
+      "id": "C-14",
+      "category": "collectibles-health",
+      "description": "Health pickups exist in stages. They restore 1 HP when collected by a damaged player. They only appear/are collectible when the player has less than max HP (3). They are visually distinct from coins (e.g., heart or cross shape, red/green color).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage that has a health pickup",
+        "Verify the health pickup is visually distinct from coins",
+        "At full HP (3), move to the health pickup — verify it is not collected or has no effect",
+        "Cause the player to take damage (reduce to 2 HP)",
+        "Move to the health pickup position — verify it is collected and HP returns to 3",
+        "Verify the HUD hearts reflect the HP restoration"
+      ],
+      "threshold": "Health pickups are visually distinct, restore 1 HP when damaged, and do not over-heal"
+    },
+    {
+      "id": "C-15",
+      "category": "collectibles-tracking",
+      "description": "Each stage has a defined total coin count. The stage complete screen shows coins collected out of the total for that stage (e.g., '12/15 coins').",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage and collect some coins (but not all)",
+        "Trigger stage completion via debug API",
+        "Verify the stage complete screen displays coin count in 'X / Y' format",
+        "Verify Y represents the total coins in the stage",
+        "Verify X represents the number actually collected this run"
+      ],
+      "threshold": "Stage complete screen shows collected/total coin count for the stage"
+    },
+    {
+      "id": "C-16",
+      "category": "save-system",
+      "description": "A save system persists game progress to localStorage after each stage completion. Saved data includes: completed stages, coin totals per stage, best times per stage, and current lives.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear localStorage",
+        "Start the game, enter stage 1-1, collect some coins, and trigger stage complete",
+        "Return to the world map",
+        "Read localStorage for the game's save key",
+        "Verify the save data contains: a list/set of completed stages including 1-1",
+        "Verify the save data contains a coin count for stage 1-1",
+        "Verify the save data contains a time for stage 1-1",
+        "Verify the save data contains the player's life count"
+      ],
+      "threshold": "localStorage contains structured save data with completed stages, coins, times, and lives after stage completion"
+    },
+    {
+      "id": "C-17",
+      "category": "save-system",
+      "description": "Loading the game with existing save data restores progress. The world map reflects previously completed stages (checkmarks), unlocked stages, and the info panel shows saved best times and coin totals.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Complete stage 1-1 with some coins and return to world map",
+        "Reload the page completely",
+        "Navigate to the world map (press Enter on title)",
+        "Verify stage 1-1 shows the completed visual state (checkmark)",
+        "Verify stage 1-2 is unlocked",
+        "Select stage 1-1 and verify the info panel shows the saved best time (not '---')",
+        "Verify the info panel shows the saved coin count"
+      ],
+      "threshold": "After page reload, save data is loaded and world map reflects completed stages, unlocked stages, times, and coins"
+    },
+    {
+      "id": "C-18",
+      "category": "save-system",
+      "description": "Best times and coin counts are tracked per-stage. Replaying a stage updates the best time only if the new time is faster, and updates the coin count only if more coins were collected.",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the save/completion logic code",
+        "Verify that on stage completion, the system compares the current time with the stored best time",
+        "Verify the best time is updated only if the new time is lower (or no previous time exists)",
+        "Verify the coin count is updated only if the new count is higher (or no previous count exists)",
+        "Verify the save data is written to localStorage after these comparisons"
+      ],
+      "threshold": "Save logic performs best-time and best-coin comparisons, only updating on improvement"
+    },
+    {
+      "id": "C-19",
+      "category": "save-system",
+      "description": "The title screen adapts based on save data. If save data exists, a 'Continue' option appears above 'New Game'. If no save data exists, only 'New Game' (and Controls) are shown.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear localStorage and open the game",
+        "Verify the title screen shows 'New Game' and 'Controls' but NOT 'Continue'",
+        "Start a game, complete stage 1-1, return to world map",
+        "Navigate back to the title screen (pause → quit to title)",
+        "Verify the title screen now shows 'Continue' above 'New Game'",
+        "Verify selecting 'Continue' transitions to the world map with saved progress"
+      ],
+      "threshold": "Title screen shows Continue only when save data exists; Continue loads the saved world map state"
+    },
+    {
+      "id": "C-20",
+      "category": "save-system",
+      "description": "A 'New Game' option on the title screen prompts for confirmation before clearing save data. Confirming resets all progress.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Ensure save data exists (complete a stage)",
+        "Return to the title screen",
+        "Select 'New Game'",
+        "Verify a confirmation dialog/prompt appears (e.g., 'Start new game? This will erase your save data.')",
+        "Confirm the dialog",
+        "Verify localStorage save data is cleared",
+        "Verify the world map shows fresh state (only 1-1 unlocked)"
+      ],
+      "threshold": "New Game shows a confirmation dialog; confirming clears save data and resets to fresh state"
+    },
+    {
+      "id": "C-21",
+      "category": "stage-complete-flow",
+      "description": "After triggering stage complete, there is a clear path back to the world map. The stage complete screen has a 'Continue' or 'Return to Map' option that transitions to WORLD_MAP, not TITLE.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1 from the world map",
+        "Trigger stage completion",
+        "Verify the stage complete screen is displayed",
+        "Press Enter or select Continue",
+        "Verify the game transitions to WORLD_MAP state (not TITLE)",
+        "Verify the world map reflects the completed stage"
+      ],
+      "threshold": "Stage complete Continue/Enter transitions to WORLD_MAP with updated completion state"
+    },
+    {
+      "id": "C-22",
+      "category": "world-map-visual",
+      "description": "The world map background is not a plain solid color. It has visual depth — either a dark textured background, subtle grid, or atmospheric elements that differentiate it from gameplay and menus.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to the world map",
+        "Take a screenshot",
+        "Verify the background is not a single flat solid color",
+        "Verify there is visual texture, gradient, pattern, or atmospheric elements",
+        "Verify the map has a distinct visual identity separate from the title screen and gameplay stages"
+      ],
+      "threshold": "World map has a non-flat background with visual texture or atmosphere"
+    },
+    {
+      "id": "C-23",
+      "category": "world-map-visual",
+      "description": "Path connections between nodes use the design spec style: dashed lines for locked paths and solid lines for unlocked paths, rendered in Warm Slate color.",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the world map rendering code for path/line drawing",
+        "Verify paths between nodes are drawn using Canvas line commands",
+        "Verify locked paths use a dashed line style (setLineDash)",
+        "Verify unlocked paths use a solid line style",
+        "Verify the path color matches Warm Slate (#2D2D44) or a visually similar shade"
+      ],
+      "threshold": "Paths use dashed lines for locked and solid lines for unlocked, in Warm Slate color"
+    },
+    {
+      "id": "C-24",
+      "category": "world-map-empty",
+      "description": "On a fresh game, a subtle animated indicator (arrow, glow, or text) draws the player's attention to the first stage node (1-1) with guidance text like 'Begin your journey'.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear localStorage and open the game",
+        "Navigate to the world map",
+        "Take a screenshot",
+        "Verify there is a visible indicator near the first stage node (arrow, glow, text, or pulsing highlight)",
+        "Verify guidance text is visible (e.g., 'Begin your journey' or similar welcoming text)"
+      ],
+      "threshold": "Fresh game world map has a visual indicator and guidance text pointing to the first stage"
+    },
+    {
+      "id": "C-25",
+      "category": "debug-api",
+      "description": "The debug API (window.__gameDebug) is extended with world map utilities: ability to unlock all stages, set arbitrary save data, and access current selected node info.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and navigate to the world map",
+        "Check window.__gameDebug for world-map related functions",
+        "Verify a function exists to unlock all stages (e.g., unlockAllStages)",
+        "Call it and verify all nodes become unlocked on the map",
+        "Verify the debug API exposes the currently selected node info"
+      ],
+      "threshold": "Debug API includes unlockAllStages (or equivalent) and exposes selected node data"
+    },
+    {
+      "id": "C-26",
+      "category": "architecture",
+      "description": "World map logic, collectible system, and save system are implemented in separate modular files — not inlined in existing files. New files (e.g., worldmap.js, collectibles.js, save.js) are loaded in index.html.",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the project file structure in src/",
+        "Verify a dedicated world map module exists (e.g., worldmap.js)",
+        "Verify a dedicated collectible/pickup system module exists (e.g., collectibles.js)",
+        "Verify a dedicated save system module exists (e.g., save.js)",
+        "Verify all new modules are loaded via <script> tags in index.html",
+        "Verify the new modules follow the existing code conventions (object-literal module pattern)"
+      ],
+      "threshold": "At least 3 new dedicated module files for world map, collectibles, and save system, loaded in index.html"
+    },
+    {
+      "id": "C-27",
+      "category": "regression",
+      "description": "All Sprint 1-3 features remain functional: game loop at 60fps, physics/collision, camera/parallax, player movement (walk, run, jump, wall slide, wall jump, coyote time, crouch, crouch-slide), combat (melee, charge, jump attack), health/lives, animations, HUD (hearts, coins, stage name), pause menu (Resume, Restart, Quit to Title), game over flow, stage complete screen, iris-wipe transitions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage from the world map",
+        "Verify player falls under gravity and lands on tiles",
+        "Verify ArrowLeft/ArrowRight moves the player",
+        "Verify Z triggers jump, X triggers attack",
+        "Verify ArrowDown triggers crouch",
+        "Verify HUD shows hearts, coin counter, and stage name",
+        "Verify Escape opens pause menu with Resume, Restart, and Quit to Title",
+        "Verify iris-wipe transitions are still present",
+        "Verify the player has 3 HP and correct lives"
+      ],
+      "threshold": "All Sprint 1 engine, Sprint 2 player, and Sprint 3 UI features remain fully functional"
+    },
+    {
+      "id": "C-28",
+      "category": "regression",
+      "description": "Canvas renders at 960x540 logical pixels, game loop runs at >=55 FPS average, and no JavaScript errors in the console across all states (TITLE, WORLD_MAP, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html",
+        "Verify canvas.width === 960 and canvas.height === 540",
+        "Navigate through all states: TITLE → WORLD_MAP → STAGE → PAUSED → resume → trigger game over → continue → trigger stage complete → return to world map",
+        "Monitor for JavaScript console errors throughout",
+        "Verify FPS >= 55 average",
+        "Verify no errors in any state"
+      ],
+      "threshold": "960x540 canvas, >= 55 FPS, zero JS console errors across all game states"
+    }
+  ],
+  "outOfScope": [
+    "Enemy spawning, AI behaviors, and enemy rendering in stages — Sprint 5",
+    "Boss encounters and boss health bar activation during gameplay — Sprint 5",
+    "Puzzle mechanics (pressure plates, keys/gates, pushable blocks) — Sprint 5",
+    "Real designed level layouts for each stage — Sprint 5+ (world map nodes exist but stages use placeholder/test layouts for now)",
+    "Path unlock animation between world clusters — Sprint 5+ (unlock is functional but animation can be basic)",
+    "Power Stars (hidden collectibles, 1 per world) — deferred to Sprint 5+ when real level layouts exist",
+    "Extra lives as collectible pickups in stages — deferred to Sprint 5+ when real level layouts exist",
+    "Sound effects for coin collection, menu navigation, map movement — Sprint 10",
+    "World-specific ambient particles on the world map (leaves, sand, snow, embers) — Sprint 11",
+    "Celebration animation when all stages are complete — Sprint 9+",
+    "Swimming/water physics in stages — Sprint 6",
+    "Per-stage total coin counts will be placeholder values until real level designs in Sprint 5+"
+  ],
+  "regressionSprints": [1, 2, 3],
+  "notes": "This sprint adds the world map as the central hub connecting all stages. The title screen now transitions to WORLD_MAP instead of directly to STAGE. The world map displays 4 world clusters (Forest, Desert, Tundra, Volcano) with 3 stage nodes each, plus a final Citadel node — 13 nodes total. Nodes show locked/unlocked/completed visual states per the design spec. Navigation uses arrow keys along paths; Enter starts the selected stage. An info panel shows stage metadata. The collectible system adds coins to stages — gold circles that increment the HUD counter when collected, plus health pickups for damaged players. The save system persists completion status, coin records, and best times to localStorage. The title screen gains Continue/New Game options based on save state. Stage completion now returns to the world map (not title), updating unlock progression. Since real level layouts don't exist until Sprint 5+, stages will use the existing test level or simple placeholder layouts — the critical deliverable is the world map infrastructure, save/load, and collectible system working end-to-end."
+}

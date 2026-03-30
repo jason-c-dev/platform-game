@@ -1,0 +1,439 @@
+{
+  "sprintNumber": 5,
+  "name": "Enemy & Boss Framework + World 1: Whispering Forest",
+  "features": ["F12: Enemy System Framework", "F13: Boss Fight Framework", "F14: Puzzle Mechanics", "F15: World 1 — Whispering Forest"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "Enemy Framework",
+      "description": "An enemy system module exists (src/enemies.js) that exports/defines a base enemy manager capable of spawning, updating, and rendering enemies. Each enemy has configurable properties: type, x, y, health, speed, behavior, width, height.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load page, wait for game to initialize",
+        "page.evaluate(() => typeof Enemies !== 'undefined' && typeof Enemies.spawn === 'function' && typeof Enemies.update === 'function' && typeof Enemies.render === 'function')"
+      ],
+      "threshold": "Enemies object exists with spawn, update, and render methods"
+    },
+    {
+      "id": "C-02",
+      "category": "Enemy Framework",
+      "description": "Shroomba enemy patrols horizontally on platforms, reversing direction at platform edges or walls. Has at least 1 HP. Visually drawn as a mushroom-like creature using Canvas primitives with forest palette colors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load page, navigate to stage 1-1 (Canopy Trail)",
+        "page.evaluate(() => { const enemies = Enemies.enemies.filter(e => e.type === 'shroomba'); return enemies.length > 0 && enemies[0].health >= 1 && enemies[0].speed > 0; })",
+        "Wait 60 frames, check that a Shroomba's x position has changed (it patrols)"
+      ],
+      "threshold": "At least 1 Shroomba in stage 1-1, patrols horizontally, has health >= 1"
+    },
+    {
+      "id": "C-03",
+      "category": "Enemy Framework",
+      "description": "Thorn Vine enemy is stationary and periodically fires projectiles toward the player. Projectiles are tracked in the enemy system, move through space, and damage the player on contact.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load page, navigate to stage 1-2 (Hollow Depths)",
+        "page.evaluate(() => { const vines = Enemies.enemies.filter(e => e.type === 'thornvine'); return vines.length > 0 && vines[0].speed === 0; })",
+        "Wait for projectile to spawn, check Enemies.projectiles.length > 0 or equivalent projectile tracking"
+      ],
+      "threshold": "Thorn Vine present in stage 1-2, stationary, fires projectiles that exist in the enemy/projectile system"
+    },
+    {
+      "id": "C-04",
+      "category": "Enemy Framework",
+      "description": "Bark Beetle enemy walks along ceiling surfaces (inverted gravity). Visually attached to the ceiling. Has at least 1 HP.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load page, navigate to stage 1-3 (Treetop Gauntlet)",
+        "page.evaluate(() => { const beetles = Enemies.enemies.filter(e => e.type === 'barkbeetle'); if (beetles.length === 0) return null; const b = beetles[0]; const tileAbove = Level.getTile(Math.floor(b.x / 32), Math.floor(b.y / 32) - 1); return { count: beetles.length, health: b.health, y: b.y, tileAbove }; })",
+        "Verify beetle exists, has health >= 1, and the tile directly above its position row (or at its row) is solid — indicating ceiling attachment"
+      ],
+      "threshold": "Bark Beetle present in stage 1-3, has health >= 1, positioned adjacent to ceiling tiles"
+    },
+    {
+      "id": "C-05",
+      "category": "Enemy Framework",
+      "description": "Player melee attack (normal attack, state='attack') damages enemies within the attack hitbox. Enemy health decreases by 1 per hit. Enemy shows visual hit feedback (flash or knockback).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load page, enter stage 1-1",
+        "Position player adjacent to a Shroomba using debug API",
+        "page.evaluate(() => { const enemy = Enemies.enemies.find(e => e.type === 'shroomba'); const initHP = enemy.health; Player.x = enemy.x - 30; Player.y = enemy.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { initHP, newHP: enemy.health }; })",
+        "Verify newHP < initHP"
+      ],
+      "threshold": "Enemy health decreases when hit by player melee attack"
+    },
+    {
+      "id": "C-06",
+      "category": "Enemy Framework",
+      "description": "Player jump attack (downward strike) damages enemies and bounces the player upward. Player charge attack also damages enemies with wider range.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1, wait for load",
+        "Test jump attack bounce: page.evaluate(() => { const enemy = Enemies.enemies.find(e => e.type === 'shroomba'); const initHP = enemy.health; Player.x = enemy.x; Player.y = enemy.y - 40; Player.vy = 3; Player.state = 'jumpAttack'; Player.grounded = false; Enemies.checkPlayerAttackCollisions(); return { initHP, newHP: enemy.health, vy: Player.vy }; })",
+        "Verify newHP < initHP (damage dealt) and Player.vy < 0 (bounced upward)",
+        "Test charge attack: page.evaluate(() => { const enemy = Enemies.enemies.find(e => e.type === 'shroomba' && e.health > 0); if (!enemy) { Enemies.spawn('shroomba', 200, 300); } const target = Enemies.enemies.find(e => e.type === 'shroomba' && e.health > 0); const initHP = target.health; Player.x = target.x - 50; Player.y = target.y; Player.facing = 1; Player.state = 'chargeAttack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { initHP, newHP: target.health }; })",
+        "Verify charge attack also reduces enemy health (wider range than normal attack at distance 50)"
+      ],
+      "threshold": "Jump attack damages enemy and bounces player (vy becomes negative); charge attack damages enemies at wider range"
+    },
+    {
+      "id": "C-07",
+      "category": "Enemy Framework",
+      "description": "Enemy contact with the player causes 1 HP damage to the player (unless player is invincible). Player gets knockback and invincibility frames as per existing takeDamage() system.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage with enemies",
+        "Position player overlapping an enemy",
+        "page.evaluate(() => { Player.hp = 3; Player.invincible = false; const enemy = Enemies.enemies[0]; Player.x = enemy.x; Player.y = enemy.y; Enemies.checkEnemyPlayerCollisions(); return { hp: Player.hp, invincible: Player.invincible }; })",
+        "Verify hp decreased and invincible is true"
+      ],
+      "threshold": "Player takes 1 damage from enemy contact, gains invincibility frames"
+    },
+    {
+      "id": "C-08",
+      "category": "Enemy Framework",
+      "description": "When an enemy's health reaches 0, it enters a death state, plays a death animation (particles or fading), and is removed from the active enemies list after the animation completes.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage with enemies",
+        "Kill an enemy by setting its health to 0 or hitting it until dead",
+        "page.evaluate(() => { const count = Enemies.enemies.length; Enemies.enemies[0].health = 0; return count; })",
+        "After 60+ frames, verify enemy count decreased"
+      ],
+      "threshold": "Dead enemies are removed after death animation; particles spawn on death"
+    },
+    {
+      "id": "C-09",
+      "category": "Boss Framework",
+      "description": "A boss fight framework exists (src/bosses.js or integrated into enemies.js) supporting boss entities with: multiple hit points, attack patterns, vulnerability windows (boss is only hittable at certain times), and phase transitions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Load page",
+        "page.evaluate(() => typeof Bosses !== 'undefined' || (typeof Enemies !== 'undefined' && typeof Enemies.spawnBoss === 'function'))",
+        "Spawn or trigger a boss and inspect properties: page.evaluate(() => { const boss = typeof Bosses !== 'undefined' ? Bosses.current : (Enemies.boss || Enemies.enemies.find(e => e.isBoss)); if (!boss) return null; return { hasHealth: typeof boss.health === 'number', hasMaxHealth: typeof boss.maxHealth === 'number', hasPhase: typeof boss.phase === 'number', hasVulnerable: typeof boss.vulnerable === 'boolean', hasPattern: typeof boss.attackPattern === 'string' || typeof boss.attackType === 'string' || typeof boss.patterns !== 'undefined' }; })",
+        "Verify all properties exist: hasHealth, hasMaxHealth, hasPhase, hasVulnerable, hasPattern are all truthy"
+      ],
+      "threshold": "Boss system exists with health, maxHealth, phase, vulnerable, and attack pattern properties on spawned boss instances"
+    },
+    {
+      "id": "C-10",
+      "category": "Boss Framework",
+      "description": "Elder Shroomba boss (stage 1-1) requires exactly 5 hits to defeat. Has a shockwave attack pattern. Boss health bar appears in the HUD when boss fight is active, showing 'Elder Shroomba' label.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to stage 1-1, reach the boss area (or trigger boss programmatically)",
+        "Verify HUD.bossActive === true and HUD.bossName === 'Elder Shroomba'",
+        "Verify HUD.bossMaxHP === 5",
+        "Hit boss 5 times, verify it is defeated"
+      ],
+      "threshold": "Elder Shroomba has 5 HP, shows health bar with correct name, has shockwave attack"
+    },
+    {
+      "id": "C-11",
+      "category": "Boss Framework",
+      "description": "Vine Mother boss (stage 1-2) requires 6 hits to defeat. Has vine sweep attack pattern.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to stage 1-2, reach the boss area",
+        "Verify HUD.bossMaxHP === 6 and HUD.bossName includes 'Vine Mother'",
+        "Hit boss 6 times, verify defeated"
+      ],
+      "threshold": "Vine Mother has 6 HP, shows health bar, has vine sweep attack"
+    },
+    {
+      "id": "C-12",
+      "category": "Boss Framework",
+      "description": "Stag King boss (stage 1-3) requires 7 hits to defeat. Has charge attack and ceiling rock drop patterns.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to stage 1-3, reach the boss area",
+        "Verify HUD.bossMaxHP === 7 and HUD.bossName includes 'Stag King'",
+        "Verify boss has multiple attack types (charge and ceiling rocks)"
+      ],
+      "threshold": "Stag King has 7 HP, shows health bar, has charge and ceiling rock attacks"
+    },
+    {
+      "id": "C-13",
+      "category": "Boss Framework",
+      "description": "Boss defeat triggers celebration effects: particle explosion and visual feedback. After boss defeat, the stage transitions to STAGE_COMPLETE state.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a boss fight, defeat the boss (set health to 0 via debug)",
+        "Verify particles spawn (Particles.particles.length increases)",
+        "Wait for transition, verify GameState.current === 'STAGE_COMPLETE'"
+      ],
+      "threshold": "Boss defeat spawns particles and transitions to STAGE_COMPLETE"
+    },
+    {
+      "id": "C-14",
+      "category": "Boss Framework",
+      "description": "Boss vulnerability windows work correctly: when boss.vulnerable === false, player attacks do not reduce boss health; when boss.vulnerable === true, player attacks reduce boss health by 1. This is the core gating mechanic of boss fights.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1, trigger boss fight",
+        "Test invulnerable state: page.evaluate(() => { const boss = typeof Bosses !== 'undefined' ? Bosses.current : (Enemies.boss || Enemies.enemies.find(e => e.isBoss)); boss.vulnerable = false; const hpBefore = boss.health; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { hpBefore, hpAfter: boss.health }; })",
+        "Verify hpBefore === hpAfter (no damage when invulnerable)",
+        "Test vulnerable state: page.evaluate(() => { const boss = typeof Bosses !== 'undefined' ? Bosses.current : (Enemies.boss || Enemies.enemies.find(e => e.isBoss)); boss.vulnerable = true; const hpBefore = boss.health; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { hpBefore, hpAfter: boss.health }; })",
+        "Verify hpAfter < hpBefore (damage dealt when vulnerable)"
+      ],
+      "threshold": "Boss takes no damage when vulnerable=false, takes 1 damage when vulnerable=true"
+    },
+    {
+      "id": "C-15",
+      "category": "Boss Framework",
+      "description": "Boss phase transitions change attack behavior. After reducing boss health below 50%, boss.phase increases and the boss gains access to additional or modified attack patterns compared to phase 1.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-3 (Stag King, 7 HP), trigger boss fight",
+        "page.evaluate(() => { const boss = typeof Bosses !== 'undefined' ? Bosses.current : (Enemies.boss || Enemies.enemies.find(e => e.isBoss)); return { initialPhase: boss.phase, hp: boss.health, maxHP: boss.maxHealth }; })",
+        "Verify initialPhase === 1 (or 0)",
+        "Reduce boss health below 50%: page.evaluate(() => { const boss = typeof Bosses !== 'undefined' ? Bosses.current : (Enemies.boss || Enemies.enemies.find(e => e.isBoss)); boss.health = Math.floor(boss.maxHealth * 0.4); boss.vulnerable = true; return { phase: boss.phase, hp: boss.health }; })",
+        "Run ~60 frames of updates, then check: page.evaluate(() => { const boss = typeof Bosses !== 'undefined' ? Bosses.current : (Enemies.boss || Enemies.enemies.find(e => e.isBoss)); return { phase: boss.phase }; })",
+        "Verify phase has increased from its initial value"
+      ],
+      "threshold": "Boss phase increases when health drops below 50%; non-blocking (informational if boss manages phases differently)"
+    },
+    {
+      "id": "C-16",
+      "category": "Puzzle Mechanics",
+      "description": "Crumbling platforms exist as a tile/entity type. When the player stands on a crumbling platform, it shakes briefly (0.5-1s) then falls/disappears. Player falls through if still standing on it.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a stage with crumbling platforms",
+        "Position player on a crumbling platform",
+        "Wait 60-90 frames",
+        "Verify the platform tile is removed/empty and player falls"
+      ],
+      "threshold": "Crumbling platforms collapse after player stands on them briefly"
+    },
+    {
+      "id": "C-17",
+      "category": "Puzzle Mechanics",
+      "description": "Bounce pad sequences exist in World 1 stages. Bounce pads (TILE_BOUNCE) are placed to create traversal challenges requiring timed jumps across multiple bounce pads.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1 or 1-3",
+        "Locate TILE_BOUNCE tiles in the level data",
+        "Verify at least 2 bounce pad tiles exist in a sequence (within 6 tiles of each other)"
+      ],
+      "threshold": "At least one stage has a bounce pad sequence with 2+ bounce pads"
+    },
+    {
+      "id": "C-18",
+      "category": "Puzzle Mechanics",
+      "description": "At least one World 1 stage contains a breakable block puzzle section — TILE_BREAKABLE tiles arranged so the player must use charge attack to break through and progress. Breakable tiles become TILE_EMPTY (or equivalent) after being destroyed by charge attack.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1 (Canopy Trail — tutorial stage, most likely to contain breakable block introduction)",
+        "page.evaluate(() => { const TILE_BREAKABLE = typeof TILES !== 'undefined' ? TILES.BREAKABLE : 5; let count = 0; for (let y = 0; y < Level.height; y++) for (let x = 0; x < Level.width; x++) if (Level.getTile(x, y) === TILE_BREAKABLE) count++; return count; })",
+        "Verify count >= 2 (at least 2 breakable tiles exist forming a puzzle section)",
+        "Test breakability: page.evaluate(() => { const TILE_BREAKABLE = typeof TILES !== 'undefined' ? TILES.BREAKABLE : 5; for (let y = 0; y < Level.height; y++) for (let x = 0; x < Level.width; x++) if (Level.getTile(x, y) === TILE_BREAKABLE) { Player.x = x * 32 - 20; Player.y = y * 32; Player.facing = 1; Player.state = 'chargeAttack'; Player.attackTimer = 5; Level.breakTile(x, y); return { tileAfter: Level.getTile(x, y) }; } return null; })",
+        "Verify tileAfter is 0 (TILE_EMPTY) — the breakable tile was destroyed"
+      ],
+      "threshold": "At least 2 TILE_BREAKABLE tiles exist in a World 1 stage and can be destroyed, becoming TILE_EMPTY"
+    },
+    {
+      "id": "C-19",
+      "category": "Level Design",
+      "description": "Stage 1-1 (Canopy Trail) has a playable level layout at least 80 tiles wide. It serves as a tutorial stage introducing basic mechanics. Has a defined spawn point and exit point/trigger.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Select stage 1-1 on world map, enter it",
+        "page.evaluate(() => ({ width: Level.width, height: Level.height, spawnX: Level.spawnX, spawnY: Level.spawnY }))",
+        "Verify Level.width >= 80",
+        "Verify Level has exit zone (exitX/exitY or equivalent trigger)"
+      ],
+      "threshold": "Stage 1-1 loads with width >= 80 tiles, has spawn and exit points"
+    },
+    {
+      "id": "C-20",
+      "category": "Level Design",
+      "description": "Stage 1-2 (Hollow Depths) has a playable level layout at least 120 tiles wide. Features wall jump sections and ladder elements for vertical traversal.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Select stage 1-2 on world map, enter it",
+        "Verify Level.width >= 120",
+        "Check level data contains wall jump opportunities (narrow vertical shafts with solid walls on both sides)",
+        "Check level contains TILE_LADDER tiles"
+      ],
+      "threshold": "Stage 1-2 loads with width >= 120 tiles, contains wall jump sections"
+    },
+    {
+      "id": "C-21",
+      "category": "Level Design",
+      "description": "Stage 1-3 (Treetop Gauntlet) has a playable level layout at least 150 tiles wide. Features moving platforms as a primary traversal mechanic.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Select stage 1-3 on world map, enter it",
+        "Verify Level.width >= 150",
+        "Verify Level.movingPlatforms.length >= 3"
+      ],
+      "threshold": "Stage 1-3 loads with width >= 150 tiles, has 3+ moving platforms"
+    },
+    {
+      "id": "C-22",
+      "category": "Level Design",
+      "description": "Forest-themed parallax background with at least 3 layers renders behind all World 1 stages. Uses forest palette (deep greens, browns). Layers scroll at different speeds creating depth. The __gameDebug API or global scope exposes the parallax layer count.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter any World 1 stage",
+        "page.evaluate(() => { const debug = window.__gameDebug; if (debug && debug.parallaxLayerCount) return debug.parallaxLayerCount(); if (typeof Camera !== 'undefined' && Camera.parallaxLayers) return Camera.parallaxLayers.length; if (typeof Renderer !== 'undefined') { const keys = Object.keys(Renderer); const layerKey = keys.find(k => k.toLowerCase().includes('parallax')); if (layerKey && Array.isArray(Renderer[layerKey])) return Renderer[layerKey].length; } return -1; })",
+        "Verify result >= 3 (at least 3 parallax layers)",
+        "Take screenshot, verify green/forest color scheme is visible in background layers"
+      ],
+      "threshold": "3+ parallax layers with forest palette colors in World 1 stages"
+    },
+    {
+      "id": "C-23",
+      "category": "Level Design",
+      "description": "Forest tile palette is visually distinct: solid tiles use deep greens and bark browns (COLORS.forest), not the default gray/blue. Tiles are drawn with canvas primitives (hatching, stippling, or gradient fills) per the design spec.",
+      "testMethod": "screenshot",
+      "testSteps": [
+        "Enter stage 1-1",
+        "Take screenshot of gameplay",
+        "Verify tiles use green/brown forest palette, not generic colors"
+      ],
+      "threshold": "Forest tiles are visually distinct with green/brown palette"
+    },
+    {
+      "id": "C-24",
+      "category": "Level Design",
+      "description": "Each World 1 stage has coins placed throughout with per-stage totals matching WorldMap.STAGES definitions (1-1: 15 coins, 1-2: 20 coins, 1-3: 25 coins). Health pickups are placed in at least 1 location per stage.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1, check Collectibles.totalCoins === 15",
+        "Enter stage 1-2, check Collectibles.totalCoins === 20",
+        "Enter stage 1-3, check Collectibles.totalCoins === 25",
+        "Verify each stage has at least 1 health pickup item"
+      ],
+      "threshold": "Coin totals match STAGES definitions; each stage has health pickups"
+    },
+    {
+      "id": "C-25",
+      "category": "Integration",
+      "description": "Selecting a World 1 stage on the world map and pressing Enter loads the correct stage. Each of the 3 Forest stages (1-1, 1-2, 1-3) loads a different, unique level layout (not the old test level).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map, select node 0 (stage 1-1), press Enter",
+        "Record Level.width after stage loads",
+        "Return to world map, select node 1 (stage 1-2), press Enter",
+        "Record Level.width, verify it differs from 1-1",
+        "Repeat for stage 1-3",
+        "Verify none of the widths === 140 (the old test level width)"
+      ],
+      "threshold": "Three distinct Forest levels load from world map; none is the old test level"
+    },
+    {
+      "id": "C-26",
+      "category": "Integration",
+      "description": "Reaching the exit zone of a stage triggers the stage complete flow. The STAGE_COMPLETE screen shows, and returning to the world map shows the stage as completed (checkmark) with the next stage unlocked.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1",
+        "Move player to exit zone (or trigger stage completion via debug)",
+        "Verify GameState.current transitions to 'STAGE_COMPLETE'",
+        "Proceed past stage complete screen to world map",
+        "Verify stage 1-1 node.completed === true and stage 1-2 node.unlocked === true"
+      ],
+      "threshold": "Stage exit triggers completion flow; world map updates correctly"
+    },
+    {
+      "id": "C-27",
+      "category": "Integration",
+      "description": "Enemies are placed within the World 1 stage levels, not floating in empty space. Enemy spawn positions are on or near solid/ceiling tiles appropriate to their behavior type.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter each World 1 stage",
+        "For each stage, verify Enemies.enemies.length >= 3",
+        "Spot-check that enemy positions correspond to tile geometry (e.g., Shroomba y is near a solid ground tile)"
+      ],
+      "threshold": "Each World 1 stage has at least 3 enemies properly positioned in the level"
+    },
+    {
+      "id": "C-28",
+      "category": "Integration",
+      "description": "Boss fights are triggered when the player reaches the boss arena area of each stage (typically the far-right section). The camera locks to the arena, preventing the player from leaving. Boss spawns and HUD boss bar activates.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1, move player to the boss trigger zone (near end of level)",
+        "Verify HUD.bossActive becomes true",
+        "Verify boss entity exists with correct type and health",
+        "Verify camera lock by checking: page.evaluate(() => { const cam = typeof Camera !== 'undefined' ? Camera : null; if (!cam) return null; return { hasMinX: typeof cam.minX === 'number' || typeof cam.lockX === 'number' || typeof cam.arenaLeft === 'number', hasMaxX: typeof cam.maxX === 'number' || typeof cam.lockRight === 'number' || typeof cam.arenaRight === 'number', locked: cam.locked === true || cam.arenaLock === true }; })",
+        "Verify at least one lock indicator is truthy — camera is constrained during boss fight"
+      ],
+      "threshold": "Boss fight triggers at arena zone; camera locks; boss spawns with health bar"
+    },
+    {
+      "id": "C-29",
+      "category": "Integration",
+      "description": "Save system correctly records World 1 stage completions. After completing stage 1-1, SaveSystem.load().completedStages includes '1-1'. Best time and coin records are saved.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear save data",
+        "Complete stage 1-1 (trigger via debug)",
+        "page.evaluate(() => SaveSystem.load())",
+        "Verify completedStages includes '1-1'",
+        "Verify bestTimes has entry for '1-1'",
+        "Verify coinRecords has entry for '1-1'"
+      ],
+      "threshold": "Save data correctly records stage completion, time, and coins for World 1 stages"
+    },
+    {
+      "id": "C-30",
+      "category": "Regression",
+      "description": "Player movement vocabulary is fully intact: walk, run, jump (variable height), wall slide, wall jump, coyote time, jump buffering, crouch, crouch-slide, melee attack, charge attack, jump attack all function as in Sprint 2.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a World 1 stage (or any stage)",
+        "Verify player can walk (press right, vx > 0)",
+        "Verify player can jump (press Z, vy < 0)",
+        "Verify player attack works (press X, state becomes 'attack')",
+        "Verify coyote time constant still exists",
+        "Verify wall slide still works near walls"
+      ],
+      "threshold": "All Sprint 2 player movement mechanics function correctly"
+    },
+    {
+      "id": "C-31",
+      "category": "Regression",
+      "description": "Game state machine transitions all function: TITLE -> WORLD_MAP -> STAGE -> PAUSED -> GAME_OVER -> STAGE_COMPLETE. Iris-wipe transitions still work. HUD renders health hearts, coin counter, and stage name.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Verify game starts in TITLE state",
+        "Press Enter, verify transition to WORLD_MAP",
+        "Select a stage, press Enter, verify transition to STAGE",
+        "Press Escape, verify PAUSED state",
+        "Resume, verify STAGE state",
+        "Verify HUD shows hearts and coin counter during STAGE"
+      ],
+      "threshold": "All state transitions from Sprint 3-4 work; HUD renders correctly"
+    },
+    {
+      "id": "C-32",
+      "category": "Regression",
+      "description": "World map navigation still works: arrow keys move between nodes, info panel shows stage name/difficulty/best time/coins. Locked stages show as locked. Completed stages show checkmarks.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to WORLD_MAP state",
+        "Press ArrowRight, verify selectedNode changes",
+        "Verify node data has stageId, name, unlocked, completed properties",
+        "Verify info panel content matches selected node"
+      ],
+      "threshold": "World map navigation, info panel, and visual states all function correctly"
+    }
+  ],
+  "outOfScope": [
+    "World 2-4 content (Desert, Tundra, Volcano stages/enemies/bosses)",
+    "The Citadel / Final Boss",
+    "Audio/sound effects (Sprint 10)",
+    "Visual effects polish like screen shake and iris-wipe refinement (Sprint 11)",
+    "Performance optimization (Sprint 12)",
+    "Power Stars collectible (hidden, 1 per world)",
+    "Keys/gates and mirror puzzles (World 2 mechanics)",
+    "Pushable blocks and ice block mechanics (World 3 mechanics)",
+    "Advanced puzzle types: rotatable mirrors, valve sequences (later worlds)"
+  ],
+  "regressionSprints": [1, 2, 3, 4],
+  "notes": "This is the highest-complexity sprint so far, introducing three major systems (enemies, bosses, puzzles) plus three complete playable stages. The enemy and boss frameworks must be extensible for future worlds. Level data should replace the current test level with real stage data, keyed by stageId. The existing __gameDebug API should be extended to expose enemy/boss state and parallax layer count for testing. REVISION NOTES: Addressed all evaluator feedback — (1) Added C-14 for boss vulnerability window behavioral test (MISSING-1), (2) Added C-18 for breakable block puzzles (MISSING-2), (3) Added C-15 for boss phase transition behavior (MISSING-3, non-blocking), (4) Fleshed out C-06 with concrete page.evaluate code for jump attack bounce and charge attack, (5) Pinned C-03 to stage 1-2 and C-04 to stage 1-3 for deterministic tests, (6) Added concrete page.evaluate code to C-09 for boss property inspection, (7) Updated C-22 (parallax) to search multiple possible property names and suggest debug API exposure, (8) Added concrete camera lock verification code to C-28."
+}

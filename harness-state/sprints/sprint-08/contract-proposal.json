@@ -1,0 +1,429 @@
+{
+  "sprintNumber": 8,
+  "name": "World 4: Molten Volcano",
+  "features": ["F18: World 4 — Molten Volcano"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "Volcano Theme",
+      "description": "Volcano tile palette is visually distinct from Forest, Desert, and Tundra: solid tiles use dark stone/lava colors from COLORS.volcano (darkStone '#2A1A1A', darkRed '#8B2A1A', lavaOrange '#FF6A2A', moltenYellow '#FFD43A'). Tiles are drawn with Canvas primitives appropriate to a volcanic environment (stone blocks, glowing cracks, magma accents).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1 (Lava Fields)",
+        "Take screenshot of gameplay area",
+        "Verify tiles use volcano palette colors (dark stone, red/orange lava tones), not forest greens, desert sands, or ice blues",
+        "page.evaluate(() => { const colors = typeof COLORS !== 'undefined' ? COLORS.volcano : null; return colors && colors.darkStone === '#2A1A1A' && colors.darkRed === '#8B2A1A' && colors.lavaOrange === '#FF6A2A' && colors.moltenYellow === '#FFD43A'; })",
+        "Verify volcano palette constants exist and Renderer uses them for World 4 rendering"
+      ],
+      "threshold": "Volcano tiles visually distinct from forest, desert, and tundra, using volcano palette colors"
+    },
+    {
+      "id": "C-02",
+      "category": "Volcano Theme",
+      "description": "Volcano parallax background with at least 3 layers renders behind all World 4 stages. Layers feature volcano-appropriate scenery (dark mountains, distant lava flows, volcanic peaks). Ember/ash particles rise from below, creating a molten atmosphere.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1",
+        "page.evaluate(() => { if (typeof Camera !== 'undefined' && Camera.parallaxLayers) return Camera.parallaxLayers.length; if (typeof Camera !== 'undefined' && Camera.layers) return Camera.layers.length; const debug = window.__gameDebug; if (debug && debug.parallaxLayerCount) return debug.parallaxLayerCount(); return -1; })",
+        "Verify result >= 3",
+        "Take screenshot to verify volcano-themed background (dark stone tones, lava/orange glows visible, not green forest, sand desert, or icy tundra)"
+      ],
+      "threshold": "3+ parallax layers with volcano theme and ember/ash particle effects in World 4 stages"
+    },
+    {
+      "id": "C-03",
+      "category": "Volcano Theme",
+      "description": "Rising ember/ash particle effect is present in all volcano stages. Ember particles drift upward across the screen, glowing orange/red/yellow, creating a molten atmosphere. Particles are continuously animated.",
+      "testMethod": "screenshot",
+      "testSteps": [
+        "Enter stage 4-1 (Lava Fields)",
+        "Take 2 screenshots ~30 frames apart",
+        "Verify visual evidence of rising ember particles (small orange/red dots or sparks drifting upward)",
+        "Ember particles should be at different positions between the two screenshots (animated)"
+      ],
+      "threshold": "Visible rising ember/ash particles in volcano stages that animate over time"
+    },
+    {
+      "id": "C-04",
+      "category": "Lava Mechanics",
+      "description": "Lava hazard tile type exists. When the player touches lava, they take damage (lose 1 HP) and are knocked back. Lava is visually animated with flowing/bubbling surface using orange/yellow colors. Lava tiles are present in all volcano stages.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1 (Lava Fields)",
+        "page.evaluate(() => { const hasLavaTile = typeof TILE_LAVA !== 'undefined' || typeof TILES !== 'undefined' && typeof TILES.LAVA !== 'undefined'; let lavaCount = 0; for (let y = 0; y < Level.height; y++) for (let x = 0; x < Level.width; x++) { const t = Level.getTile(x, y); if (t === 3 || t === (typeof TILE_LAVA !== 'undefined' ? TILE_LAVA : -1)) lavaCount++; } return { hasLavaTile, lavaCount }; })",
+        "Verify lava tiles exist in stage 4-1 (count > 0)",
+        "page.evaluate(() => { const hpBefore = Player.health; Player.invincibleTimer = 0; Player.y = (Level.height - 2) * 32; Player.vy = 0; for (let i = 0; i < 10; i++) { if (typeof Physics.update === 'function') Physics.update(1/60); } return { hpBefore, hpAfter: Player.health, tookDamage: Player.health < hpBefore }; })",
+        "Verify player takes damage from lava contact (hpAfter < hpBefore)"
+      ],
+      "threshold": "Lava hazard tiles exist in volcano stages; player takes damage on lava contact"
+    },
+    {
+      "id": "C-05",
+      "category": "Lava Mechanics",
+      "description": "Stage 4-1 (Lava Fields) features rising/falling lava sections where the lava level rises over time, forcing the player to climb higher. The lava level animates up and potentially down, creating timed platforming pressure.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1 (Lava Fields)",
+        "page.evaluate(() => { return { hasRisingLava: typeof Level.risingLava !== 'undefined' || typeof Level.lavaLevel !== 'undefined' || typeof Level.lavaRise !== 'undefined', lavaLevel: Level.lavaLevel || Level.risingLava || null, lavaSpeed: Level.lavaRiseSpeed || Level.lavaSpeed || null }; })",
+        "Verify rising lava mechanic exists (risingLava or lavaLevel property defined)",
+        "page.evaluate(() => { const lvlBefore = Level.lavaLevel || Level.risingLava; for (let i = 0; i < 120; i++) { if (typeof Level.update === 'function') Level.update(1/60); } const lvlAfter = Level.lavaLevel || Level.risingLava; return { lvlBefore, lvlAfter, rose: lvlAfter !== lvlBefore }; })",
+        "Verify lava level changes over time (lava rises or oscillates)"
+      ],
+      "threshold": "Rising/falling lava mechanic active in stage 4-1; lava level changes over time"
+    },
+    {
+      "id": "C-06",
+      "category": "Lava Mechanics",
+      "description": "Stage 4-2 (Forge of Chains) features chain-swinging mechanics. Chains are hanging objects the player can grab and swing from. At least 2 chain swing points exist in stage 4-2, allowing the player to traverse gaps over lava or hazards.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-2 (Forge of Chains)",
+        "page.evaluate(() => { const hasChains = typeof Level.chains !== 'undefined' || typeof Level.swingPoints !== 'undefined' || typeof Level.chainPoints !== 'undefined'; let chainCount = 0; if (typeof Level.chains !== 'undefined') chainCount = Level.chains.length; else if (typeof Level.swingPoints !== 'undefined') chainCount = Level.swingPoints.length; else if (typeof Level.chainPoints !== 'undefined') chainCount = Level.chainPoints.length; return { hasChains, chainCount }; })",
+        "Verify chain/swing points exist (count >= 2)",
+        "page.evaluate(() => { const chains = Level.chains || Level.swingPoints || Level.chainPoints || []; if (chains.length === 0) return null; const chain = chains[0]; return { hasPosition: typeof chain.x !== 'undefined' && typeof chain.y !== 'undefined', hasLength: typeof chain.length !== 'undefined' || typeof chain.chainLength !== 'undefined', hasGrabMechanic: typeof chain.canGrab !== 'undefined' || typeof chain.grabbed !== 'undefined' || typeof Player.grabbedChain !== 'undefined' }; })",
+        "Verify chains have position, length, and grab mechanic"
+      ],
+      "threshold": "Chain-swinging mechanic exists in stage 4-2 with at least 2 chain points; player can grab and swing"
+    },
+    {
+      "id": "C-07",
+      "category": "Enemy Types",
+      "description": "Magma Slime enemy exists in volcano stages. Magma Slime splits into 2 smaller slimes when defeated (similar to classic slime-split behavior). Has at least 1 HP. Visually drawn as a blob/slime shape using volcano palette colors (orange/red).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1 (Lava Fields)",
+        "page.evaluate(() => { const slimes = Enemies.enemies.filter(e => e.type === 'magma_slime' || e.type === 'magmaslime'); return slimes.length > 0 ? { count: slimes.length, health: slimes[0].health, behavior: slimes[0].behavior, splitOnDeath: slimes[0].splitOnDeath === true || slimes[0].splits === true || typeof slimes[0].splitCount !== 'undefined' } : null; })",
+        "Verify at least 1 Magma Slime exists with health >= 1",
+        "Verify Magma Slime has split-on-death behavior (splitOnDeath flag, splits property, or splitCount defined)"
+      ],
+      "threshold": "Magma Slime present in volcano stages, has health >= 1, splits into smaller slimes on death"
+    },
+    {
+      "id": "C-08",
+      "category": "Enemy Types",
+      "description": "Fire Bat enemy exists in volcano stages. Fire Bats fly in erratic/swooping flight patterns and appear in groups of 3. They have at least 1 HP. Visually drawn as bat-like creatures using Canvas primitives with red/orange colors.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1 or 4-3",
+        "page.evaluate(() => { const bats = Enemies.enemies.filter(e => e.type === 'fire_bat' || e.type === 'firebat'); return bats.length > 0 ? { count: bats.length, health: bats[0].health, behavior: bats[0].behavior, hasFlightPattern: typeof bats[0].flightTimer !== 'undefined' || typeof bats[0].swoopTimer !== 'undefined' || bats[0].behavior === 'erratic' || bats[0].behavior === 'flight' || bats[0].behavior === 'swoop' } : null; })",
+        "Verify at least 1 Fire Bat exists with health >= 1",
+        "Verify Fire Bats have erratic flight behavior (flight timer, swoop timer, or erratic behavior type)"
+      ],
+      "threshold": "Fire Bat present in volcano stages, has health >= 1, flies in erratic patterns"
+    },
+    {
+      "id": "C-09",
+      "category": "Enemy Types",
+      "description": "Obsidian Knight enemy exists in volcano stages. Obsidian Knight has a frontal shield making it invulnerable from the front — can only be damaged by attacking from behind. Has at least 2 HP (tougher enemy). Visually drawn as an armored knight using Canvas primitives.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-2 or 4-3",
+        "page.evaluate(() => { const knights = Enemies.enemies.filter(e => e.type === 'obsidian_knight' || e.type === 'obsidianknight'); return knights.length > 0 ? { count: knights.length, health: knights[0].health, behavior: knights[0].behavior, hasShield: knights[0].hasShield === true || knights[0].shielded === true || knights[0].frontalShield === true || typeof knights[0].shieldDirection !== 'undefined' } : null; })",
+        "Verify at least 1 Obsidian Knight exists with health >= 2",
+        "Verify Obsidian Knight has shield mechanic (hasShield, shielded, frontalShield, or shieldDirection property)"
+      ],
+      "threshold": "Obsidian Knight present in volcano stages, health >= 2, has frontal shield requiring back-attack"
+    },
+    {
+      "id": "C-10",
+      "category": "Level Design",
+      "description": "Stage 4-1 (Lava Fields) has a playable level layout at least 120 tiles wide with rising lava sections integrated into the terrain. Has defined spawn point, exit point, and boss arena. Contains Magma Slime and/or Fire Bat enemies.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map, select stage 4-1, enter it",
+        "page.evaluate(() => ({ width: Level.width, height: Level.height, spawnX: Level.spawnX, spawnY: Level.spawnY, hasExit: typeof Level.exitX === 'number', hasBoss: Level.bossData !== null && Level.bossData !== undefined, enemyCount: Enemies.enemies.length }))",
+        "Verify Level.width >= 120",
+        "Verify spawn point, exit, boss data, and enemies exist"
+      ],
+      "threshold": "Stage 4-1 loads with width >= 120 tiles, has spawn, exit, boss arena, and enemies"
+    },
+    {
+      "id": "C-11",
+      "category": "Level Design",
+      "description": "Stage 4-2 (Forge of Chains) has a playable level layout at least 140 tiles wide featuring chain-swinging sections. Industrial forge aesthetics with metal platforms and lava pits. Contains mixed enemy types including Obsidian Knight.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map, select stage 4-2, enter it",
+        "page.evaluate(() => ({ width: Level.width, height: Level.height, spawnX: Level.spawnX, spawnY: Level.spawnY, hasExit: typeof Level.exitX === 'number', hasBoss: Level.bossData !== null && Level.bossData !== undefined, enemyCount: Enemies.enemies.length }))",
+        "Verify Level.width >= 140",
+        "Verify spawn point, exit, boss data, and enemies exist"
+      ],
+      "threshold": "Stage 4-2 loads with width >= 140 tiles, has spawn, exit, boss arena, and enemies"
+    },
+    {
+      "id": "C-12",
+      "category": "Level Design",
+      "description": "Stage 4-3 (Caldera) has a playable level layout at least 150 tiles wide featuring all 3 volcano enemy types (Magma Slime, Fire Bat, Obsidian Knight). The culminating stage of the volcano world with the most challenging layout.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map, select stage 4-3, enter it",
+        "page.evaluate(() => ({ width: Level.width, height: Level.height, spawnX: Level.spawnX, spawnY: Level.spawnY, hasExit: typeof Level.exitX === 'number', hasBoss: Level.bossData !== null && Level.bossData !== undefined, enemyCount: Enemies.enemies.length }))",
+        "Verify Level.width >= 150",
+        "Verify spawn point, exit, boss data, and enemies exist",
+        "page.evaluate(() => { const types = new Set(Enemies.enemies.map(e => e.type)); return { types: Array.from(types), hasAllThree: (types.has('magma_slime') || types.has('magmaslime')) && (types.has('fire_bat') || types.has('firebat')) && (types.has('obsidian_knight') || types.has('obsidianknight')) }; })",
+        "Verify all 3 volcano enemy types present in stage 4-3"
+      ],
+      "threshold": "Stage 4-3 loads with width >= 150 tiles, has spawn, exit, boss, and all 3 enemy types"
+    },
+    {
+      "id": "C-13",
+      "category": "Boss Fights",
+      "description": "Lava Serpent boss (stage 4-1) requires exactly 7 hits to defeat. Lava Serpent emerges from lava and destroys platforms as part of its attack pattern. Boss health bar shows in HUD with 'Lava Serpent' label and maxHP of 7.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, trigger boss fight by moving player to boss arena",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; return { type: boss.type, health: boss.health, maxHealth: boss.maxHealth, name: boss.name || boss.type }; })",
+        "Verify boss type is lava_serpent (or equivalent), maxHealth === 7",
+        "Verify HUD shows boss name 'Lava Serpent' and health bar"
+      ],
+      "threshold": "Lava Serpent boss has 7 HP, shows health bar with correct name, emerges from lava"
+    },
+    {
+      "id": "C-14",
+      "category": "Boss Fights",
+      "description": "Iron Warden boss (stage 4-2) requires exactly 7 hits to defeat. Has a chain anchor mechanic as part of its attack patterns. Boss health bar shows 'Iron Warden' and maxHP of 7. Has a final phase that activates at low health.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-2, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; return { type: boss.type, health: boss.health, maxHealth: boss.maxHealth, name: boss.name || boss.type }; })",
+        "Verify boss maxHealth === 7",
+        "Verify boss type is iron_warden or equivalent",
+        "Verify HUD shows boss name 'Iron Warden' and health bar"
+      ],
+      "threshold": "Iron Warden boss has 7 HP, shows health bar with correct name, has chain anchor attack"
+    },
+    {
+      "id": "C-15",
+      "category": "Boss Fights",
+      "description": "Dragon of the Caldera boss (stage 4-3) is a 2-phase fight requiring 11 total hits. Phase 1 requires a certain number of hits, then the boss transforms or changes arena for phase 2 with different attack patterns. Boss health bar shows 'Dragon of the Caldera' and maxHP of 11.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-3, trigger boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; return { type: boss.type, health: boss.health, maxHealth: boss.maxHealth, name: boss.name || boss.type, phase: boss.phase, phases: boss.phases || null }; })",
+        "Verify boss maxHealth === 11",
+        "Verify boss type is dragon_caldera, dragon, or equivalent",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.health = Math.floor(boss.maxHealth * 0.4); for (let i = 0; i < 60; i++) { if (typeof Enemies.updateBoss === 'function') Enemies.updateBoss(1/60); else if (typeof Enemies.update === 'function') Enemies.update(1/60); } return { phase: boss.phase, hasMultiplePhases: boss.phase > 1 || (boss.phases && boss.phases.length > 1) }; })",
+        "Verify boss has 2 phases (phase transitions at reduced health)"
+      ],
+      "threshold": "Dragon of the Caldera has 11 HP, 2-phase fight, shows health bar with correct name"
+    },
+    {
+      "id": "C-16",
+      "category": "Boss Fights",
+      "description": "Boss vulnerability windows work correctly for all volcano bosses. When boss.vulnerable === false, attacks do not reduce boss health. When boss.vulnerable === true, attacks reduce health by 1. This follows the same framework pattern from Sprints 5, 6, and 7.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, trigger Lava Serpent boss fight",
+        "Test invulnerable: page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.vulnerable = false; const hpBefore = boss.health; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { hpBefore, hpAfter: boss.health }; })",
+        "Verify hpBefore === hpAfter",
+        "Test vulnerable: page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.vulnerable = true; const hpBefore = boss.health; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { hpBefore, hpAfter: boss.health }; })",
+        "Verify hpAfter < hpBefore"
+      ],
+      "threshold": "Volcano bosses follow vulnerability window pattern (no damage when invulnerable, 1 damage when vulnerable)"
+    },
+    {
+      "id": "C-17",
+      "category": "Boss Fights",
+      "description": "Volcano bosses have phase transitions. After reducing boss health below 50%, the boss enters phase 2 with modified attack patterns (faster, additional attacks, or new mechanics).",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, trigger Lava Serpent boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; return { phase: boss.phase, health: boss.health, maxHealth: boss.maxHealth }; })",
+        "Verify initial phase is 1",
+        "page.evaluate(() => { const boss = Enemies.boss; boss.health = Math.floor(boss.maxHealth * 0.4); for (let i = 0; i < 60; i++) { if (typeof Enemies.updateBoss === 'function') Enemies.updateBoss(1/60); else if (typeof Enemies.update === 'function') Enemies.update(1/60); } return { phase: boss.phase, health: boss.health }; })",
+        "Verify boss.phase has increased (phase > 1) after health dropped below 50%"
+      ],
+      "threshold": "Boss phase increases when health drops below 50%"
+    },
+    {
+      "id": "C-18",
+      "category": "Boss Fights",
+      "description": "Defeating a volcano boss triggers stage completion. Boss defeat sets health to 0, plays defeat animation, and transitions game state to STAGE_COMPLETE.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, trigger Lava Serpent boss fight",
+        "page.evaluate(() => { const boss = Enemies.boss; if (!boss) return null; boss.vulnerable = true; boss.health = 1; Player.x = boss.x - 30; Player.y = boss.y; Player.facing = 1; Player.state = 'attack'; Player.attackTimer = 5; Enemies.checkPlayerAttackCollisions(); return { health: boss.health, state: boss.state }; })",
+        "Verify boss health === 0 or boss state is 'dying'/'dead'",
+        "Wait for defeat animation, verify GameState transitions to STAGE_COMPLETE"
+      ],
+      "threshold": "Defeating volcano bosses triggers STAGE_COMPLETE state transition"
+    },
+    {
+      "id": "C-19",
+      "category": "Collectibles",
+      "description": "Each volcano stage has coins placed matching WorldMap.STAGES definitions: stage 4-1 has 22 coins, stage 4-2 has 26 coins, stage 4-3 has 32 coins. At least 1 health pickup per stage.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, page.evaluate(() => ({ coins: Collectibles.coins ? Collectibles.coins.length : Level.coinPositions.length, health: Collectibles.healthPickups ? Collectibles.healthPickups.length : Level.healthPositions.length }))",
+        "Verify coins === 22 and health >= 1",
+        "Enter stage 4-2, verify coins === 26 and health >= 1",
+        "Enter stage 4-3, verify coins === 32 and health >= 1"
+      ],
+      "threshold": "Coin totals match STAGES definitions (22, 26, 32); each stage has health pickups"
+    },
+    {
+      "id": "C-20",
+      "category": "Collectibles",
+      "description": "Each volcano stage has at least 3 enemies properly placed within the level geometry — positioned on or near appropriate surfaces. Not floating in empty space. Mix of volcano enemy types used.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, page.evaluate(() => Enemies.enemies.length)",
+        "Verify >= 3 enemies",
+        "Enter stage 4-2, verify >= 3 enemies",
+        "Enter stage 4-3, verify >= 3 enemies",
+        "Spot-check that enemy positions correspond to tile geometry"
+      ],
+      "threshold": "Each volcano stage has at least 3 enemies properly positioned in the level"
+    },
+    {
+      "id": "C-21",
+      "category": "Puzzle Mechanics",
+      "description": "Valve/lever puzzle mechanic exists in at least one volcano stage. Interactable valve or lever objects that the player can activate (by pressing a key near them) to trigger platform movement, open gates, or redirect lava flow. At least 1 valve/lever puzzle in stage 4-2 or 4-3.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-2 (Forge of Chains)",
+        "page.evaluate(() => { const hasValves = typeof Level.valves !== 'undefined' || typeof Level.levers !== 'undefined'; let count = 0; if (typeof Level.valves !== 'undefined') count += Level.valves.length; if (typeof Level.levers !== 'undefined') count += Level.levers.length; if (typeof Level.puzzleElements !== 'undefined') count += Level.puzzleElements.filter(p => p.type === 'valve' || p.type === 'lever').length; return { hasValves, count }; })",
+        "Verify valves or levers exist (count > 0)",
+        "Verify valves/levers have activate/toggle functionality"
+      ],
+      "threshold": "Valve/lever puzzle mechanic exists in volcano stages with interactive activation"
+    },
+    {
+      "id": "C-22",
+      "category": "Integration",
+      "description": "World 4 stages are accessible only after completing all 3 World 3 (Tundra) stages. The world map correctly enforces linear progression — stage 4-1 unlocks after completing stage 3-3.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Clear save data, navigate to world map",
+        "Verify World 4 nodes are locked (stage 4-1 unlocked === false)",
+        "Set save data with stages 1-1 through 3-3 completed",
+        "Refresh world map, verify stage 4-1 is now unlocked"
+      ],
+      "threshold": "World 4 locked until World 3 complete; stage 4-1 unlocks after stage 3-3 completion"
+    },
+    {
+      "id": "C-23",
+      "category": "Integration",
+      "description": "Selecting a World 4 stage on the world map and pressing Enter loads the correct stage. Each of the 3 volcano stages (4-1, 4-2, 4-3) loads a different, unique level layout — not any prior world's levels. Verified by comparing level name/ID or tile data.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Navigate to world map, unlock World 4 stages (complete Worlds 1-3 via save data)",
+        "Select stage 4-1, press Enter, page.evaluate(() => ({ width: Level.width, name: Level.name || Level.id || Level.currentStageId || null, firstRow: Level.tiles ? Level.tiles[0].slice(0,10).join(',') : null }))",
+        "Return to world map, select stage 4-2, record same data, verify name or tile data differs from 4-1",
+        "Return to world map, select stage 4-3, record same data, verify differs from 4-1 and 4-2",
+        "Verify all three volcano stages have distinct level names/IDs or distinct tile data from each other and from World 1/2/3 stages"
+      ],
+      "threshold": "Three distinct volcano levels load from world map; none reuses prior world layouts"
+    },
+    {
+      "id": "C-24",
+      "category": "Integration",
+      "description": "Boss fights trigger when player reaches the boss arena area of each volcano stage. Camera locks to arena, boss spawns with correct type and health, HUD boss health bar activates with correct name.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 4-1, move player past bossArenaX",
+        "page.evaluate(() => { const boss = Enemies.boss; return { bossExists: boss !== null && boss !== undefined, bossType: boss ? boss.type : null, bossHP: boss ? boss.maxHealth : null, hudActive: typeof HUD !== 'undefined' ? HUD.bossActive : null }; })",
+        "Verify boss spawns with correct type and HP (7 for Lava Serpent)",
+        "Verify HUD boss bar is active"
+      ],
+      "threshold": "Boss fight triggers in volcano stages; camera locks; boss spawns with health bar"
+    },
+    {
+      "id": "C-25",
+      "category": "Integration",
+      "description": "Completing a volcano stage triggers STAGE_COMPLETE state, and returning to world map shows the stage as completed with next stage unlocked. Save system records volcano stage completions, best times, and coin counts.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Set save data to have Worlds 1-3 completed and stage 4-1 unlocked",
+        "Enter stage 4-1, trigger completion (defeat boss)",
+        "Verify GameState transitions to STAGE_COMPLETE",
+        "Return to world map, verify stage 4-1 shows completed and stage 4-2 unlocked",
+        "page.evaluate(() => { const save = SaveSystem.load(); return { completed: save.completedStages, hasBestTime: '4-1' in (save.bestTimes || {}), hasCoins: '4-1' in (save.coinRecords || {}) }; })",
+        "Verify save data includes '4-1' completion"
+      ],
+      "threshold": "Volcano stage completion updates world map, unlocks next stage, saves progress"
+    },
+    {
+      "id": "C-26",
+      "category": "Regression",
+      "description": "All 3 World 1 Forest stages (1-1, 1-2, 1-3) still load correctly with their original layouts, enemies, and bosses. Forest tile palette and parallax are still rendered. No Forest content has been broken by Volcano additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 1-1, verify Level.width >= 80 and enemies exist",
+        "Enter stage 1-2, verify Level.width >= 120 and enemies exist",
+        "Enter stage 1-3, verify Level.width >= 150 and enemies exist",
+        "Verify Forest enemy types (shroomba, thornvine, barkbeetle) still spawn in Forest stages",
+        "Verify Forest bosses still have correct HP (5, 6, 7)"
+      ],
+      "threshold": "All Forest stages load correctly with original content intact"
+    },
+    {
+      "id": "C-27",
+      "category": "Regression",
+      "description": "All 3 World 2 Desert stages (2-1, 2-2, 2-3) still load correctly with their original layouts, enemies, bosses, and unique mechanics (quicksand, dark rooms, water). No Desert content has been broken by Volcano additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 2-1, verify Level.width >= 100 and enemies exist",
+        "Enter stage 2-2, verify Level.width >= 130 and enemies exist",
+        "Enter stage 2-3, verify Level.width >= 140 and enemies exist",
+        "Verify Desert enemy types (sand_skitter, dust_devil, mummy) still spawn",
+        "Verify Desert bosses still have correct HP (6, 8, 12)"
+      ],
+      "threshold": "All Desert stages load correctly with original content intact"
+    },
+    {
+      "id": "C-28",
+      "category": "Regression",
+      "description": "All 3 World 3 Tundra stages (3-1, 3-2, 3-3) still load correctly with their original layouts, enemies, bosses, and unique mechanics (ice physics, auto-scrolling, ice blocks). No Tundra content has been broken by Volcano additions.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter stage 3-1, verify Level.width >= 115 and enemies exist",
+        "Enter stage 3-2, verify Level.width >= 130 and enemies exist",
+        "Enter stage 3-3, verify Level.width >= 160 and enemies exist",
+        "Verify Tundra enemy types (frost_imp, ice_golem, snow_owl) still spawn",
+        "Verify Tundra bosses still have correct HP (7, 25, 9)"
+      ],
+      "threshold": "All Tundra stages load correctly with original content intact"
+    },
+    {
+      "id": "C-29",
+      "category": "Regression",
+      "description": "Player movement vocabulary is fully intact: walk, run, jump (variable height), wall slide, wall jump, coyote time, jump buffering, crouch, melee attack, charge attack, jump attack all function in volcano stages.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Enter a volcano stage",
+        "Verify player can walk (press right, vx > 0)",
+        "Verify player can jump (press Z, vy < 0)",
+        "Verify player attack works (press X, state becomes 'attack')",
+        "Verify coyote time constant exists (COYOTE_FRAMES === 6)",
+        "Verify wall slide works near walls"
+      ],
+      "threshold": "All player movement and combat mechanics function correctly in volcano stages"
+    },
+    {
+      "id": "C-30",
+      "category": "Regression",
+      "description": "The game loads without JavaScript errors. No console errors on page load or during World 4 gameplay. The loadStage switch statement handles '4-1', '4-2', '4-3' cases. The game runs at stable framerate.",
+      "testMethod": "playwright",
+      "testSteps": [
+        "page.on('pageerror') to capture JS errors",
+        "Load the game page",
+        "Navigate to world map, enter stage 4-1",
+        "Play for 5 seconds (simulated input)",
+        "Verify zero unhandled JS errors",
+        "page.evaluate(() => typeof Level.loadStage === 'function')",
+        "Verify loadStage function exists and handles 4-1, 4-2, 4-3"
+      ],
+      "threshold": "Zero JS errors on load and during World 4 gameplay; loadStage handles all volcano stages"
+    }
+  ],
+  "outOfScope": [
+    "The Citadel / Final Boss (Sprint 9)",
+    "Audio / Sound effects (Sprint 10)",
+    "Visual effects polish — screen shake, hit flash, slow-mo (Sprint 11)",
+    "Performance optimization pass (Sprint 12)",
+    "Modifying World 1, 2, or 3 content beyond bug fixes",
+    "Save system schema changes"
+  ],
+  "regressionSprints": [5, 6, 7]
+}

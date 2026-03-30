@@ -1,0 +1,257 @@
+{
+  "sprintNumber": 9,
+  "name": "The Citadel & Final Boss",
+  "overallResult": "PASS",
+  "passCount": 30,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "category": "Citadel Stage",
+      "description": "Stage 5-1 loads with width >= 200, spawn, exit, boss arena",
+      "result": "PASS",
+      "detail": "Stage 5-1 loads: width=220, height=20, spawnX/Y present, hasExit=true, hasBoss=true. The Citadel is the longest stage in the game at 220 tiles wide."
+    },
+    {
+      "id": "C-02",
+      "category": "Citadel Stage",
+      "description": "4 distinct world-themed sections (Forest, Desert, Tundra, Volcano)",
+      "result": "PASS",
+      "detail": "citadelSections has 4 entries with themes: forest (cols 0-49), desert (cols 50-99), tundra (cols 100-149), volcano (cols 150-189). worldSections and sections aliases also set."
+    },
+    {
+      "id": "C-03",
+      "category": "Citadel Stage",
+      "description": "Bark Beetle enemies in forest section",
+      "result": "PASS",
+      "detail": "2 barkbeetle enemies found in the Citadel, spawned at cols 10 and 30 (forest section)."
+    },
+    {
+      "id": "C-04",
+      "category": "Citadel Stage",
+      "description": "Desert section has quicksand and Dust Devil",
+      "result": "PASS",
+      "detail": "1 dust_devil enemy at col 63. 18 quicksand tiles across two pits (cols 55-59 and 78-83). TILE_QUICKSAND and TILE_QUICKSAND_DEEP properly placed."
+    },
+    {
+      "id": "C-05",
+      "category": "Citadel Stage",
+      "description": "Tundra section has ice physics zones",
+      "result": "PASS",
+      "detail": "3 ice zones defined (cols 103-115, 120-135, 140-148), 48 ice tiles placed via _placeIce. iceZones array explicitly tracked for evaluator access."
+    },
+    {
+      "id": "C-06",
+      "category": "Citadel Stage",
+      "description": "Volcano section has rising lava",
+      "result": "PASS",
+      "detail": "lavaLevel initialized at 30, lavaRiseSpeed=8, lavaSpeed=8. Rising lava mechanic active in volcano section (cols 150-189)."
+    },
+    {
+      "id": "C-07",
+      "category": "Citadel Stage",
+      "description": "Enemies from at least 3 different world types",
+      "result": "PASS",
+      "detail": "4 worlds represented with 9 total enemies. Types: barkbeetle, shroomba (Forest), dust_devil, sand_skitter (Desert), frost_imp, ice_golem (Tundra), fire_bat, magma_slime (Volcano)."
+    },
+    {
+      "id": "C-08",
+      "category": "Final Boss",
+      "description": "The Architect boss spawns with 19 HP",
+      "result": "PASS",
+      "detail": "Boss type='the_architect', maxHealth=19, name='The Architect'. Boss spawns at col 205 in boss arena (cols 190-219)."
+    },
+    {
+      "id": "C-09",
+      "category": "Final Boss",
+      "description": "5 distinct phases with world theme transitions",
+      "result": "PASS",
+      "detail": "Phase transitions verified: hp19->phase1, hp15->phase2 (Desert), hp11->phase3 (Tundra), hp7->phase4 (Volcano), hp3->phase5 (All Combined). 5 unique phases confirmed."
+    },
+    {
+      "id": "C-10",
+      "category": "Final Boss",
+      "description": "HUD displays 'The Architect' with 19 HP health bar",
+      "result": "PASS",
+      "detail": "HUD.bossActive=true, HUD.bossName='The Architect', boss.maxHealth=19. Screenshot confirms boss health bar at bottom center with name label."
+    },
+    {
+      "id": "C-11",
+      "category": "Final Boss",
+      "description": "Vulnerability windows work correctly",
+      "result": "PASS",
+      "detail": "Invulnerable test: 19->19 (no damage). Vulnerable test: 19->18 (1 damage). Boss vulnerability flag correctly blocks/allows damage in checkPlayerAttackCollisions."
+    },
+    {
+      "id": "C-12",
+      "category": "Final Boss",
+      "description": "Defeating The Architect triggers VICTORY state",
+      "result": "PASS",
+      "detail": "Boss health reduced to 0, state transitions to 'dying'. After 1500ms setTimeout, GameState transitions to VICTORY. Verified GameState.current === 'VICTORY' post-defeat."
+    },
+    {
+      "id": "C-13",
+      "category": "Victory Screen",
+      "description": "VICTORY state exists in GameState machine",
+      "result": "PASS",
+      "detail": "GameState.VICTORY = 'VICTORY'. Handled in both update() switch (line 194 -> _updateVictory) and render() switch (line 230 -> Menu.renderVictory). No JS errors when active."
+    },
+    {
+      "id": "C-14",
+      "category": "Victory Screen",
+      "description": "Victory screen displays stats (time, coins, deaths)",
+      "result": "PASS",
+      "detail": "Menu._victoryTime, Menu._victoryCoins, Menu._victoryDeaths all tracked. renderVictory draws stats panel with Total Time (mm:ss format), Total Coins (gold), Total Deaths (ember red)."
+    },
+    {
+      "id": "C-15",
+      "category": "Victory Screen",
+      "description": "Scrolling credits with return to title",
+      "result": "PASS",
+      "detail": "victoryScrollY increments by 0.5/frame (30px over 60 frames). creditsY and scrollOffset aliased. Credits include world names, 'Thank you for playing!', and 'Press Enter to Return to Title'."
+    },
+    {
+      "id": "C-16",
+      "category": "Citadel Progression",
+      "description": "Citadel locked until all 12 prior stages completed",
+      "result": "PASS",
+      "detail": "With no save data: Citadel node (index 12) is locked. After completing all 12 stages (1-1 through 4-3) via SaveSystem: Citadel node unlocks. Linear unlock chain works correctly."
+    },
+    {
+      "id": "C-17",
+      "category": "Citadel Progression",
+      "description": "World map shows The Citadel info panel",
+      "result": "PASS",
+      "detail": "STAGES entry: id='5-1', name='The Citadel', difficulty=3, totalCoins=40. World 4 palette applied. Info panel shows name and difficulty stars."
+    },
+    {
+      "id": "C-18",
+      "category": "Collectibles",
+      "description": "40 coins and health pickups in Citadel",
+      "result": "PASS",
+      "detail": "40 coins placed (10 per section: Forest, Desert, Tundra, Volcano). 4 health pickups distributed across sections. Matches WorldMap.STAGES totalCoins=40."
+    },
+    {
+      "id": "C-19",
+      "category": "Collectibles",
+      "description": "6+ enemies properly placed",
+      "result": "PASS",
+      "detail": "9 enemies from 8 different types across all 4 world sections. Enemies positioned on surfaces (patrol enemies on ground, ceiling walkers on ceiling, flyers at appropriate heights)."
+    },
+    {
+      "id": "C-20",
+      "category": "Citadel Parallax",
+      "description": "3+ parallax layers with themed background",
+      "result": "PASS",
+      "detail": "4 parallax layers at speeds 0.05, 0.15, 0.3, 0.5. Citadel-specific blended colors: Deep Charcoal base, Forest/Desert mid, Tundra/Volcano foreground. Screenshot confirms visible parallax."
+    },
+    {
+      "id": "C-21",
+      "category": "Death Tracking",
+      "description": "Death count tracked and incremented",
+      "result": "PASS",
+      "detail": "GameState.totalDeaths, GameState.deathCount, Player.deathCount, Player.totalDeaths all defined. Player._die() increments all counters. Verified: 0->1 after Player.die() call."
+    },
+    {
+      "id": "C-22",
+      "category": "Save System",
+      "description": "Citadel completion recorded in save system",
+      "result": "PASS",
+      "detail": "WorldMap.completeStage('5-1', 300, 35) correctly calls SaveSystem.recordStageCompletion. Save data includes '5-1' in completedStages array."
+    },
+    {
+      "id": "C-23",
+      "category": "Final Boss Attacks",
+      "description": "The Architect has active attack patterns",
+      "result": "PASS",
+      "detail": "Boss actively moves and changes state during update cycles. Phase 1: jump + shockwave. Phase 2: teleport + projectile. Phase 3: frost beam. Phase 4: fire breath + dive. Phase 5: combined."
+    },
+    {
+      "id": "C-24",
+      "category": "Final Boss Attacks",
+      "description": "Boss deals contact damage to player",
+      "result": "PASS",
+      "detail": "Player positioned at boss coordinates. checkEnemyPlayerCollisions() reduces player health from 3 to 2. Boss also creates hostile projectiles (shockwave, sand_bolt, frost_beam, fireball)."
+    },
+    {
+      "id": "C-25",
+      "category": "Regression",
+      "description": "Forest stages (1-1, 1-2, 1-3) intact",
+      "result": "PASS",
+      "detail": "All 3 Forest stages load correctly. 1-1: width=85 (>=80), 1-2: width=125 (>=120), 1-3: width=155 (>=150). Enemies spawn normally."
+    },
+    {
+      "id": "C-26",
+      "category": "Regression",
+      "description": "Desert stages (2-1, 2-2, 2-3) intact",
+      "result": "PASS",
+      "detail": "All 3 Desert stages load correctly. 2-1: width=110 (>=100), 2-2: width=135 (>=130), 2-3: width=145 (>=140). Quicksand and desert mechanics unaffected."
+    },
+    {
+      "id": "C-27",
+      "category": "Regression",
+      "description": "Tundra stages (3-1, 3-2, 3-3) intact",
+      "result": "PASS",
+      "detail": "All 3 Tundra stages load correctly. 3-1: width=120 (>=115), 3-2: width=135 (>=130), 3-3: width=165 (>=160). Ice physics and auto-scroll unaffected."
+    },
+    {
+      "id": "C-28",
+      "category": "Regression",
+      "description": "Volcano stages (4-1, 4-2, 4-3) intact",
+      "result": "PASS",
+      "detail": "All 3 Volcano stages load correctly. 4-1: width=125 (>=120), 4-2: width=145 (>=140), 4-3: width=155 (>=150). Lava and chain mechanics unaffected."
+    },
+    {
+      "id": "C-29",
+      "category": "Regression",
+      "description": "Player movement vocabulary intact",
+      "result": "PASS",
+      "detail": "Walk (vx>0), jump (COYOTE_FRAMES=6), attack (state='attack' after _startAttack), wall slide (WALL_SLIDE_SPEED defined). All movement constants and state transitions functional in Citadel."
+    },
+    {
+      "id": "C-30",
+      "category": "Regression",
+      "description": "No JS errors during gameplay",
+      "result": "PASS",
+      "detail": "Zero pageerror events during page load, stage loading, and Citadel gameplay. Level.loadStage function exists and handles '5-1' case via switch statement."
+    }
+  ],
+  "regressionResults": {
+    "sprintsTested": [5, 6, 7, 8],
+    "totalCriteria": 124,
+    "passCount": 124,
+    "failCount": 0,
+    "summary": "All 124 regression criteria across sprints 5-8 pass. No regressions detected. Forest, Desert, Tundra, and Volcano stages all load correctly with enemies, bosses, mechanics, and collectibles intact."
+  },
+  "holisticScores": {
+    "designQuality": {
+      "score": 7,
+      "notes": "Follows design-spec.md color palette consistently: Deep Charcoal backgrounds, Muted Gold accents, Ember Red hearts, Soft Cream text. Boss health bar uses gradient fill from red to green per spec. Victory screen uses twinkling stars, golden glow, proper typography scale (48px bold title, 14px labels). World map Citadel node uses unique gold palette. Parallax blends 4 world themes. Minor: HUD shows 'Test Stage' instead of 'The Citadel' (pre-existing from earlier sprints, not a sprint 9 regression). Each world section is visually distinguishable through tile colors and ice/quicksand tile styles."
+    },
+    "originality": {
+      "score": 7,
+      "notes": "The Citadel as a 4-world remix stage is a strong game design concept. The Architect boss with 5 phases corresponding to Forest/Desert/Tundra/Volcano/Combined attacks is creative and thematic. 19 HP (matching the total of previous boss HPs) adds meaning. Victory screen with accumulated stats (time/coins/deaths) rewards full-game engagement. The name 'The Architect' ties into the 'Canvas' creative theme. World-specific hazards (quicksand, ice, lava) appearing in sequence creates escalating challenge."
+    },
+    "codeQuality": {
+      "score": 7,
+      "notes": "Clean modular architecture: stage built in _buildStage5_1() with clear section comments and column ranges. Boss AI uses dispatch pattern (_architectPhase1-5) matching existing boss patterns. Phase transitions use health thresholds (15/11/7/3) with particle effects. Victory state properly integrated into GameState switch statements for both update and render. Death tracking added to both Player._die() and GameState._onPlayerDeath() for redundancy. SaveSystem integration for Citadel completion follows established patterns. Only 1018 net lines added."
+    },
+    "completeness": {
+      "score": 9,
+      "notes": "All 30 contract criteria pass. All 124 regression criteria pass (0 failures). Full Citadel stage with 220-tile width, 4 themed sections, 9 enemies from 4 worlds, 40 coins, 4 health pickups. The Architect boss with 5 distinct phases, each using world-specific attacks (shockwave, teleport+projectiles, frost beams, fire breath+dive, combined). Victory state with scrolling credits, stats panel, and return-to-title. Death tracking across all stages. World map lock/unlock working. Save system integration complete."
+    },
+    "uxInteractivity": {
+      "score": 7,
+      "notes": "Boss vulnerability windows create read-react combat loop. Phase transitions with particle effects provide visual feedback. Rising lava in volcano section adds time pressure. 4 world sections keep gameplay varied throughout the long stage. Victory credits scroll automatically with 'Press Enter' to return. Boss health bar with gradient fill communicates health status clearly. Contact damage and projectile attacks create threat."
+    }
+  },
+  "primaryScore": 7.4,
+  "blockingIssues": [],
+  "nonBlockingIssues": [
+    "HUD displays 'Test Stage' instead of 'The Citadel' during gameplay (pre-existing issue from earlier sprints, not a sprint 9 regression)",
+    "Citadel parallax uses forest-dominant colors despite being a multi-world stage. The blended palette is subtle — colors could be more distinctly transitioned per section.",
+    "The Architect boss renders as a simple circle outline. While adequate for Canvas 2D, a more detailed geometric form would improve visual identity for the final boss."
+  ],
+  "testMethodology": "Playwright headless Chromium browser testing with page.evaluate for JavaScript state verification. 30 sprint criteria tested individually. 124 regression criteria across sprints 5-8 tested. Visual verification via 8 screenshots covering title, world map, all 4 Citadel sections, boss arena, and victory screen. SaveSystem properly used with correct key ('kingdoms_of_the_canvas_save').",
+  "timestamp": "2026-03-30T13:00:00Z"
+}

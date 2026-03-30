@@ -1,0 +1,98 @@
+{
+  "sprintNumber": 8,
+  "decision": "accepted",
+  "reviewDate": "2026-03-30",
+  "summary": "Comprehensive contract with 30 criteria covering the Molten Volcano world. Follows the established pattern from Sprint 5-7 world contracts. Good coverage of theme, all 3 stages, all 3 enemy types, all 3 bosses, integration, and regression. A few notable gaps are documented below as advisory notes — they do not block acceptance because the core feature surface is well-covered and the testing style is consistent with prior sprints.",
+  "criteriaAnalysis": {
+    "total": 30,
+    "testable": 30,
+    "categories": {
+      "Volcano Theme": 3,
+      "Lava Mechanics": 3,
+      "Enemy Types": 3,
+      "Level Design": 3,
+      "Boss Fights": 6,
+      "Collectibles": 2,
+      "Puzzle Mechanics": 1,
+      "Integration": 4,
+      "Regression": 5
+    }
+  },
+  "featureCoverage": {
+    "F18: World 4 — Molten Volcano": {
+      "covered": [
+        "Volcano color palette (COLORS.volcano with 4 colors) — C-01",
+        "Parallax background with 3+ layers — C-02",
+        "Ember/ash particle effects — C-03",
+        "Lava hazard tiles with player damage — C-04",
+        "Rising/falling lava in stage 4-1 — C-05",
+        "Chain-swinging mechanic in stage 4-2 — C-06",
+        "Magma Slime enemy (split-on-death flag) — C-07",
+        "Fire Bat enemy (erratic flight flag) — C-08",
+        "Obsidian Knight enemy (shield flag) — C-09",
+        "Stage 4-1 Lava Fields level layout (120+ tiles) — C-10",
+        "Stage 4-2 Forge of Chains level layout (140+ tiles) — C-11",
+        "Stage 4-3 Caldera level layout (150+ tiles, all 3 enemy types) — C-12",
+        "Lava Serpent boss (7 HP) — C-13",
+        "Iron Warden boss (7 HP) — C-14",
+        "Dragon of the Caldera boss (11 HP, 2-phase) — C-15",
+        "Boss vulnerability windows — C-16",
+        "Boss phase transitions — C-17",
+        "Boss defeat → STAGE_COMPLETE — C-18",
+        "Coin and health pickup placement per stage — C-19",
+        "Enemy placement in levels — C-20",
+        "Valve/lever puzzle mechanics — C-21",
+        "World 4 locked until World 3 complete — C-22",
+        "Three distinct volcano stages load from world map — C-23",
+        "Boss trigger integration with camera lock and HUD — C-24",
+        "Stage completion flow with save persistence — C-25"
+      ],
+      "gaps": [
+        "Steam vents — Sprint deliverable explicitly lists 'steam vents' as a key mechanic alongside rising lava and chain-swinging, but no criterion tests for steam vent objects, their visual rendering, or their gameplay effect (launching player upward). Consider adding a criterion or moving to outOfScope.",
+        "Lava geyser timing maze — Product spec lists 3 puzzle types: 'valve sequences, lever-chain platforms, lava geyser timing maze'. C-21 covers valve/lever but not lava geysers. The geyser maze could overlap with steam vents — either way, one is missing.",
+        "Fire Bat group-of-3 behavior — C-08 description says 'appear in groups of 3' per product spec, but test steps only verify 'at least 1 Fire Bat exists'. The grouping behavior is not tested.",
+        "Obsidian Knight back-attack behavioral test — C-09 checks for shield property flags but does not test actual combat: front attack blocked, rear attack deals damage. This is the defining mechanic.",
+        "Magma Slime split behavioral test — C-07 checks split-on-death flags but does not simulate killing a slime and verifying 2 smaller slimes spawn."
+      ]
+    }
+  },
+  "regressionCoverage": {
+    "regressionSprintsListed": [5, 6, 7],
+    "assessment": "Correct. Sprints 5 (Forest/Enemy Framework), 6 (Desert), and 7 (Tundra) are the world-content sprints that could regress. Sprints 1-4 (engine, player, UI, world map) are implicitly tested by everything else functioning. Inline regression criteria C-26 (Forest), C-27 (Desert), C-28 (Tundra), C-29 (player movement), and C-30 (JS errors) provide additional safety net."
+  },
+  "testabilityNotes": [
+    {
+      "criterion": "C-04",
+      "concern": "Lava damage test moves Player.y to (Level.height - 2) * 32, assuming lava is at the bottom of the level. If lava tiles are not at the very bottom, the test may not trigger contact. More robust: find actual lava tile positions first, then position the player there.",
+      "severity": "minor"
+    },
+    {
+      "criterion": "C-10, C-11, C-12",
+      "concern": "These check Level.bossData to verify boss arena exists. In prior sprints, boss data may only populate on Enemies.boss when the player reaches the boss arena trigger. If Level.bossData is not set at load time, this could produce false negatives. The evaluator should be flexible about checking Level.bossArenaX or similar properties as alternatives.",
+      "severity": "minor"
+    },
+    {
+      "criterion": "C-03",
+      "concern": "Screenshot-based ember particle verification is inherently subjective. Two screenshots 30 frames apart may not show clearly distinct particle positions at small scale. Acceptable given the visual nature of the feature, but evaluator should be lenient on timing.",
+      "severity": "minor"
+    },
+    {
+      "criterion": "C-05",
+      "concern": "Rising lava test calls Level.update(1/60) 120 times. If the game loop updates lava in a different function (e.g., Game.update or a dedicated LavaSystem.update), calling Level.update alone won't advance the lava. The evaluator should try alternative update paths.",
+      "severity": "minor"
+    }
+  ],
+  "outOfScopeCheck": {
+    "appropriate": true,
+    "notes": "Out-of-scope items correctly exclude Citadel (Sprint 9), Audio (Sprint 10), VFX polish (Sprint 11), and performance (Sprint 12). However, 'steam vents' should either appear as a criterion or be explicitly listed in outOfScope to avoid ambiguity."
+  },
+  "strengths": [
+    "30 criteria provides thorough coverage — consistent with prior world sprints (Sprint 7 had 31)",
+    "All 3 enemy types have individual criteria with type-specific mechanic checks",
+    "All 3 bosses have individual criteria with HP values matching product spec exactly (7, 7, 11)",
+    "6 boss criteria (C-13 through C-18) covering identity, vulnerability, phases, and defeat — strong boss testing",
+    "Integration criteria (C-22 through C-25) test full gameplay loop: unlock → load → play → complete → save",
+    "Inline regression for all 3 prior worlds plus player movement and error-free loading",
+    "Test code snippets use defensive checks with fallback property names (e.g., Level.chains || Level.swingPoints || Level.chainPoints) — reduces false failures from naming differences"
+  ]
+}

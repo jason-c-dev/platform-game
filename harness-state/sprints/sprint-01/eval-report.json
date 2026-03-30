@@ -1,0 +1,234 @@
+{
+  "sprintNumber": 1,
+  "name": "Core Engine",
+  "overallResult": "PASS",
+  "passCount": 28,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "category": "bootstrap",
+      "description": "Opening index.html displays an HTML5 Canvas element that fills the browser window",
+      "result": "PASS",
+      "evidence": "Canvas element present with 1280x720 CSS dimensions, scaled to fill viewport while preserving 16:9 aspect ratio. Resize handler at index.html:45 dynamically adjusts."
+    },
+    {
+      "id": "C-02",
+      "category": "bootstrap",
+      "description": "Canvas uses 960x540 logical pixels",
+      "result": "PASS",
+      "evidence": "canvas.width=960, canvas.height=540. Set in renderer.js:13-14 via Renderer.init()."
+    },
+    {
+      "id": "C-03",
+      "category": "game-loop",
+      "description": "Fixed-timestep game loop at 60 updates/sec",
+      "result": "PASS",
+      "evidence": "Measured 60 updates/sec (120 updates in 2.00s). FIXED_TIMESTEP=16.67ms in constants.js:41. Loop uses requestAnimationFrame at game.js:116."
+    },
+    {
+      "id": "C-04",
+      "category": "game-loop",
+      "description": "Game renders without errors with visible output",
+      "result": "PASS",
+      "evidence": "Canvas renders rich forest scene with parallax layers, tiles, and player character. Zero JavaScript console errors detected."
+    },
+    {
+      "id": "C-05",
+      "category": "tiles",
+      "description": "Test level defined as 2D array with 32x32 tiles",
+      "result": "PASS",
+      "evidence": "TILE_SIZE=32 at constants.js:10. Level stored as Level.tiles[row][col] 2D array at level.js:8-33. Level is 120 tiles wide x 20 tiles tall (120 > 80 minimum)."
+    },
+    {
+      "id": "C-06",
+      "category": "tiles",
+      "description": "5+ distinct tile types implemented",
+      "result": "PASS",
+      "evidence": "6 tile types with unique IDs (constants.js:13-19): EMPTY(0), SOLID(1), ONE_WAY(2), HAZARD(3), BREAKABLE(4), BOUNCE(5), LADDER(6). Each has distinct rendering in renderer.js:206-419."
+    },
+    {
+      "id": "C-07",
+      "category": "tiles",
+      "description": "Viewport culling for tile rendering",
+      "result": "PASS",
+      "evidence": "renderer.js:185-188 calculates startCol/endCol/startRow/endRow from camera position. Render loop at lines 190-201 only iterates over visible tile range."
+    },
+    {
+      "id": "C-08",
+      "category": "tiles",
+      "description": "Forest world color palette and visual patterns",
+      "result": "PASS",
+      "evidence": "Screenshots confirm Forest palette: deep greens (#2D5A27, #4A8C3F), browns (#8B6B3D) with textures. Solid tiles have grass top with highlight, dirt body with hatching. 81.1% green, 18.6% brown pixel samples. Tiles are NOT flat fills - they have stippling, wood grain, and grass tufts."
+    },
+    {
+      "id": "C-09",
+      "category": "physics",
+      "description": "Entity affected by gravity, lands on solid tiles",
+      "result": "PASS",
+      "evidence": "Player spawns at y=384 (row 12), falls under gravity, lands on ground at y=514 with onGround=true. Does not clip through tiles."
+    },
+    {
+      "id": "C-10",
+      "category": "physics",
+      "description": "AABB collision in all 4 directions",
+      "result": "PASS",
+      "evidence": "Left wall: player stops at x=32.0 (col 0 wall), vx=0. Right wall: player right edge=3680 stops at wall col 115 (x=3680). Ceiling: player hits ceiling at row 14 (y=480), vy reverses to 0. Floor: player lands on ground, onGround=true. All four directions confirmed."
+    },
+    {
+      "id": "C-11",
+      "category": "physics",
+      "description": "Gravity with terminal velocity",
+      "result": "PASS",
+      "evidence": "GRAVITY=0.55 applied each frame at physics.js:12. TERMINAL_VELOCITY=12 at constants.js:23. Clamped at physics.js:13-15: if(entity.vy > TERMINAL_VELOCITY) entity.vy = TERMINAL_VELOCITY."
+    },
+    {
+      "id": "C-12",
+      "category": "physics",
+      "description": "One-way platforms passthrough from below, land from above",
+      "result": "PASS",
+      "evidence": "Player at y=514 jumped through one-way platform at row 14 (y=448), reached y=418 above it, then landed on platform at y=418 with onGround=true. Physics.js:131-139 checks prevBottom <= platform top to allow pass-through."
+    },
+    {
+      "id": "C-13",
+      "category": "physics",
+      "description": "Moving platforms carry entity",
+      "result": "PASS",
+      "evidence": "Horizontal platform: player moved 57.0px with platform over 3s (startX=1416 to endX=1359). Vertical platform: player moved 112.0px vertically over 3s (startY=448 to endY=336). Player.js:62-65 applies platform delta."
+    },
+    {
+      "id": "C-14",
+      "category": "physics",
+      "description": "Ground/air physics differ",
+      "result": "PASS",
+      "evidence": "GROUND_ACCELERATION=0.6 > AIR_ACCELERATION=0.35. GROUND_FRICTION=0.78 (22% velocity loss/frame) vs AIR_DRAG=0.92 (8% loss/frame). Ground friction provides more stopping power. Applied at physics.js:19-26."
+    },
+    {
+      "id": "C-15",
+      "category": "input",
+      "description": "Arrow keys move entity left/right",
+      "result": "PASS",
+      "evidence": "Right arrow: x moved from 96.0 to 152.3 (+56.3px). Left arrow: x moved from 152.3 to 103.2 (-49.1px). On key release, vx decelerates to 0.00 (friction working)."
+    },
+    {
+      "id": "C-16",
+      "category": "input",
+      "description": "Z key jump from ground, no air-jumping",
+      "result": "PASS",
+      "evidence": "Z press: player at y=514 (onGround=true) jumped to y=427.6 (vy=-10.5), returned to y=514 onGround=true. Air-jump test: in-air vy=-5.55, second Z press resulted in vy=-1.70 (no new impulse, just gravity). player.js:44 checks onGround before allowing jump."
+    },
+    {
+      "id": "C-17",
+      "category": "camera",
+      "description": "Camera smoothly follows entity horizontally",
+      "result": "PASS",
+      "evidence": "Camera X moved from 0.0 to 232.2 over 5s of rightward movement. CAMERA_SMOOTH=0.08 provides smooth interpolation at camera.js:36."
+    },
+    {
+      "id": "C-18",
+      "category": "camera",
+      "description": "Vertical dead zone (center 50%)",
+      "result": "PASS",
+      "evidence": "CAMERA_DEADZONE_TOP=0.25, CAMERA_DEADZONE_BOTTOM=0.25 at constants.js:37-38. camera.js:40-47: topThreshold=25%*540=135, bottomThreshold=75%*540=405. Camera only scrolls when entity in outer 25% bands."
+    },
+    {
+      "id": "C-19",
+      "category": "camera",
+      "description": "Parallax with 3+ layers at different speeds",
+      "result": "PASS",
+      "evidence": "4 parallax layers with speeds [0.05, 0.15, 0.3, 0.5]. Layer 0: mountains (renderer.js:47-77). Layer 1: far trees (84-116). Layer 2: mid trees (119-145). Layer 3: foreground leaves (148-174). Screenshots confirm layered depth with differential scrolling."
+    },
+    {
+      "id": "C-20",
+      "category": "camera",
+      "description": "Camera clamped to level bounds",
+      "result": "PASS",
+      "evidence": "Left boundary: camera.x=0.00 (clamped at 0). Right boundary: camera.x=2880.0 = levelWidth*32 - 960 (exact max). camera.js:52-58 implements clamping."
+    },
+    {
+      "id": "C-21",
+      "category": "performance",
+      "description": "60fps with no dropped frames",
+      "result": "PASS",
+      "evidence": "Average FPS: 60, Max frame time: 17ms (well under 33ms threshold), 300 samples over 5 seconds during active gameplay."
+    },
+    {
+      "id": "C-22",
+      "category": "architecture",
+      "description": "Vanilla JavaScript, no external dependencies",
+      "result": "PASS",
+      "evidence": "All 8 script tags reference local src/ files. No import/require statements. No CDN scripts. No runtime dependencies. Pure Canvas API."
+    },
+    {
+      "id": "C-23",
+      "category": "architecture",
+      "description": "Modular file organization",
+      "result": "PASS",
+      "evidence": "8 separate JS modules: constants.js, input.js, level.js, physics.js, camera.js, renderer.js, player.js, game.js. Each handles a distinct engine system."
+    },
+    {
+      "id": "C-24",
+      "category": "tiles",
+      "description": "Test level includes all tile types in playable layout",
+      "result": "PASS",
+      "evidence": "Level contains: solid ground (rows 17-19), walls (col 0, col 115, col 119), one-way platforms (rows 14/11 at cols 5-9), hazard spikes (cols 30-32), breakable blocks (cols 40-42), bounce pads (cols 50-51), gaps requiring jumps (cols 88-90, 108-109). Verified both programmatically and visually via screenshots."
+    },
+    {
+      "id": "C-25",
+      "category": "physics",
+      "description": "Hazard tiles deal damage on contact",
+      "result": "PASS",
+      "evidence": "Walking into hazard spikes at cols 30-32 triggers _takeDamage(): invincible=true, knockback vy=-6, vx reversed. 1.5s invincibility timer with visual flash. player.js:83-89."
+    },
+    {
+      "id": "C-26",
+      "category": "physics",
+      "description": "Bounce pads launch higher than normal jump",
+      "result": "PASS",
+      "evidence": "Bounce pad applies BOUNCE_FORCE=-15 (vs JUMP_FORCE=-10.5). Peak vy measured at -15.00. Player gained 163.1px height from bounce (theoretical normal jump height ~100px). physics.js:144-149."
+    },
+    {
+      "id": "C-27",
+      "category": "visual",
+      "description": "Entity drawn as character figure, not plain rectangle",
+      "result": "PASS",
+      "evidence": "69 unique colors in player area. Character has: head with arc (renderer.js:545), eye (549), hair (552-555), blue tunic body with shading (534-539), belt with gold buckle (558-561), legs (564-566), boots (579-580), arms with swing animation (583-586), skin-colored hands (589-591). Uses playerBlue #3A7BD5 as specified."
+    },
+    {
+      "id": "C-28",
+      "category": "visual",
+      "description": "Entity faces direction of movement",
+      "result": "PASS",
+      "evidence": "Facing=1 when moving right, facing=-1 when moving left. renderer.js:521-526 applies ctx.scale(-1,1) flip when facing=-1. player.js:39-41 updates facing on input."
+    }
+  ],
+  "regressionResults": [],
+  "holistic": {
+    "designQuality": {
+      "score": 7,
+      "rationale": "Excellent adherence to design spec's Forest palette (#2D5A27, #4A8C3F, #8B6B3D). Tiles have rich textures: grass tufts with highlights, dirt with hatching, wood grain on platforms, cracked stone on breakable blocks, mushroom bounce pads with animated gold glow. Player character uses specified #3A7BD5 blue body and #E8DCC8 skin. Dark theme background (#0D1B0E) makes world colors pop as the design spec intended. 4-layer parallax with mountains, far trees, mid trees, and drifting leaves creates excellent depth. Spacing follows 32px tile grid. One minor gap: no text rendering yet to evaluate typography rules, but that's out of scope for Sprint 1."
+    },
+    "originality": {
+      "score": 6,
+      "rationale": "The Forest world has character: mushroom bounce pads with white spots and animated gold glow, triangular far trees contrasting with rounded mid trees, floating leaf particles, grass surface tiles with distinct underground texturing. The player character has personality with hair, belt buckle, boot details, and arm/leg swing animations. Moving platforms have metal brackets and directional arrow indicators. Not groundbreaking for the genre, but shows creative effort in Canvas-drawn art."
+    },
+    "codeQuality": {
+      "score": 8,
+      "rationale": "Clean modular architecture with 8 well-separated files. Each system (physics, camera, rendering, input) has clear responsibility boundaries. Fixed-timestep game loop correctly handles frame skipping and spiral-of-death protection. Collision system uses proper separate X/Y axis resolution. Debug API (window.__gameDebug) enables testability. Constants centralized. Parallax layer generation uses procedural methods. Minor nitpick: global namespace objects instead of ES modules, but that's appropriate for zero-dependency vanilla JS."
+    },
+    "uxInteraction": {
+      "score": 7,
+      "rationale": "Controls are responsive with distinct ground/air feel. Smooth camera following with appropriate lerp factor (0.08). Vertical dead zone prevents jarring camera movement during normal gameplay. Hazard knockback provides clear feedback. Invincibility flash communicates damage state. Moving platforms properly carry the player. Jump feels good with appropriate force and gravity. One small gap: no visual/audio feedback for bounce pad activation beyond the physics response."
+    },
+    "completeness": {
+      "score": 9,
+      "rationale": "All 28 acceptance criteria met. Every feature area covered: game loop (fixed timestep at 60fps), tile system (6 types with culling), physics (gravity, AABB, one-way, moving platforms, bounce, hazards), camera (smooth follow, dead zone, parallax, clamping), input (arrows, jump, press queue), rendering (textured tiles, character figure, parallax layers). The test level showcases all mechanics in a playable layout. Debug API enables future testing."
+    },
+    "visualPolish": {
+      "score": 7,
+      "rationale": "Four parallax layers create genuine visual depth. Tiles have multiple rendering states (surface vs underground) with textures. One-way platforms have wood grain and support pegs. Hazard spikes have highlights and base. Bounce pads are full mushroom shapes with animated glow. Player character has 69 unique colors in its small sprite area. Moving platforms have metal brackets and directional indicators. Foreground leaf particles add ambient life. Screenshots show a cohesive, pleasant forest scene."
+    }
+  },
+  "summary": "Sprint 1 delivers a rock-solid game engine foundation. All 28 criteria pass. The fixed-timestep game loop runs at a perfect 60fps with zero dropped frames. Physics are correct: AABB collision works in all four directions, one-way platforms properly allow pass-through from below, moving platforms carry the player, bounce pads launch higher than normal jumps, and hazards trigger knockback with invincibility. The camera smoothly follows with a vertical dead zone and proper level-bound clamping. The Forest world palette matches the design spec with textured, patterned tiles and a 4-layer parallax background. Code is cleanly modular across 8 files with zero external dependencies.",
+  "timestamp": "2026-03-30T05:30:00Z"
+}

@@ -1,0 +1,46 @@
+{
+  "projectName": "Kingdoms of the Canvas",
+  "completedSprints": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "currentSprint": 13,
+  "totalSprints": 12,
+  "completedFeatures": [],
+  "keyFiles": {
+    "index.html": "Entry point - canvas, CSS scaling, script loading",
+    "src/constants.js": "Game constants, tile IDs, physics values, design spec colors",
+    "src/input.js": "Keyboard input with press-queue detection",
+    "src/level.js": "Test level 120x20, tile data, moving platforms",
+    "src/physics.js": "AABB collision, gravity, terminal velocity, one-way platforms",
+    "src/camera.js": "Smooth follow, vertical dead zone, parallax generation",
+    "src/renderer.js": "Canvas drawing: parallax, tiles, platforms, player",
+    "src/player.js": "Player entity: movement, jump, damage, respawn",
+    "src/game.js": "Fixed-timestep game loop, debug API"
+  },
+  "techStack": {
+    "language": "Vanilla JavaScript",
+    "rendering": "HTML5 Canvas 2D",
+    "resolution": "960x540 logical pixels",
+    "dependencies": "None"
+  },
+  "outstandingIssues": [],
+  "devServerCommand": "python3 -m http.server 8080",
+  "devServerPort": 8080,
+  "git": {
+    "harnessBranch": "harness/build-the-app-described-in-prompt-txt",
+    "latestTag": "harness/sprint-12/pass",
+    "latestMergeSha": "4508fab3c8c4d41dd9023308f4754f44c015125e",
+    "prNumbers": []
+  }
+}

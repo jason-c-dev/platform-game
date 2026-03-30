@@ -1,0 +1,406 @@
+{
+  "sprintNumber": 2,
+  "name": "Player Character",
+  "theme": "Full movement vocabulary, combat mechanics, and animated Canvas-drawn sprite",
+  "features": ["F5: Player Movement", "F6: Player Combat", "F7: Player Animation & Visuals"],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "movement-run",
+      "description": "Holding Shift while moving increases the player's speed by approximately 1.6x (run mode)",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and wait for the player to land on ground",
+        "Press and hold ArrowRight for 1 second without Shift — measure horizontal displacement",
+        "Reset player position",
+        "Press and hold ArrowRight + Shift for 1 second — measure horizontal displacement",
+        "Verify the Shift+move displacement is approximately 1.5-1.7x the walk-only displacement"
+      ],
+      "threshold": "Running speed (Shift held) is 1.5x-1.7x walking speed"
+    },
+    {
+      "id": "C-02",
+      "category": "movement-jump",
+      "description": "Variable-height jump: tapping Z produces a short hop, holding Z produces a higher jump",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game with player on ground",
+        "Tap Z (press and release within 50ms) — measure max height reached before falling",
+        "Wait for player to land",
+        "Press and hold Z for 500ms — measure max height reached",
+        "Verify the held-Z jump height is significantly greater than the tapped-Z height (at least 1.3x)"
+      ],
+      "threshold": "Held jump reaches at least 1.3x the height of a tapped jump"
+    },
+    {
+      "id": "C-03",
+      "category": "movement-wall",
+      "description": "Wall slide: pressing into a wall while airborne causes the player to slide down slowly instead of falling at normal speed",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Position the player next to a tall wall in the air",
+        "Hold the direction key into the wall while airborne",
+        "Measure the player's fall speed while sliding",
+        "Compare to normal fall speed (not pressing into wall)",
+        "Verify wall slide speed is significantly slower than normal fall speed"
+      ],
+      "threshold": "Player slides down walls at a visibly reduced speed when pressing into the wall while airborne"
+    },
+    {
+      "id": "C-04",
+      "category": "movement-wall",
+      "description": "Wall jump: pressing jump while wall sliding kicks the player away from the wall at approximately 45 degrees",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Have the player wall-slide on a wall (pressing into wall while airborne)",
+        "Press Z (jump) while wall sliding",
+        "Verify the player moves upward and away from the wall",
+        "Verify the horizontal and vertical impulse are both significant (player moves diagonally away)",
+        "Verify the player's facing direction changes after wall jump"
+      ],
+      "threshold": "Player jumps diagonally away from the wall during a wall slide, with both horizontal and vertical displacement"
+    },
+    {
+      "id": "C-05",
+      "category": "movement-coyote",
+      "description": "Coyote time: the player can still jump for 6 frames (~100ms) after walking off a ledge",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Position the player at the edge of a platform",
+        "Move the player off the edge so they become airborne",
+        "Press Z within ~100ms of leaving the platform",
+        "Verify the player successfully jumps (gains upward velocity) despite not being on ground",
+        "Verify that pressing Z significantly later (e.g., 300ms) does NOT allow a jump"
+      ],
+      "threshold": "Player can jump within ~100ms of leaving a platform edge, but not after the grace period"
+    },
+    {
+      "id": "C-06",
+      "category": "movement-buffer",
+      "description": "Jump buffering: pressing Z up to 8 frames (~133ms) before landing triggers a jump on landing",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Have the player fall toward a platform from above",
+        "Press Z while still airborne, shortly before landing",
+        "Verify that upon landing, the player immediately jumps without needing to press Z again",
+        "Verify the jump buffer window is approximately 100-150ms"
+      ],
+      "threshold": "Pressing jump slightly before landing causes an automatic jump upon touchdown"
+    },
+    {
+      "id": "C-07",
+      "category": "movement-crouch",
+      "description": "Pressing Down while on the ground causes the player to crouch with a reduced hitbox height",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and verify the player's standing hitbox height",
+        "Press and hold ArrowDown while on the ground",
+        "Verify the player's visual appearance changes (shorter/crouching pose)",
+        "Verify the player's collision hitbox height is reduced (can fit under lower obstacles)"
+      ],
+      "threshold": "Crouching visibly shortens the player and reduces the collision hitbox height"
+    },
+    {
+      "id": "C-08",
+      "category": "movement-crouch",
+      "description": "Crouch-slide: pressing Down while running at full speed causes the player to slide with momentum",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Run the player at full speed (Shift + ArrowRight)",
+        "While running, press ArrowDown to crouch",
+        "Verify the player enters a sliding state (moves forward while crouching)",
+        "Verify the slide gradually decelerates (player slows down and stops)",
+        "Verify the player remains in crouched hitbox during the slide"
+      ],
+      "threshold": "Player slides forward with decreasing momentum when crouching at run speed"
+    },
+    {
+      "id": "C-09",
+      "category": "combat-melee",
+      "description": "Pressing X performs a short-range melee attack with visible attack animation",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game with the player standing on ground",
+        "Press X to attack",
+        "Take a screenshot during the attack",
+        "Verify a visible attack graphic/hitbox appears in front of the player (e.g., a sword swing or arm extension)",
+        "Verify the attack has a short duration and the player returns to idle after"
+      ],
+      "threshold": "Pressing X shows a visible melee attack animation in the direction the player faces"
+    },
+    {
+      "id": "C-10",
+      "category": "combat-charge",
+      "description": "Holding X for 1 second charges a powerful wide attack that can break breakable blocks",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Position the player next to a breakable block tile",
+        "Tap X (normal attack) — verify the breakable block is NOT destroyed",
+        "Hold X for at least 1 second to charge, then release or let it trigger",
+        "Verify a wider/more powerful attack animation appears",
+        "Verify the breakable block is destroyed/removed from the tile map"
+      ],
+      "threshold": "Charged attack (hold X 1s) destroys breakable blocks; normal attack does not"
+    },
+    {
+      "id": "C-11",
+      "category": "combat-jump-attack",
+      "description": "Pressing X while airborne performs a downward strike that bounces the player upward on hit",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the player combat code for a jump attack / downward strike implementation",
+        "Verify that pressing attack while airborne triggers a different attack type (downward)",
+        "Verify that a successful hit from above applies an upward bounce impulse to the player",
+        "Verify the attack hitbox is positioned below the player"
+      ],
+      "threshold": "Airborne attack creates a downward hitbox; hitting something bounces the player upward"
+    },
+    {
+      "id": "C-12",
+      "category": "combat-health",
+      "description": "Player has a 3-hit health system — taking damage reduces health, displayed as hearts",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and verify the player starts with 3 health (or health is visible in code/debug)",
+        "Move the player into a hazard tile to take damage",
+        "Verify health decreases by 1",
+        "Verify the player has 1.5-second invincibility frames after taking damage (flashing sprite)",
+        "Verify that taking 3 hits total results in death"
+      ],
+      "threshold": "Player starts with 3 HP, loses 1 per hit, has invincibility frames, dies at 0 HP"
+    },
+    {
+      "id": "C-13",
+      "category": "combat-lives",
+      "description": "Player has a lives system starting at 5 lives — death consumes a life and respawns the player",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and verify the player starts with 5 lives",
+        "Kill the player (fall off the level or take 3 hits)",
+        "Verify lives decrease by 1",
+        "Verify the player respawns at the spawn point with full health (3 HP)",
+        "Verify that losing all lives triggers a game over state or message"
+      ],
+      "threshold": "Player starts with 5 lives; death costs 1 life and respawns with full HP; 0 lives = game over"
+    },
+    {
+      "id": "C-14",
+      "category": "combat-health",
+      "description": "Invincibility frames last 1.5 seconds with a visible flashing/blinking sprite effect",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Cause the player to take damage",
+        "Observe the player sprite for 1.5 seconds after being hit",
+        "Verify the sprite flashes/blinks (alternates between visible and invisible)",
+        "Verify the player cannot take additional damage during the flashing period",
+        "Verify the flashing stops after approximately 1.5 seconds"
+      ],
+      "threshold": "Player sprite visibly flashes for ~1.5 seconds after damage and is immune during that time"
+    },
+    {
+      "id": "C-15",
+      "category": "animation-idle",
+      "description": "The player has an idle breathing animation when standing still",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and let the player stand still on the ground",
+        "Take screenshots at 0ms, 500ms, and 1000ms intervals",
+        "Compare the screenshots — verify the player sprite subtly changes (breathing motion)",
+        "The animation should be a gentle vertical oscillation or body movement"
+      ],
+      "threshold": "Player sprite shows visible subtle animation changes when standing idle (breathing)"
+    },
+    {
+      "id": "C-16",
+      "category": "animation-walk",
+      "description": "Walking produces a multi-frame walk cycle animation (at least 4 frames)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the player animation code for walk state",
+        "Verify a walk animation exists with at least 4 distinct frames/poses",
+        "Verify the animation cycles based on movement speed or time",
+        "Verify the walk animation only plays when moving at walk speed on the ground"
+      ],
+      "threshold": "Walk cycle has at least 4 distinct frames that cycle during ground movement"
+    },
+    {
+      "id": "C-17",
+      "category": "animation-run",
+      "description": "Running produces a faster, more dynamic animation cycle (at least 6 frames)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the player animation code for run state",
+        "Verify a run animation exists with at least 6 distinct frames/poses",
+        "Verify the run animation is visually distinct from the walk animation (faster cycle, more exaggerated poses)",
+        "Verify it activates when holding Shift and moving"
+      ],
+      "threshold": "Run cycle has at least 6 distinct frames, visually different from walk, activated with Shift"
+    },
+    {
+      "id": "C-18",
+      "category": "animation-air",
+      "description": "Distinct jump and fall animation states — the player looks different when rising vs falling",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Make the player jump",
+        "Take a screenshot while the player is moving upward (jump/rising state)",
+        "Take a screenshot while the player is falling down (fall state)",
+        "Compare the two — verify distinct visual poses for jump vs fall"
+      ],
+      "threshold": "Player sprite shows different poses for jumping (ascending) vs falling (descending)"
+    },
+    {
+      "id": "C-19",
+      "category": "animation-wall",
+      "description": "Wall slide has a distinct animation — player sprite shows a wall-clinging pose",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Have the player wall slide on a wall",
+        "Take a screenshot during the wall slide",
+        "Verify the player sprite is visually distinct from normal falling (e.g., arms pressed against wall, body flattened)",
+        "Verify the player faces the wall or shows wall-contact pose"
+      ],
+      "threshold": "Wall sliding shows a visually distinct sprite pose from normal falling"
+    },
+    {
+      "id": "C-20",
+      "category": "animation-crouch",
+      "description": "Crouching has a distinct animation — player sprite is visibly shorter/compressed",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Take a screenshot of the player standing (idle)",
+        "Press ArrowDown to crouch",
+        "Take a screenshot of the player crouching",
+        "Verify the crouching sprite is visually shorter than the standing sprite",
+        "Verify the crouch pose is distinct (not just a scaled-down version)"
+      ],
+      "threshold": "Crouching player is visibly shorter with a distinct crouching pose"
+    },
+    {
+      "id": "C-21",
+      "category": "animation-attack",
+      "description": "Attack animation is visible and distinct — shows a weapon swing or arm extension",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Take a screenshot of the player in idle state",
+        "Press X to attack",
+        "Take a screenshot during the attack animation",
+        "Verify the attack pose is visually distinct from idle (arm/weapon extended forward)",
+        "Verify the attack animation plays for a short duration then returns to idle"
+      ],
+      "threshold": "Attack animation shows a visibly distinct pose with weapon/arm extension"
+    },
+    {
+      "id": "C-22",
+      "category": "animation-hurt",
+      "description": "Taking damage shows a hurt animation — the player recoils or flashes distinctly",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Move the player into a hazard to take damage",
+        "Observe the player's visual response",
+        "Verify a hurt/recoil pose appears (knockback + visual change)",
+        "Verify the player sprite flashes during invincibility (already confirmed in C-14)",
+        "Verify the hurt state transitions back to normal after recovery"
+      ],
+      "threshold": "Taking damage produces a visible hurt reaction (recoil + knockback + sprite flash)"
+    },
+    {
+      "id": "C-23",
+      "category": "animation-death",
+      "description": "Death animation plays when health reaches 0 — the player doesn't just disappear",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Reduce the player's health to 0 (take 3 hits)",
+        "Observe what happens when the last hit lands",
+        "Verify a death animation plays (e.g., sprite falls, breaks apart, or fades)",
+        "Verify there is a visible delay before respawn (not instant teleport)"
+      ],
+      "threshold": "Player death shows a visible animation before respawning (not instant disappearance)"
+    },
+    {
+      "id": "C-24",
+      "category": "particles",
+      "description": "Dust particles spawn when the player lands on the ground after a fall",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Make the player jump high or fall from a height",
+        "Take a screenshot at the moment of landing",
+        "Verify small dust/particle effects appear at the player's feet on landing",
+        "Verify the particles fade or disappear after a short time"
+      ],
+      "threshold": "Visible dust particles appear at the player's feet upon landing from a jump/fall"
+    },
+    {
+      "id": "C-25",
+      "category": "particles",
+      "description": "Dust particles spawn while running and spark particles during wall slides",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review particle system code",
+        "Verify particles are spawned during the run state (dust/footstep puffs)",
+        "Verify particles are spawned during wall slide (sparks or friction particles)",
+        "Verify particles have position, velocity, lifetime, and color properties",
+        "Verify particles are updated and removed when their lifetime expires"
+      ],
+      "threshold": "Particle system spawns dust during running and sparks during wall sliding, with proper lifecycle"
+    },
+    {
+      "id": "C-26",
+      "category": "state-machine",
+      "description": "Player has a proper state machine with distinct states: idle, walk, run, jump, fall, wallSlide, crouch, crouchSlide, attack, hurt, dead",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the player code for a state machine or state tracking system",
+        "Verify at least these states exist: idle, walk, run, jump, fall, wallSlide, crouch, attack, hurt, dead",
+        "Verify state transitions are handled (e.g., can't attack while dead, can't crouch in air)",
+        "Verify the current state drives which animation is displayed"
+      ],
+      "threshold": "Player has at least 10 distinct states with proper transitions; state drives animation"
+    },
+    {
+      "id": "C-27",
+      "category": "input-bindings",
+      "description": "All Sprint 2 input bindings work: Arrow keys (move), Z (jump), X (attack), Shift (run), Down (crouch)",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game",
+        "Verify ArrowLeft/ArrowRight move the player",
+        "Verify Z triggers a jump",
+        "Verify X triggers an attack",
+        "Verify Shift+direction increases speed (run)",
+        "Verify ArrowDown on ground triggers crouch"
+      ],
+      "threshold": "All 5 input bindings (arrows, Z, X, Shift, Down) produce their expected player actions"
+    },
+    {
+      "id": "C-28",
+      "category": "regression",
+      "description": "All Sprint 1 functionality continues to work: gravity, tile collision, camera follow, parallax, moving platforms, bounce pads, hazards",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open the game and verify the canvas renders at 960x540",
+        "Verify the player falls under gravity and lands on solid tiles",
+        "Verify the camera follows the player horizontally with smooth tracking",
+        "Verify parallax background layers are visible and scroll at different rates",
+        "Verify one-way platforms work (pass through from below, land from above)",
+        "Verify bounce pads launch the player higher than a normal jump",
+        "Verify hazard tiles trigger damage/knockback"
+      ],
+      "threshold": "All Sprint 1 core engine features remain fully functional"
+    }
+  ],
+  "outOfScope": [
+    "Game state machine (title screen, pause menu, game over screen) -- Sprint 3",
+    "HUD elements (health hearts display, coin counter, boss health bar) -- Sprint 3",
+    "World map and stage selection -- Sprint 4",
+    "Save/load system -- Sprint 4",
+    "Enemy AI and boss fights -- Sprint 5",
+    "Actual enemy entities to test combat against (use breakable blocks and hazards for testing) -- Sprint 5",
+    "Sound effects and music -- Sprint 10",
+    "Screen shake and advanced visual effects -- Sprint 11",
+    "Iris-wipe screen transitions -- Sprint 3",
+    "Coin and collectible system -- Sprint 4"
+  ],
+  "regressionSprints": [1],
+  "notes": "This sprint transforms the Sprint 1 test entity into a fully-featured player character. The player gains the complete movement vocabulary (run, variable jump, wall slide, wall jump, coyote time, jump buffering, crouch, crouch-slide) and combat system (melee attack, charge attack, jump attack, 3-hit health, lives). All animation states are drawn with Canvas commands, and a basic particle system is added for landing dust, run dust, and wall slide sparks. Since there are no enemies yet, combat is tested against breakable blocks (charge attack) and hazard tiles (damage/health/lives). The test level from Sprint 1 should be extended or adapted to include areas for testing wall jumps, crouching under low ceilings, and charge-attacking breakable blocks."
+}

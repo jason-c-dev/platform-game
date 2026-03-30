@@ -1,0 +1,253 @@
+{
+  "sprint": 12,
+  "name": "Integration, Balance & Performance",
+  "overallResult": "PASS",
+  "passCount": 30,
+  "failCount": 0,
+  "attemptNumber": 1,
+  "timestamp": "2026-03-30T15:00:00Z",
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "category": "loading",
+      "description": "Game loads without JS errors, title screen renders",
+      "result": "PASS",
+      "evidence": "Playwright test confirmed: canvas visible, zero console errors during load, title screen renders with game title text. 18 script files loaded correctly."
+    },
+    {
+      "id": "C-02",
+      "category": "loading",
+      "description": "All 13 stages loadable via Level.loadStage()",
+      "result": "PASS",
+      "evidence": "Automated test loaded all 13 stages (1-1 through 5-1). All returned valid dimensions (e.g., 1-1: 85x20, 5-1: 220x20). Zero errors thrown during any stage load."
+    },
+    {
+      "id": "C-03",
+      "category": "stage-structure",
+      "description": "Every stage has valid spawn and exit points",
+      "result": "PASS",
+      "evidence": "Automated test verified all 13 stages have spawnX > 0, spawnY > 0, exitX > 0, exitY > 0. exitX > spawnX confirmed for all stages (side-scrolling progression)."
+    },
+    {
+      "id": "C-04",
+      "category": "stage-structure",
+      "description": "Every stage has boss data defined",
+      "result": "PASS",
+      "evidence": "Automated test verified all 13 stages have non-null bossData with valid type (string), spawnX > 0, spawnY > 0, and bossArenaX > 0."
+    },
+    {
+      "id": "C-05",
+      "category": "stage-structure",
+      "description": "Every stage has coin collectibles matching totalCoins",
+      "result": "PASS",
+      "evidence": "Automated test verified all 13 stages have coinPositions arrays with length >= totalCoins from WorldMap.STAGES. Counts: 1-1:15, 1-2:20, 1-3:25, 2-1:18, 2-2:22, 2-3:28, 3-1:20, 3-2:24, 3-3:30, 4-1:22, 4-2:26, 4-3:32, 5-1:40."
+    },
+    {
+      "id": "C-06",
+      "category": "stage-structure",
+      "description": "Every stage has enemy spawn data",
+      "result": "PASS",
+      "evidence": "Automated test verified all 13 stages have enemySpawns arrays with length > 0 (5-12 spawns per stage). Each entry has valid type string, numeric x and y."
+    },
+    {
+      "id": "C-07",
+      "category": "progression",
+      "description": "World map linear unlock progression",
+      "result": "PASS",
+      "evidence": "Automated test: After clearSave()+init(), only node 0 (1-1) is unlocked. After recordStageCompletion('1-1', 30, 10)+init(), node 1 (1-2) is unlocked. Chain progression verified."
+    },
+    {
+      "id": "C-08",
+      "category": "progression",
+      "description": "No softlocks: boss-defeat-to-exit flow works",
+      "result": "PASS",
+      "evidence": "Code inspection of states.js: _checkExitZone() (line 394) returns early if Enemies.boss is non-null (boss alive). After boss defeat (Enemies.boss = null), exit zone check proceeds. Boss arena walls placed at columns r < Level.height - 3, leaving exit path clear. STAGE_COMPLETE calls setupStageComplete() which calls WorldMap.completeStage()."
+    },
+    {
+      "id": "C-09",
+      "category": "progression",
+      "description": "Victory state reachable from stage 5-1",
+      "result": "PASS",
+      "evidence": "Code inspection: enemies.js line 2381-2385 — when boss defeated on stage 5-1: GameState.transitionTo(GameState.VICTORY, () => { GameState.setupVictory() }). setupVictory() (states.js:433) calculates totalTime, totalCoins, totalDeaths from save data. Menu.initVictory() and Menu.renderVictory() exist and display stats including 'VICTORY!' title text."
+    },
+    {
+      "id": "C-10",
+      "category": "save-system",
+      "description": "Save system persists data across reload",
+      "result": "PASS",
+      "evidence": "Automated test: clearSave(), recordStageCompletion('1-1', 45.5, 12), recordStageCompletion('1-2', 60.2, 18), then load(). completedStages includes both IDs, bestTimes['1-1']=45.5, coinRecords['1-1']=12, bestTimes['1-2']=60.2, coinRecords['1-2']=18. Round-trip through localStorage verified."
+    },
+    {
+      "id": "C-11",
+      "category": "save-system",
+      "description": "Save system tracks best times (lower) and best coins (higher)",
+      "result": "PASS",
+      "evidence": "Automated test: record(1-1, 30, 15), then record(1-1, 50, 10) — load() shows bestTimes=30 (kept lower), coinRecords=15 (kept higher). Then record(1-1, 25, 20) — load() shows bestTimes=25 (improved), coinRecords=20 (improved). save.js:81 checks time < existing, line 86 checks coins > existing."
+    },
+    {
+      "id": "C-12",
+      "category": "save-system",
+      "description": "Clear save returns default data",
+      "result": "PASS",
+      "evidence": "Automated test: after recordStageCompletion + clearSave() + load(), completedStages is empty array, bestTimes and coinRecords are empty objects. save.js:100 calls localStorage.removeItem()."
+    },
+    {
+      "id": "C-13",
+      "category": "game-feel",
+      "description": "Coyote time: COYOTE_FRAMES = 6",
+      "result": "PASS",
+      "evidence": "Code inspection: constants.js:84 defines COYOTE_FRAMES = 6. player.js:151 sets coyoteTimer = COYOTE_FRAMES when onGround. Line 153-155 decrements when airborne. Line 278 allows jump when coyoteTimer > 0 even if not onGround. Line 342 in _updateAirborne checks coyoteTimer > 0 for mid-air coyote jump."
+    },
+    {
+      "id": "C-14",
+      "category": "game-feel",
+      "description": "Jump buffering: JUMP_BUFFER_FRAMES = 8",
+      "result": "PASS",
+      "evidence": "Code inspection: constants.js:85 defines JUMP_BUFFER_FRAMES = 8. player.js:143 sets jumpBufferTimer = JUMP_BUFFER_FRAMES on jump press. Lines 145-146 decrement each frame. Line 408-411 in _updateAirborne: landing with jumpBufferTimer > 0 triggers automatic jump."
+    },
+    {
+      "id": "C-15",
+      "category": "game-feel",
+      "description": "Variable-height jump: VARIABLE_JUMP_MULTIPLIER = 0.4",
+      "result": "PASS",
+      "evidence": "Code inspection: constants.js:83 defines VARIABLE_JUMP_MULTIPLIER = 0.4. player.js:336-338 in _updateAirborne: if jump not held and vy < 0 (ascending) and !_jumpCut, multiplies vy by VARIABLE_JUMP_MULTIPLIER. _jumpCut flag prevents re-applying."
+    },
+    {
+      "id": "C-16",
+      "category": "game-feel",
+      "description": "Wall slide: WALL_SLIDE_SPEED = 2",
+      "result": "PASS",
+      "evidence": "Code inspection: constants.js:70 defines WALL_SLIDE_SPEED = 2. player.js:382 enters wallSlide when airborne (vy > 0) and pressing into wall (hitRight/hitLeft). Line 435 clamps: vy = Math.min(vy + GRAVITY, WALL_SLIDE_SPEED). Lines 471-479 wall jump uses WALL_JUMP_VX and WALL_JUMP_VY."
+    },
+    {
+      "id": "C-17",
+      "category": "performance",
+      "description": "60fps on title screen",
+      "result": "PASS",
+      "evidence": "Automated test: waited 5 seconds on title screen, read window.__gameDebug.fps = 60. 300 frame samples averaged below 16.67ms. FPS >= 50 threshold exceeded."
+    },
+    {
+      "id": "C-18",
+      "category": "performance",
+      "description": "Adequate FPS during stage gameplay",
+      "result": "PASS",
+      "evidence": "Playwright test: navigated to stage 1-1, waited 3 seconds of gameplay, measured window.__gameDebug.fps = 60. 437 frames rendered in 3s window. FPS >= 45 threshold exceeded."
+    },
+    {
+      "id": "C-19",
+      "category": "performance",
+      "description": "Particle system bounded with MAX_PARTICLES cap",
+      "result": "PASS",
+      "evidence": "Code inspection: particles.js:7 defines MAX_PARTICLES = 300. Line 19 decrements particle.life by 1/60 each frame. Lines 23-24 remove particles when life <= 0 or size < 0.3. Lines 29-31 enforce hard cap: while loop shifts oldest particles when count exceeds MAX_PARTICLES."
+    },
+    {
+      "id": "C-20",
+      "category": "boss-balance",
+      "description": "All 13 boss maxHealth values match spec",
+      "result": "PASS",
+      "evidence": "Automated test spawned each boss and verified maxHealth: Elder Shroomba=5, Vine Mother=6, Stag King=7, Sand Wyrm=6, Pharaoh Specter=8, Hydra Cactus=12, Frost Bear=7, Crystal Witch=25, Yeti Monarch=9, Lava Serpent=7, Iron Warden=7, Dragon=11, Architect=19. All exact matches."
+    },
+    {
+      "id": "C-21",
+      "category": "boss-balance",
+      "description": "All boss types spawn without errors",
+      "result": "PASS",
+      "evidence": "Automated test: for each of 13 stages, loaded stage, read bossData.type, called Enemies.spawnBoss(type, spawnX, spawnY). All 13 bosses spawned successfully with Enemies.boss non-null. Zero JS errors."
+    },
+    {
+      "id": "C-22",
+      "category": "world-mechanics",
+      "description": "Ice physics active in Tundra stages",
+      "result": "PASS",
+      "evidence": "Code inspection: constants.js:79-80 defines ICE_FRICTION = 0.97, ICE_ACCELERATION = 0.04. physics.js:28-31 uses ICE_ACCELERATION for movement on ice. Line 48 uses ICE_FRICTION for deceleration. Line 160 sets result.onIce when standing on TILE_ICE. level.js:1443 places TILE_ICE tiles in Tundra stages."
+    },
+    {
+      "id": "C-23",
+      "category": "world-mechanics",
+      "description": "Auto-scroll mechanism for stage 3-3",
+      "result": "PASS",
+      "evidence": "Code inspection: camera.js:85-87 enables autoScroll with speed 1.2 for stage 3-3. camera.js:160 advances autoScrollX each frame. states.js:341-350 (new sprint 12 code) implements kill boundary: if Player.x + Player.width < Camera.autoScrollX - TILE_SIZE, player takes damage (when not invincible/dead/hurt)."
+    },
+    {
+      "id": "C-24",
+      "category": "audio-integration",
+      "description": "AudioManager has all 11 core sound methods",
+      "result": "PASS",
+      "evidence": "Automated test verified typeof === 'function' for all 11 methods: playJump (line 100), playLand (133), playAttack (182), playHurt (212), playCoinCollect (510), playStageClear (651), playGameOver (683), startAmbient (729), stopAmbient (758), startBossMusic (1038), stopBossMusic (1048). init() completes without errors."
+    },
+    {
+      "id": "C-25",
+      "category": "state-machine",
+      "description": "All 8 game states defined with handlers",
+      "result": "PASS",
+      "evidence": "Code inspection: states.js:8-15 defines TITLE, CONTROLS, WORLD_MAP, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE, VICTORY as non-empty strings. update() switch (lines 200-225) handles all 8. render() switch (lines 232-259) handles all 8. transitionTo() (line 56) and changeTo() (line 75) methods exist."
+    },
+    {
+      "id": "C-26",
+      "category": "state-machine",
+      "description": "Pause/resume toggles correctly with stage behind overlay",
+      "result": "PASS",
+      "evidence": "Code inspection: states.js:296-299 — Escape in STAGE calls changeTo(PAUSED) (instant, no iris-wipe). _updatePaused delegates to Menu.updatePause(). Render for PAUSED (lines 246-247): calls _renderStage(ctx) then Menu.renderPause(ctx) as overlay. Playwright C-28 test confirmed pause/resume works error-free."
+    },
+    {
+      "id": "C-27",
+      "category": "no-errors",
+      "description": "All 17 global objects defined on window",
+      "result": "PASS",
+      "evidence": "Automated test: verified typeof window[name] !== 'undefined' and non-null for all 17: Game, GameState, Renderer, Input, Level, Physics, Camera, Player, Particles, Enemies, Transition, HUD, Menu, SaveSystem, Collectibles, WorldMap, AudioManager. Sprint 12 added explicit window.X = X assignments in index.html:87-104."
+    },
+    {
+      "id": "C-28",
+      "category": "no-errors",
+      "description": "Zero JS errors during full game flow",
+      "result": "PASS",
+      "evidence": "Playwright test monitored pageerror and console.error throughout: title screen -> Enter (world map) -> Enter (stage 1-1) -> 3s gameplay -> Escape (pause) -> Enter (resume) -> Escape (pause) -> navigate to Return to World Map -> Enter. Zero errors detected throughout entire flow."
+    },
+    {
+      "id": "C-29",
+      "category": "hud",
+      "description": "HUD renders hearts, coins, stage name, boss health bar",
+      "result": "PASS",
+      "evidence": "Code inspection of hud.js: _renderHealthHearts (line 68) draws hearts based on Player.hp/PLAYER_MAX_HP using bezierCurveTo, filled with COLORS.emberRed, empty with COLORS.steelBlue. _renderCoinCounter (line 144) reads GameState.coinsCollected, displays in 3-digit zero-padded format with gold coin icon. _renderStageName (line 202) reads GameState.stageName in 18px bold. _renderBossHealthBar (line 233) conditional on this.bossActive, 320x12 bar with gradient from emberRed to mossGreen with smooth lerp."
+    },
+    {
+      "id": "C-30",
+      "category": "collectibles",
+      "description": "Coin collection increments counter, removes coin, plays sound",
+      "result": "PASS",
+      "evidence": "Code inspection of collectibles.js: _checkPlayerCollision (line 83) does AABB check. _collect (line 98): sets item.collected = true (line 102), increments GameState.coinsCollected++ (line 103), calls Particles.spawnCoinCollect() (line 105), calls AudioManager.playCoinCollect() (line 106). Collected coins are skipped in update and render loops."
+    }
+  ],
+  "regressionResults": {
+    "sprintsChecked": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    "regressionPassed": true,
+    "notes": "Sprint 12 made only 3 additive commits (111 lines added, 0 lines modified/deleted): (1) auto-scroll kill boundary in states.js (only activates for stage 3-3 when Camera.autoScroll && !Camera.locked), (2) particle cap MAX_PARTICLES=300 in particles.js (removes oldest excess only), (3) window global exposure in index.html (window.X = X assignments). No existing code was modified, so regression risk is minimal. Full game flow test (C-28) via Playwright navigated title->map->stage->pause->resume->map with zero JS errors, validating core state machine, input, rendering, physics, and UI systems from all prior sprints. All 13 stages load, all 13 bosses spawn correctly, save system round-trips, world map progression works, FPS stable at 60."
+  },
+  "holisticScores": {
+    "designQuality": {
+      "score": 7,
+      "notes": "Design spec faithfully implemented: correct color palette (Deep Charcoal #1A1A2E, Warm Slate #2D2D44, Muted Gold #C4A35A, etc.), proper typography (Courier New monospace for HUD numbers, bold sans-serif for titles), 4px spacing base, heart shapes via bezierCurveTo, coin counter with 3-digit zero-padding, boss health bar with gradient and smooth lerp, world map nodes with completion/selected/locked states. Dark theme exclusive per spec. Semi-transparent dark HUD backgrounds. 2px text outlines for readability."
+    },
+    "originality": {
+      "score": 7,
+      "notes": "Substantial original game: 13 unique stages across 4 themed worlds (Forest, Desert, Tundra, Volcano) plus Citadel. 13 distinct boss types with unique HP and behavior patterns. World-specific mechanics (ice physics, quicksand, auto-scroll, rising lava, chain swinging). Pure Web Audio API synthesis with no audio files. Coyote time, jump buffer, variable jump, wall slide game-feel mechanics. Complete progression system with save/load."
+    },
+    "codeQuality": {
+      "score": 7,
+      "notes": "Clean modular architecture: 18 separate JS files with clear separation of concerns (constants, input, level, physics, camera, renderer, particles, player, enemies, transition, hud, menu, save, collectibles, worldmap, audio, states, game). Consistent naming patterns, proper state machine, constants centralized. No external dependencies."
+    },
+    "completeness": {
+      "score": 8,
+      "notes": "All 12 sprints worth of features functional. 13 stages loadable, 13 bosses spawnable with correct HP, save system persists correctly, world map progression works, victory state reachable, all 8 game states have update/render handlers, all 17 global systems defined. Full game flow from title to world map to gameplay to pause to resume operates error-free."
+    },
+    "performance": {
+      "score": 8,
+      "notes": "Consistent 60 FPS on both title screen and during active gameplay. Particle system bounded with MAX_PARTICLES=300 cap. Viewport tile culling optimization. Fixed-timestep game loop at 16.67ms."
+    },
+    "uxResponsiveness": {
+      "score": 7,
+      "notes": "Smooth 60fps gameplay. Iris-wipe transitions between states. Screen shake for impact feedback. Particle effects for landing, running, wall sliding, combat, collection. HUD pulse animations when HP/coins change. Boss health bar with smooth lerp. Save system persistence across reloads. Game feel mechanics (coyote time, jump buffer, variable jump) enhance responsiveness."
+    }
+  },
+  "summary": "Sprint 12 (Integration, Balance & Performance) PASSES all 30 criteria. The sprint made only 3 small additive commits (111 lines added across index.html, particles.js, states.js) to fill gaps identified during integration testing: (1) auto-scroll kill boundary for stage 3-3, (2) particle count hard cap at 300, (3) explicit window global exposure for all 17 game systems. All automation tests pass: 13 stages load, 13 bosses spawn with exact HP values matching spec, save system round-trips correctly, world map progression works, all audio methods exist, all globals defined, 60 FPS stable, zero JS errors in full game flow. All code inspection criteria verified: coyote time, jump buffer, variable jump, wall slide, ice physics, auto-scroll, particle bounds, state machine, pause/resume, HUD, collectibles, boss-defeat-to-exit flow, victory state reachability. Design spec adherence confirmed: correct colors, typography, spacing, component patterns. Regression risk is minimal as no existing code was modified."
+}

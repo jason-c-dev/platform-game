@@ -1,0 +1,140 @@
+{
+  "sprintNumber": 5,
+  "reviewDate": "2026-03-30",
+  "decision": "accepted",
+  "summary": "Revised contract addresses all 3 required changes and all 5 suggested changes from the prior review. 32 criteria comprehensively cover all 4 sprint features (F12: Enemy System, F13: Boss Framework, F14: Puzzle Mechanics, F15: World 1 Stages). New criteria C-14 (vulnerability windows), C-15 (phase transitions), and C-18 (breakable blocks) close the prior coverage gaps. C-06 now has concrete page.evaluate code. C-03/C-04 are pinned to specific stages. C-09/C-22/C-28 all have improved test code. Two minor notes remain (C-16 stage ambiguity, C-15 non-blocking marker) but neither is blocking for acceptance.",
+  "featureCoverage": {
+    "F12: Enemy System Framework": {
+      "covered": true,
+      "criteriaIds": ["C-01", "C-02", "C-03", "C-04", "C-05", "C-06", "C-07", "C-08"],
+      "notes": "8 criteria cover the enemy manager API (C-01), all 3 World 1 enemy types with specific stage placements (C-02: Shroomba in 1-1, C-03: Thorn Vine in 1-2, C-04: Bark Beetle in 1-3), all 3 player attack types damaging enemies (C-05: melee, C-06: jump + charge), enemy contact damage to player (C-07), and enemy death/removal (C-08). Thorough."
+    },
+    "F13: Boss Fight Framework": {
+      "covered": true,
+      "criteriaIds": ["C-09", "C-10", "C-11", "C-12", "C-13", "C-14", "C-15"],
+      "notes": "7 criteria cover boss API/properties (C-09), all 3 World 1 bosses with specific HP and attack patterns (C-10: Elder Shroomba 5HP, C-11: Vine Mother 6HP, C-12: Stag King 7HP), boss defeat effects (C-13), vulnerability window behavior (C-14 — new, closes MISSING-1), and phase transitions (C-15 — new, closes MISSING-3, non-blocking). Excellent coverage."
+    },
+    "F14: Puzzle Mechanics": {
+      "covered": true,
+      "criteriaIds": ["C-16", "C-17", "C-18"],
+      "notes": "All 3 World 1 puzzle types covered: crumbling platforms (C-16), bounce pad sequences (C-17), breakable blocks (C-18 — new, closes MISSING-2). Complete."
+    },
+    "F15: World 1 — Whispering Forest": {
+      "covered": true,
+      "criteriaIds": ["C-19", "C-20", "C-21", "C-22", "C-23", "C-24", "C-25", "C-26", "C-27", "C-28", "C-29"],
+      "notes": "11 criteria cover all 3 stage layouts with concrete size thresholds (C-19/C-20/C-21), forest parallax (C-22), forest tile visuals (C-23), collectible placement with exact coin counts (C-24), distinct level loading from world map (C-25), stage completion flow (C-26), enemy placement per stage (C-27), boss arena triggering with camera lock (C-28), and save system integration (C-29). Comprehensive."
+    },
+    "Regression": {
+      "covered": true,
+      "criteriaIds": ["C-30", "C-31", "C-32"],
+      "notes": "3 inline regression criteria cover player movement (C-30), state machine transitions (C-31), and world map navigation (C-32). Combined with regressionSprints: [1, 2, 3, 4] for formal registry-based regression testing."
+    }
+  },
+  "priorReviewResolution": {
+    "requiredChanges": [
+      {
+        "id": "MISSING-1",
+        "requirement": "Add criterion for boss vulnerability window behavior",
+        "resolution": "RESOLVED — C-14 added with concrete page.evaluate code testing both vulnerable=false (no damage) and vulnerable=true (damage taken). Excellent behavioral test."
+      },
+      {
+        "id": "MISSING-2",
+        "requirement": "Add criterion for breakable block puzzles in World 1",
+        "resolution": "RESOLVED — C-18 added testing TILE_BREAKABLE tile existence (>= 2 tiles), destruction via charge attack, and verification that destroyed tiles become TILE_EMPTY."
+      },
+      {
+        "id": "C-06-REVISE",
+        "requirement": "Flesh out C-06 test steps with concrete page.evaluate code",
+        "resolution": "RESOLVED — C-06 now has full page.evaluate code for: (a) jump attack setting Player above enemy with vy=3, verifying vy becomes negative (bounce) and HP decreases, (b) charge attack at distance 50 from enemy, verifying HP decreases at wider range."
+      }
+    ],
+    "suggestedChanges": [
+      {
+        "id": "C-03/C-04 pinning",
+        "resolution": "RESOLVED — C-03 pinned to stage 1-2 (Hollow Depths), C-04 pinned to stage 1-3 (Treetop Gauntlet)."
+      },
+      {
+        "id": "C-09 concrete code",
+        "resolution": "RESOLVED — C-09 now has page.evaluate code checking hasHealth, hasMaxHealth, hasPhase, hasVulnerable, hasPattern on spawned boss instances, with fallback search patterns."
+      },
+      {
+        "id": "C-22 parallax names",
+        "resolution": "RESOLVED — C-22 now searches multiple property locations: __gameDebug.parallaxLayerCount(), Camera.parallaxLayers, and Renderer keys containing 'parallax'. Also recommends debug API exposure."
+      },
+      {
+        "id": "C-28 camera lock",
+        "resolution": "RESOLVED — C-28 now has concrete page.evaluate code checking cam.minX, cam.lockX, cam.arenaLeft, cam.maxX, cam.lockRight, cam.arenaRight, cam.locked, and cam.arenaLock."
+      },
+      {
+        "id": "MISSING-3 phase transitions",
+        "resolution": "RESOLVED — C-15 added testing phase increase when health drops below 50%. Correctly marked as non-blocking in threshold text."
+      }
+    ]
+  },
+  "criteriaReview": [
+    { "id": "C-01", "verdict": "pass", "notes": "Clear API surface test. Unchanged from prior version." },
+    { "id": "C-02", "verdict": "pass", "notes": "Specific: Shroomba in 1-1, health >= 1, x position changes over 60 frames. Good." },
+    { "id": "C-03", "verdict": "pass", "notes": "Now pinned to stage 1-2. Checks type, stationary (speed === 0), and projectile spawning. Deterministic." },
+    { "id": "C-04", "verdict": "pass", "notes": "Now pinned to stage 1-3. Ceiling tile adjacency check via Level.getTile is reasonable. Minor: the tile coordinate math (Math.floor(b.y / 32) - 1) assumes 32px tiles — should work given TILE_SIZE is 32." },
+    { "id": "C-05", "verdict": "pass", "notes": "Model criterion with concrete code. Unchanged." },
+    { "id": "C-06", "verdict": "pass", "notes": "Significantly improved. Jump attack: verifies vy becomes negative AND HP decreases. Charge attack: tests at distance 50 (wider than normal attack's 30). Both have full page.evaluate code. Addresses prior feedback completely." },
+    { "id": "C-07", "verdict": "pass", "notes": "Concrete overlap + collision check. Clear assertions." },
+    { "id": "C-08", "verdict": "pass-with-note", "notes": "Tests enemy removal after health=0 + 60 frames. Threshold mentions 'particles spawn on death' but test steps only check enemy count decrease, not particle count. The evaluator should additionally spot-check particles. Minor — enemy removal is the critical assertion." },
+    { "id": "C-09", "verdict": "pass", "notes": "Now has concrete page.evaluate checking 5 boss properties (health, maxHealth, phase, vulnerable, attackPattern/patterns). Multi-path lookup covers Bosses.current and Enemies.boss fallbacks. Good." },
+    { "id": "C-10", "verdict": "pass", "notes": "Specific: 5 HP, 'Elder Shroomba' name in HUD, HUD.bossMaxHP === 5. Hit 5 times to verify defeat. Concrete." },
+    { "id": "C-11", "verdict": "pass", "notes": "Consistent pattern: 6 HP, 'Vine Mother' name, vine sweep attack." },
+    { "id": "C-12", "verdict": "pass", "notes": "7 HP, 'Stag King' name, verifies multiple attack types (charge + ceiling rocks)." },
+    { "id": "C-13", "verdict": "pass", "notes": "Tests particles + STAGE_COMPLETE transition after boss defeat. Clear." },
+    { "id": "C-14", "verdict": "pass", "notes": "NEW criterion. Excellent behavioral test: (a) vulnerable=false → no HP change, (b) vulnerable=true → HP decreases. This is the core boss mechanic gating test. Concrete page.evaluate code with clear pre/post assertions. Closes MISSING-1." },
+    { "id": "C-15", "verdict": "pass-with-note", "notes": "NEW criterion. Tests phase increase at <50% HP on Stag King. Non-blocking qualifier in threshold text is appropriate — bosses may manage phases differently (e.g., exact HP thresholds). Note: there is no explicit 'blocking' field in the schema, so the evaluator must interpret the threshold text. This is acceptable convention." },
+    { "id": "C-16", "verdict": "pass-with-note", "notes": "Tests crumbling platform collapse. Minor issue: 'Enter a stage with crumbling platforms' is not pinned to a specific stage. Per the prompt, crumbling platforms are in stage 1-3 (Treetop Gauntlet). The evaluator should test in 1-3. This was the same class of issue fixed in C-03/C-04 but was not flagged for C-16 in the prior review. Not blocking since the evaluator can determine the correct stage." },
+    { "id": "C-17", "verdict": "pass", "notes": "Tests bounce pad tile existence with spatial proximity check (2+ pads within 6 tiles). Reasonable proxy for a 'sequence'. Good." },
+    { "id": "C-18", "verdict": "pass", "notes": "NEW criterion. Tests TILE_BREAKABLE count >= 2, then tests destruction via Level.breakTile() with verification that tile becomes TILE_EMPTY (0). Closes MISSING-2." },
+    { "id": "C-19", "verdict": "pass", "notes": "Width >= 80, spawn point, exit zone. Concrete thresholds." },
+    { "id": "C-20", "verdict": "pass", "notes": "Width >= 120, wall jump sections, TILE_LADDER presence. Good." },
+    { "id": "C-21", "verdict": "pass", "notes": "Width >= 150, movingPlatforms >= 3. Concrete." },
+    { "id": "C-22", "verdict": "pass", "notes": "Now searches multiple property locations for parallax layers. Screenshot for visual forest color verification. Improved from prior version." },
+    { "id": "C-23", "verdict": "pass", "notes": "Screenshot-based visual test for forest palette. Appropriate method." },
+    { "id": "C-24", "verdict": "pass", "notes": "Exact coin counts (15/20/25) and health pickup presence per stage. Concrete." },
+    { "id": "C-25", "verdict": "pass", "notes": "Tests 3 distinct levels load with different widths, none matching old test level width (140). Smart negative check." },
+    { "id": "C-26", "verdict": "pass", "notes": "Full flow: exit zone → STAGE_COMPLETE → world map → completed + next unlocked. End-to-end." },
+    { "id": "C-27", "verdict": "pass", "notes": "Minimum 3 enemies per stage with position validation. Good." },
+    { "id": "C-28", "verdict": "pass", "notes": "Now has concrete camera lock verification code checking multiple property name patterns. Boss trigger + HUD activation + camera lock. Comprehensive." },
+    { "id": "C-29", "verdict": "pass", "notes": "SaveSystem.load() verification for completedStages, bestTimes, coinRecords. Clear." },
+    { "id": "C-30", "verdict": "pass", "notes": "Regression: movement vocabulary checks. Covers walk, jump, attack, coyote time, wall slide." },
+    { "id": "C-31", "verdict": "pass", "notes": "Regression: state machine transitions. Covers TITLE → WORLD_MAP → STAGE → PAUSED → resume, plus HUD." },
+    { "id": "C-32", "verdict": "pass", "notes": "Regression: world map navigation, node properties, info panel." }
+  ],
+  "issues": [
+    {
+      "severity": "low",
+      "description": "C-16 (Crumbling platforms) says 'Enter a stage with crumbling platforms' without specifying which stage. Per prompt.txt, crumbling platforms are in stage 1-3 (Treetop Gauntlet). This is the same class of ambiguity that was fixed in C-03 and C-04.",
+      "recommendation": "Evaluator will test in stage 1-3. Generator should place crumbling platforms in 1-3 per the game design."
+    },
+    {
+      "severity": "low",
+      "description": "C-08 threshold mentions 'particles spawn on death' but test steps only verify enemy count decrease, not particle spawning. The particle check is secondary to the critical behavior (enemy removal).",
+      "recommendation": "Evaluator should additionally check Particles.particles.length after enemy death if feasible, but enemy removal is the primary assertion."
+    },
+    {
+      "severity": "info",
+      "description": "C-15 non-blocking status is indicated via threshold text convention rather than an explicit schema field. This is consistent with how the contract structure works but relies on evaluator interpretation.",
+      "recommendation": "Evaluator should treat C-15 as non-blocking per the threshold text. A C-15 failure should not cause sprint failure."
+    },
+    {
+      "severity": "info",
+      "description": "C-03 does not verify Thorn Vine's specific HP (prompt says 'Dies in 2 hits'). The criterion tests existence, stationarity, and projectile firing but not durability. This is acceptable since the combat damage flow is thoroughly tested in C-05/C-06.",
+      "recommendation": "No change needed. If the evaluator wants, they can spot-check Thorn Vine HP during C-03 testing."
+    }
+  ],
+  "outOfScopeReview": "Well-defined. Correctly defers World 2-4 content, The Citadel, audio, visual effects polish, performance optimization, Power Stars, and advanced puzzle types (mirrors, valves, pushable blocks, ice blocks). The boundary between 'in scope' puzzle mechanics (crumbling, bounce, breakable) and 'out of scope' mechanics (keys/gates, mirrors) is clear and matches the sprint plan.",
+  "regressionReview": "regressionSprints: [1, 2, 3, 4] is correct — all prior completed sprints. Inline regression criteria (C-30, C-31, C-32) cover the three most critical prior systems: player movement (Sprint 2), game state machine (Sprint 3), and world map (Sprint 4). The formal regression registry will provide comprehensive re-testing of all 28 Sprint 1 criteria, 28 Sprint 2 criteria, 28 Sprint 3 criteria, and 28 Sprint 4 criteria.",
+  "structuralNotes": [
+    "32 criteria for a high-complexity sprint (the largest so far) is appropriately thorough.",
+    "All 3 required changes from prior review are fully resolved.",
+    "All 5 suggested changes from prior review are fully resolved.",
+    "Category organization (Enemy Framework, Boss Framework, Puzzle Mechanics, Level Design, Integration, Regression) provides clear grouping.",
+    "Concrete page.evaluate code in most criteria reduces evaluator guesswork and makes tests deterministic.",
+    "The revision notes section in the contract is excellent — provides clear traceability from feedback to resolution."
+  ]
+}
