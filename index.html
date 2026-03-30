@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kingdoms of the Canvas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0D0D15;
+        }
+        #gameCanvas {
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- Engine modules -->
+    <script src="src/constants.js"></script>
+    <script src="src/input.js"></script>
+    <script src="src/level.js"></script>
+    <script src="src/physics.js"></script>
+    <script src="src/camera.js"></script>
+    <script src="src/renderer.js"></script>
+    <script src="src/player.js"></script>
+    <script src="src/game.js"></script>
+
+    <script>
+        // Scale canvas to fit window while preserving aspect ratio
+        function resizeCanvas() {
+            const canvas = document.getElementById('gameCanvas');
+            const windowW = window.innerWidth;
+            const windowH = window.innerHeight;
+            const aspect = 960 / 540;
+            const windowAspect = windowW / windowH;
+
+            let cssW, cssH;
+            if (windowAspect > aspect) {
+                cssH = windowH;
+                cssW = cssH * aspect;
+            } else {
+                cssW = windowW;
+                cssH = cssW / aspect;
+            }
+
+            canvas.style.width = cssW + 'px';
+            canvas.style.height = cssH + 'px';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Start the game
+        Game.init();
+    </script>
+</body>
+</html>
