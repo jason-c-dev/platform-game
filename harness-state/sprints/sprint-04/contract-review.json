@@ -1,0 +1,194 @@
+{
+  "sprintNumber": 4,
+  "decision": "accepted",
+  "reviewDate": "2026-03-30",
+  "summary": "Comprehensive contract with 28 criteria covering all 3 sprint features (F11: World Map, F20: Collectible System, F21: Save System). Feature coverage is thorough. Good mix of Playwright and code-review test methods. One significant contradiction between C-05 and C-08 regarding locked node navigation must be resolved during implementation per the design spec. Minor testability concerns noted but not blocking.",
+  "featureCoverage": {
+    "F11: World Map": {
+      "covered": true,
+      "criteriaIds": ["C-01", "C-02", "C-03", "C-04", "C-05", "C-06", "C-07", "C-08", "C-09", "C-10", "C-11", "C-22", "C-23", "C-24"],
+      "notes": "14 criteria cover world map state, node layout, color palettes, visual states, navigation, stage entry, info panel, unlock progression, pause menu return, background visuals, path styles, and fresh-game indicator. Thorough."
+    },
+    "F20: Collectible System": {
+      "covered": true,
+      "criteriaIds": ["C-12", "C-13", "C-14", "C-15"],
+      "notes": "4 criteria cover coin mechanics, coin visuals/animation, health pickups, and coin tracking on stage complete. Power Stars correctly deferred to out-of-scope."
+    },
+    "F21: Save System": {
+      "covered": true,
+      "criteriaIds": ["C-16", "C-17", "C-18", "C-19", "C-20"],
+      "notes": "5 criteria cover save persistence, load restoration, best-time/coin comparison logic, Continue/New Game title screen options, and New Game confirmation. End-to-end save/load cycle is well-covered."
+    },
+    "Cross-cutting": {
+      "covered": true,
+      "criteriaIds": ["C-21", "C-25", "C-26", "C-27", "C-28"],
+      "notes": "Stage-complete-to-world-map flow (C-21), debug API extensions (C-25), architecture/modularity (C-26), and two regression criteria (C-27, C-28) round out coverage."
+    }
+  },
+  "criteriaReview": [
+    {
+      "id": "C-01",
+      "verdict": "pass",
+      "notes": "Clear, testable. WORLD_MAP state integration is well-specified with debug API check and visual verification."
+    },
+    {
+      "id": "C-02",
+      "verdict": "pass",
+      "notes": "Good specificity: 13 nodes, 4 clusters, visible paths. Cluster verification via screenshot is reasonable."
+    },
+    {
+      "id": "C-03",
+      "verdict": "pass",
+      "notes": "Design spec hex values included in test steps. Verifiable via screenshot color sampling."
+    },
+    {
+      "id": "C-04",
+      "verdict": "pass-with-note",
+      "notes": "Description mentions 3 visual states (completed/selected/locked) but test steps only verify 2 (selected/locked) on a fresh game. The completed state is covered by C-10 instead. Acceptable but the description slightly over-promises what the test steps verify."
+    },
+    {
+      "id": "C-05",
+      "verdict": "needs-clarification",
+      "notes": "CONTRADICTION with C-08 and design spec. C-05 says 'navigation does not move to locked nodes (selection stays on current node)'. But the design spec under 'Stage Locked' says 'Selecting it shows info panel with: stage name, LOCKED in Steel Blue, and Complete [previous stage] to unlock' — implying you CAN navigate to locked nodes. C-08 also requires examining a locked node's info panel. Resolution: the generator should allow navigation TO locked nodes but block ENTERING them (Enter does nothing on locked nodes). C-05's threshold should be interpreted as 'locked nodes cannot be entered' not 'locked nodes cannot be navigated to'."
+    },
+    {
+      "id": "C-06",
+      "verdict": "pass",
+      "notes": "Clear transition test: Enter → iris-wipe → STAGE state with correct stage name."
+    },
+    {
+      "id": "C-07",
+      "verdict": "pass",
+      "notes": "Well-specified against design spec: 260x160px, bottom-right, Deep Charcoal bg, Muted Gold border, all required fields listed."
+    },
+    {
+      "id": "C-08",
+      "verdict": "pass-with-note",
+      "notes": "Test steps hedge with 'or examine the info panel for the initially locked node if navigation to locked nodes is possible'. Per design spec, navigation to locked nodes IS the intended behavior. The generator should implement it that way. Testable once C-05 contradiction is resolved."
+    },
+    {
+      "id": "C-09",
+      "verdict": "pass",
+      "notes": "Clean fresh-game test: clear localStorage, verify exactly 1 unlocked stage."
+    },
+    {
+      "id": "C-10",
+      "verdict": "pass",
+      "notes": "Good end-to-end test: complete stage via debug API, return to map, verify unlock + checkmark. Depends on debug API triggerStageComplete existing."
+    },
+    {
+      "id": "C-11",
+      "verdict": "pass",
+      "notes": "Clear: pause menu gets 'Return to World Map' option, selecting it goes to WORLD_MAP state."
+    },
+    {
+      "id": "C-12",
+      "verdict": "pass-with-note",
+      "notes": "Test step 'Move the player to overlap with a coin's position' requires knowing where coins are. The generator should place coins near spawn or the debug API should provide teleportation. Testable but depends on coin placement."
+    },
+    {
+      "id": "C-13",
+      "verdict": "pass",
+      "notes": "Visual test for gold color and animation via dual screenshots. Reasonable."
+    },
+    {
+      "id": "C-14",
+      "verdict": "pass-with-note",
+      "notes": "Requires causing player damage to test the pickup mechanic. Since enemies are Sprint 5, the debug API must provide a way to damage the player (e.g., window.__gameDebug.damagePlayer()). The generator should ensure this is available. Also, 'only appears when player has less than max HP' — the test steps check this by moving to it at full HP first. Good coverage."
+    },
+    {
+      "id": "C-15",
+      "verdict": "pass",
+      "notes": "Clear X/Y format verification on stage complete screen. Testable."
+    },
+    {
+      "id": "C-16",
+      "verdict": "pass",
+      "notes": "Thorough: verifies localStorage contains completed stages, coin counts, times, and lives. Good structured data check."
+    },
+    {
+      "id": "C-17",
+      "verdict": "pass",
+      "notes": "Full reload test: complete stage, reload page, verify map state persists. Critical for save system validation."
+    },
+    {
+      "id": "C-18",
+      "verdict": "pass",
+      "notes": "Code review is the right method for comparison logic. Playwright would be fragile for testing 'only updates if better'."
+    },
+    {
+      "id": "C-19",
+      "verdict": "pass",
+      "notes": "Clear: no save → no Continue; save exists → Continue appears above New Game; Continue loads saved state."
+    },
+    {
+      "id": "C-20",
+      "verdict": "pass",
+      "notes": "Confirmation dialog before data deletion. Test steps cover the full flow including verification that localStorage is actually cleared."
+    },
+    {
+      "id": "C-21",
+      "verdict": "pass",
+      "notes": "Critical flow: stage complete → world map (not title). Well-specified."
+    },
+    {
+      "id": "C-22",
+      "verdict": "pass",
+      "notes": "Visual quality gate: non-flat background. Reasonable bar for a world map."
+    },
+    {
+      "id": "C-23",
+      "verdict": "pass",
+      "notes": "Code review for Canvas setLineDash usage. Appropriate method."
+    },
+    {
+      "id": "C-24",
+      "verdict": "pass",
+      "notes": "Design spec explicitly calls for 'Begin your journey' text and animated arrow. Clear acceptance criteria."
+    },
+    {
+      "id": "C-25",
+      "verdict": "pass",
+      "notes": "Debug API extension is essential for evaluator testing. unlockAllStages and selected node info are the right utilities."
+    },
+    {
+      "id": "C-26",
+      "verdict": "pass",
+      "notes": "Architecture gate: 3 new module files loaded in index.html. Clean, verifiable."
+    },
+    {
+      "id": "C-27",
+      "verdict": "pass",
+      "notes": "Broad regression sweep across Sprint 1-3 features. Test steps cover the key systems. Formal regression via regressionSprints [1,2,3] provides additional depth."
+    },
+    {
+      "id": "C-28",
+      "verdict": "pass",
+      "notes": "Canvas resolution, FPS, and zero-error checks across all states including the new WORLD_MAP state. Good."
+    }
+  ],
+  "issues": [
+    {
+      "severity": "medium",
+      "description": "C-05 and C-08 contradict each other on locked node navigation. C-05 says 'navigation does not move to locked nodes' but C-08 requires viewing a locked node's info panel (which requires navigating to it). The design spec supports being able to navigate TO locked nodes but not ENTER them. The generator must follow the design spec: allow navigation to locked nodes, show their locked info panel, but block Enter from starting them.",
+      "recommendation": "Generator should implement: arrow keys navigate to ALL connected nodes (locked or unlocked); Enter only activates unlocked nodes. C-05 test step 5 ('Verify navigation does not move to locked nodes') should be interpreted as 'Verify Enter does not activate locked nodes'. During evaluation I will test per the design spec behavior."
+    },
+    {
+      "severity": "low",
+      "description": "C-14 health pickup testing depends on a debug API to damage the player, since enemies don't exist until Sprint 5. No explicit debug damage function is listed in C-25.",
+      "recommendation": "Generator should ensure window.__gameDebug includes a damagePlayer() function or similar, or place a hazard (spikes) near the health pickup for natural damage."
+    },
+    {
+      "severity": "low",
+      "description": "C-12 coin collection test requires the evaluator to know where coins are placed. Coins should be near the player spawn point in test stages for reliable automated testing.",
+      "recommendation": "Generator should place at least one coin within 3-5 tiles of the player's spawn position in the test level."
+    },
+    {
+      "severity": "info",
+      "description": "Missing explicit criterion for game-over flow with world map integration. When lives reach 0, does Game Over still go to Title, or should it offer 'Return to World Map'? The proposal doesn't address this flow change.",
+      "recommendation": "Current Sprint 3 behavior (Game Over → Title) is acceptable for now. Can be addressed in a future sprint if needed."
+    }
+  ],
+  "outOfScopeReview": "Well-defined. Correctly defers enemies, bosses, puzzle mechanics, real level layouts, Power Stars, extra lives collectibles, sound effects, ambient particles, celebration animation, and swimming physics. The note about placeholder coin totals is honest and appropriate.",
+  "regressionReview": "regressionSprints: [1, 2, 3] is correct. C-27 and C-28 provide inline regression coverage. The formal regression registry from prior sprints will provide comprehensive re-testing."
+}
