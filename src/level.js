@@ -217,8 +217,8 @@ const Level = {
         // =====================
         this.bossArenaX = 65 * TILE_SIZE;
         // Arena walls
-        this._fill(65, 65, 5, 16, TILE_SOLID);
-        this._fill(84, 84, 5, 16, TILE_SOLID);
+        this._fill(65, 65, 0, 13, TILE_SOLID);
+        this._fill(84, 84, 0, 16, TILE_SOLID);
         // Arena ceiling
         this._fill(65, 84, 5, 5, TILE_SOLID);
         // Arena floor
