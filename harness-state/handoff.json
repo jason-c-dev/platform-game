@@ -3,9 +3,10 @@
   "completedSprints": [
     1,
     2,
-    3
+    3,
+    4
   ],
-  "currentSprint": 4,
+  "currentSprint": 5,
   "totalSprints": 12,
   "completedFeatures": [],
   "keyFiles": {
@@ -30,8 +31,8 @@
   "devServerPort": 8080,
   "git": {
     "harnessBranch": "harness/build-the-app-described-in-prompt-txt",
-    "latestTag": "harness/sprint-03/pass",
-    "latestMergeSha": "80781db985ed5bb03db36baa7ce58c2afd14dd65",
+    "latestTag": "harness/sprint-04/pass",
+    "latestMergeSha": "b343b5ba48a22760d412f5731f1cabd3034adcda",
     "prNumbers": []
   }
 }
