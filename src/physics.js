@@ -15,14 +15,25 @@ const Physics = {
         }
     },
 
+    // Ice friction property — set by resolveCollisions when entity stands on ice
+    iceFriction: false,
+    onIce: false,
+
     applyMovement(entity, inputDir, maxSpeed) {
         const max = maxSpeed || WALK_MAX_SPEED;
+        const isOnIce = entity.onIce || this.onIce;
 
         if (inputDir !== 0) {
             if (entity.onGround) {
-                // Ground: approach-to-target model — player accelerates toward max speed
-                const targetVx = inputDir * max;
-                entity.vx += (targetVx - entity.vx) * GROUND_ACCELERATION * 0.2;
+                if (isOnIce) {
+                    // Ice: very slow acceleration, high momentum preservation
+                    const targetVx = inputDir * max;
+                    entity.vx += (targetVx - entity.vx) * ICE_ACCELERATION;
+                } else {
+                    // Ground: approach-to-target model — player accelerates toward max speed
+                    const targetVx = inputDir * max;
+                    entity.vx += (targetVx - entity.vx) * GROUND_ACCELERATION * 0.2;
+                }
             } else {
                 // Air: additive acceleration with drag — less control
                 entity.vx += inputDir * AIR_ACCELERATION;
@@ -33,11 +44,16 @@ const Physics = {
             }
         } else {
             // No input: decelerate with friction
-            entity.vx *= (entity.onGround ? GROUND_FRICTION : AIR_DRAG);
+            if (entity.onGround && isOnIce) {
+                entity.vx *= ICE_FRICTION; // slide much further on ice
+            } else {
+                entity.vx *= (entity.onGround ? GROUND_FRICTION : AIR_DRAG);
+            }
         }
 
-        // Clamp small velocities to zero
-        if (Math.abs(entity.vx) < 0.1) {
+        // Clamp small velocities to zero (higher threshold on ice for sliding feel)
+        const threshold = isOnIce ? 0.05 : 0.1;
+        if (Math.abs(entity.vx) < threshold) {
             entity.vx = 0;
         }
     },
@@ -81,7 +97,16 @@ const Physics = {
 
         entity.onGround = result.hitBottom;
 
+        // Track ice state on entity for physics
+        entity.onIce = result.onIce || false;
+        this.onIce = result.onIce || false;
+        this.iceFriction = result.onIce || false;
+
         return result;
+    },
+
+    _isSolidTile(tile) {
+        return tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE || tile === TILE_GATE || tile === TILE_ICE;
     },
 
     _checkTileCollisionsX(entity) {
@@ -94,7 +119,7 @@ const Physics = {
             const rightCol = Math.floor((entity.x + entity.width) / TILE_SIZE);
             for (let row = top; row <= bottom; row++) {
                 const tile = Level.getTile(rightCol, row);
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE || tile === TILE_GATE) {
+                if (this._isSolidTile(tile)) {
                     entity.x = rightCol * TILE_SIZE - entity.width;
                     entity.vx = 0;
                     result.hitRight = true;
@@ -106,7 +131,7 @@ const Physics = {
             const leftCol = Math.floor(entity.x / TILE_SIZE);
             for (let row = top; row <= bottom; row++) {
                 const tile = Level.getTile(leftCol, row);
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE || tile === TILE_GATE) {
+                if (this._isSolidTile(tile)) {
                     entity.x = (leftCol + 1) * TILE_SIZE;
                     entity.vx = 0;
                     result.hitLeft = true;
@@ -119,7 +144,7 @@ const Physics = {
     },
 
     _checkTileCollisionsY(entity) {
-        const result = { hitTop: false, hitBottom: false, hazard: false, bounce: false };
+        const result = { hitTop: false, hitBottom: false, hazard: false, bounce: false, onIce: false };
         const left = Math.floor(entity.x / TILE_SIZE);
         const right = Math.floor((entity.x + entity.width - 1) / TILE_SIZE);
 
@@ -128,10 +153,11 @@ const Physics = {
             const bottomRow = Math.floor((entity.y + entity.height) / TILE_SIZE);
             for (let col = left; col <= right; col++) {
                 const tile = Level.getTile(col, bottomRow);
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE || tile === TILE_GATE) {
+                if (this._isSolidTile(tile)) {
                     entity.y = bottomRow * TILE_SIZE - entity.height;
                     entity.vy = 0;
                     result.hitBottom = true;
+                    if (tile === TILE_ICE) result.onIce = true;
                     break;
                 }
                 if (tile === TILE_ONE_WAY) {
@@ -160,10 +186,21 @@ const Physics = {
             for (let col = left; col <= right; col++) {
                 const tile = Level.getTile(col, topRow);
                 // One-way platforms do NOT block from below
-                if (tile === TILE_SOLID || tile === TILE_BREAKABLE || tile === TILE_CRUMBLE || tile === TILE_GATE) {
+                if (this._isSolidTile(tile)) {
                     entity.y = (topRow + 1) * TILE_SIZE;
                     entity.vy = 0;
                     result.hitTop = true;
+                    break;
+                }
+            }
+        }
+
+        // Also check what the entity is standing on for ice detection
+        if (result.hitBottom) {
+            const feetRow = Math.floor((entity.y + entity.height) / TILE_SIZE);
+            for (let col = left; col <= right; col++) {
+                if (Level.getTile(col, feetRow) === TILE_ICE) {
+                    result.onIce = true;
                     break;
                 }
             }
