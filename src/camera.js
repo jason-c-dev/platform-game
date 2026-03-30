@@ -35,13 +35,27 @@ const Camera = {
         this.minX = null;
         this.maxX = null;
 
-        // Create 4 parallax layers for Forest
-        this.layers = [
-            { speed: 0.05, color1: '#0D1B0E', color2: '#1A3A15', elements: this._generateMountains() },
-            { speed: 0.15, color1: '#1A3A15', color2: '#2D5A27', elements: this._generateFarTrees() },
-            { speed: 0.3, color1: '#2D5A27', color2: '#4A8C3F', elements: this._generateMidTrees() },
-            { speed: 0.5, color1: '#3A6B30', color2: '#4A8C3F', elements: this._generateForegroundLeaves() }
-        ];
+        // Create 4 parallax layers (world-aware)
+        const stageId = GameState.currentStageId || '1-1';
+        const world = parseInt(stageId.charAt(0)) - 1;
+
+        if (world === 1) {
+            // Desert parallax
+            this.layers = [
+                { speed: 0.05, color1: '#B8843A', color2: '#8B6B2E', elements: this._generateMountains() },
+                { speed: 0.15, color1: '#C4943A', color2: '#8B6B2E', elements: this._generateFarTrees() },
+                { speed: 0.3, color1: '#D4B896', color2: '#C4943A', elements: this._generateMidTrees() },
+                { speed: 0.5, color1: '#E8D4A0', color2: '#C4943A', elements: this._generateForegroundLeaves() }
+            ];
+        } else {
+            // Forest parallax (default)
+            this.layers = [
+                { speed: 0.05, color1: '#0D1B0E', color2: '#1A3A15', elements: this._generateMountains() },
+                { speed: 0.15, color1: '#1A3A15', color2: '#2D5A27', elements: this._generateFarTrees() },
+                { speed: 0.3, color1: '#2D5A27', color2: '#4A8C3F', elements: this._generateMidTrees() },
+                { speed: 0.5, color1: '#3A6B30', color2: '#4A8C3F', elements: this._generateForegroundLeaves() }
+            ];
+        }
         this.parallaxLayers = this.layers;
     },
 

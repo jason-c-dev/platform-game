@@ -258,6 +258,11 @@ const GameState = {
         // Normal gameplay update
         Level.updateMovingPlatforms();
         Level.updateCrumblingTiles();
+        // Desert mechanics
+        if (Level.quicksandTiles.length > 0) Level.updateQuicksand();
+        if (Level.waterTiles.length > 0) Level.updateWater();
+        if (Level.pressurePlates.length > 0) Level.updatePressurePlates();
+        if (Level.mirrors.length > 0) Level.updateMirrors();
         Player.update();
         Enemies.update();
         Enemies.checkPlayerAttackCollisions();
@@ -354,10 +359,14 @@ const GameState = {
         Renderer.renderParallax();
         Renderer.renderTiles();
         Renderer.renderMovingPlatforms();
+        // Desert-specific renders
+        if (Level.mirrors.length > 0) Renderer.renderMirrors(ctx);
         Collectibles.render(ctx);
         Enemies.render(ctx);
         Renderer.renderPlayer(Player);
         Renderer.renderParticles();
+        // Dark room overlay (after everything else, before HUD)
+        if (Level.isDark) Renderer.renderDarkOverlay(ctx);
         HUD.render(ctx);
     }
 };
