@@ -12,6 +12,8 @@ const Level = {
     spawnX: 0,
     spawnY: 0,
     movingPlatforms: [],
+    coinPositions: [],
+    healthPositions: [],
 
     init() {
         this.buildTestLevel();
@@ -214,6 +216,43 @@ const Level = {
         // =============================================
         this.spawnX = 3 * TILE_SIZE;
         this.spawnY = 16 * TILE_SIZE;
+
+        // =============================================
+        // COLLECTIBLE POSITIONS
+        // Coins — golden collectibles scattered throughout level
+        // =============================================
+        this.coinPositions = [
+            // Near spawn — intro coins
+            { x: 4 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            { x: 5 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            { x: 6 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            // Above one-way platforms
+            { x: 7 * TILE_SIZE + 8, y: 14 * TILE_SIZE },
+            { x: 8 * TILE_SIZE + 8, y: 14 * TILE_SIZE },
+            // Near ceiling section
+            { x: 19 * TILE_SIZE + 8, y: 16 * TILE_SIZE },
+            { x: 20 * TILE_SIZE + 8, y: 16 * TILE_SIZE },
+            // After hazards reward
+            { x: 34 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            { x: 35 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            // High platform above bounce pads
+            { x: 50 * TILE_SIZE + 8, y: 9 * TILE_SIZE },
+            { x: 51 * TILE_SIZE + 8, y: 9 * TILE_SIZE },
+            // Wall jump shaft reward
+            { x: 57 * TILE_SIZE + 8, y: 4 * TILE_SIZE },
+            { x: 58 * TILE_SIZE + 8, y: 4 * TILE_SIZE },
+            // After crawl space
+            { x: 82 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            { x: 83 * TILE_SIZE + 8, y: 19 * TILE_SIZE }
+        ];
+
+        // Health pickups — restore 1 HP when damaged
+        this.healthPositions = [
+            // After first hazard section
+            { x: 36 * TILE_SIZE + 8, y: 19 * TILE_SIZE },
+            // After second hazard section
+            { x: 89 * TILE_SIZE + 8, y: 19 * TILE_SIZE }
+        ];
 
         // =============================================
         // MOVING PLATFORMS

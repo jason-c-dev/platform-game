@@ -111,5 +111,35 @@ const COLORS = {
         bark: '#8B6B3D',
         shadow: '#1A3A15',
         highlight: '#C8E6A0',
-    }
+    },
+
+    // Desert palette
+    desert: {
+        sand: '#C4943A',
+        darkSand: '#8B6B2E',
+        lightStone: '#D4B896',
+        shadow: '#3A2A1A',
+        bleachedBone: '#E8D4A0',
+    },
+
+    // Tundra palette
+    tundra: {
+        iceBlue: '#A8D4E6',
+        snowWhite: '#E8F0F8',
+        deepIce: '#6B9CB8',
+        shadow: '#2A4A5A',
+        auroraGreen: '#C8FFE8',
+    },
+
+    // Volcano palette
+    volcano: {
+        darkStone: '#2A1A1A',
+        darkRed: '#8B2A1A',
+        lavaOrange: '#FF6A2A',
+        moltenYellow: '#FFD43A',
+        shadow: '#4A2A2A',
+    },
+
+    // Power Stars
+    powerStarPink: '#FF69B4'
 };

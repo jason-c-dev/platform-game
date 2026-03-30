@@ -102,6 +102,46 @@ const Game = {
                     GameState.setupStageComplete();
                 });
             },
+            // World map utilities (Sprint 4)
+            unlockAllStages: () => {
+                WorldMap.unlockAllStages();
+            },
+            getSelectedNode: () => {
+                const node = WorldMap.getSelectedNode();
+                return node ? {
+                    stageId: node.stageId,
+                    name: node.name,
+                    world: node.world,
+                    unlocked: node.unlocked,
+                    completed: node.completed,
+                    x: node.x,
+                    y: node.y
+                } : null;
+            },
+            setSaveData: (data) => {
+                SaveSystem.save(data);
+            },
+            getSaveData: () => {
+                return SaveSystem.load();
+            },
+            clearSaveData: () => {
+                SaveSystem.clearSave();
+            },
+            setSelectedNode: (index) => {
+                if (index >= 0 && index < WorldMap.nodes.length) {
+                    WorldMap.selectedNode = index;
+                }
+            },
+            getWorldMapNodes: () => {
+                return WorldMap.nodes.map(n => ({
+                    stageId: n.stageId,
+                    name: n.name,
+                    unlocked: n.unlocked,
+                    completed: n.completed,
+                    x: n.x,
+                    y: n.y
+                }));
+            },
             transitionTo: (state) => {
                 GameState.transitionTo(state);
             },
