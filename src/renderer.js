@@ -28,6 +28,9 @@ const Renderer = {
     renderParallax() {
         const ctx = this.ctx;
 
+        // Advance animation timer
+        this.frameTime += 1 / 60;
+
         // Layer 0: Mountains (furthest)
         this._renderMountainLayer(Camera.layers[0]);
 
@@ -146,7 +149,6 @@ const Renderer = {
         const ctx = this.ctx;
         const offsetX = Camera.x * layer.speed;
         const offsetY = Camera.y * layer.speed * 0.3;
-        this.frameTime += 0.016;
 
         for (const l of layer.elements) {
             const sx = l.x - offsetX;
@@ -414,33 +416,79 @@ const Renderer = {
         for (const mp of Level.movingPlatforms) {
             const x = mp.x - Camera.x;
             const y = mp.y - Camera.y;
+            const w = mp.width;
+            const h = mp.height;
 
-            // Platform body
+            // Drop shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.fillRect(x + 2, y + h, w - 4, 4);
+
+            // Platform body — log/plank style
             ctx.fillStyle = COLORS.forest.bark;
-            ctx.fillRect(x, y, mp.width, mp.height);
+            ctx.fillRect(x, y, w, h);
 
             // Top highlight
-            ctx.fillStyle = '#A8854A';
-            ctx.fillRect(x, y, mp.width, 3);
+            ctx.fillStyle = '#B8956A';
+            ctx.fillRect(x, y, w, 3);
 
             // Wood grain lines
             ctx.strokeStyle = '#6B5030';
             ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(x + 3, y + mp.height * 0.4);
-            ctx.lineTo(x + mp.width - 3, y + mp.height * 0.5);
-            ctx.stroke();
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 3, y + 3 + i * 3);
+                ctx.lineTo(x + w - 3, y + 4 + i * 3);
+                ctx.stroke();
+            }
 
-            // Shadow
-            ctx.fillStyle = COLORS.forest.shadow;
-            ctx.globalAlpha = 0.3;
-            ctx.fillRect(x + 2, y + mp.height, mp.width - 4, 3);
+            // Side edges (bark color darker)
+            ctx.fillStyle = '#5A4020';
+            ctx.fillRect(x, y, 2, h);
+            ctx.fillRect(x + w - 2, y, 2, h);
+
+            // Metal brackets at corners
+            ctx.fillStyle = '#888';
+            ctx.fillRect(x + 2, y + 1, 5, 3);
+            ctx.fillRect(x + w - 7, y + 1, 5, 3);
+            ctx.fillStyle = '#666';
+            ctx.fillRect(x + 3, y + h - 3, 4, 2);
+            ctx.fillRect(x + w - 7, y + h - 3, 4, 2);
+
+            // Arrow indicator showing movement direction
+            ctx.fillStyle = COLORS.mutedGold;
+            ctx.globalAlpha = 0.5;
+            if (mp.axis === 'x') {
+                // Horizontal arrows
+                const arrowY = y + h / 2;
+                ctx.beginPath();
+                ctx.moveTo(x + w / 2 - 12, arrowY);
+                ctx.lineTo(x + w / 2 - 6, arrowY - 3);
+                ctx.lineTo(x + w / 2 - 6, arrowY + 3);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(x + w / 2 + 12, arrowY);
+                ctx.lineTo(x + w / 2 + 6, arrowY - 3);
+                ctx.lineTo(x + w / 2 + 6, arrowY + 3);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // Vertical arrows
+                const arrowX = x + w / 2;
+                ctx.beginPath();
+                ctx.moveTo(arrowX, y + 1);
+                ctx.lineTo(arrowX - 4, y + 5);
+                ctx.lineTo(arrowX + 4, y + 5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.beginPath();
+                ctx.moveTo(arrowX, y + h - 1);
+                ctx.lineTo(arrowX - 4, y + h - 5);
+                ctx.lineTo(arrowX + 4, y + h - 5);
+                ctx.closePath();
+                ctx.fill();
+            }
             ctx.globalAlpha = 1.0;
-
-            // Edge nails
-            ctx.fillStyle = '#555';
-            ctx.fillRect(x + 4, y + 2, 3, 3);
-            ctx.fillRect(x + mp.width - 7, y + 2, 3, 3);
         }
     },
 

@@ -4,45 +4,47 @@
 
 const Input = {
     keys: {},
+    _pressQueue: {},   // Keys pressed since last update (survives rapid press/release)
+    _releaseQueue: {},
     justPressed: {},
     justReleased: {},
     _prevKeys: {},
 
     init() {
         this.keys = {};
+        this._pressQueue = {};
+        this._releaseQueue = {};
         this.justPressed = {};
         this.justReleased = {};
         this._prevKeys = {};
 
         window.addEventListener('keydown', (e) => {
-            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'z', 'Z', 'x', 'X', 'Shift', 'Escape', 'Enter', ' '].includes(e.key)) {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                 'z', 'Z', 'x', 'X', 'Shift', 'Escape', 'Enter', ' '].includes(e.key)) {
                 e.preventDefault();
+            }
+            if (!this.keys[e.key]) {
+                this._pressQueue[e.key] = true;
             }
             this.keys[e.key] = true;
         });
 
         window.addEventListener('keyup', (e) => {
+            this._releaseQueue[e.key] = true;
             this.keys[e.key] = false;
         });
     },
 
     update() {
-        // Compute justPressed / justReleased
-        this.justPressed = {};
-        this.justReleased = {};
-        for (const key in this.keys) {
-            if (this.keys[key] && !this._prevKeys[key]) {
-                this.justPressed[key] = true;
-            }
-            if (!this.keys[key] && this._prevKeys[key]) {
-                this.justReleased[key] = true;
-            }
-        }
-        for (const key in this._prevKeys) {
-            if (!this.keys[key] && this._prevKeys[key]) {
-                this.justReleased[key] = true;
-            }
-        }
+        // justPressed = keys that were pressed since last update
+        this.justPressed = Object.assign({}, this._pressQueue);
+        this.justReleased = Object.assign({}, this._releaseQueue);
+
+        // Clear queues
+        this._pressQueue = {};
+        this._releaseQueue = {};
+
+        // Store previous state
         this._prevKeys = Object.assign({}, this.keys);
     },
 

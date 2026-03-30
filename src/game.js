@@ -35,12 +35,36 @@ const Game = {
         this.frameTimes = [];
         this.lastFrameTimestamp = performance.now();
 
-        // Expose debug info globally
+        // Expose debug info globally for testing
         window.__gameDebug = {
             updateCount: 0,
             frameCount: 0,
             fps: 60,
-            frameTimes: this.frameTimes
+            frameTimes: this.frameTimes,
+            getPlayer: () => ({
+                x: Player.x,
+                y: Player.y,
+                vx: Player.vx,
+                vy: Player.vy,
+                onGround: Player.onGround,
+                facing: Player.facing,
+                invincible: Player.invincible,
+                width: Player.width,
+                height: Player.height
+            }),
+            getCamera: () => ({
+                x: Camera.x,
+                y: Camera.y
+            }),
+            getLevelSize: () => ({
+                width: Level.width,
+                height: Level.height,
+                pixelWidth: Level.width * TILE_SIZE,
+                pixelHeight: Level.height * TILE_SIZE
+            }),
+            TILE_SIZE: TILE_SIZE,
+            CANVAS_WIDTH: CANVAS_WIDTH,
+            CANVAS_HEIGHT: CANVAS_HEIGHT
         };
 
         this._loop(performance.now());

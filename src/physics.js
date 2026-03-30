@@ -178,27 +178,25 @@ const Physics = {
     },
 
     _checkMovingPlatforms(entity) {
-        if (entity.vy < 0) return null; // Only land when falling
+        if (entity.vy < -1) return null; // Only land when falling or near-stationary
 
         for (const mp of Level.movingPlatforms) {
-            // Check if entity's bottom is near the top of the platform
             const entityBottom = entity.y + entity.height;
             const entityRight = entity.x + entity.width;
             const mpRight = mp.x + mp.width;
-            const mpBottom = mp.y + mp.height;
 
-            // Horizontal overlap
-            if (entityRight > mp.x && entity.x < mpRight) {
-                // Vertical: entity bottom within platform top region
-                if (entityBottom >= mp.y && entityBottom <= mpBottom + entity.vy + 2) {
-                    // Was entity's previous bottom above platform top?
-                    const prevBottom = entityBottom - entity.vy;
-                    if (prevBottom <= mp.y + 4) {
-                        entity.y = mp.y - entity.height;
-                        entity.vy = 0;
-                        return mp;
-                    }
-                }
+            // Horizontal overlap check
+            if (entityRight <= mp.x || entity.x >= mpRight) continue;
+
+            // Check if entity bottom is near platform top
+            // Allow tolerance for frame-to-frame landing
+            const tolerance = Math.max(Math.abs(entity.vy), 4) + Math.abs(mp.y - mp.prevY) + 2;
+
+            if (entityBottom >= mp.y - 2 && entityBottom <= mp.y + tolerance) {
+                // Snap entity onto platform
+                entity.y = mp.y - entity.height;
+                entity.vy = 0;
+                return mp;
             }
         }
         return null;

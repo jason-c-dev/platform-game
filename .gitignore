@@ -1,0 +1,4 @@
+
+# Harness infrastructure (not project code)
+.claude/agents/
+.claude/skills/
