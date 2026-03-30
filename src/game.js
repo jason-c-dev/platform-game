@@ -1,5 +1,5 @@
 // ============================================================
-// game.js — Main game loop (fixed timestep)
+// game.js — Main game loop (fixed timestep) with state machine
 // ============================================================
 
 const Game = {
@@ -14,19 +14,10 @@ const Game = {
     init() {
         Renderer.init();
         Input.init();
-        Level.init();
-        Particles.init();
-        Player.init();
-        Camera.init();
-
-        // Position camera initially
-        Camera.x = Player.x - CANVAS_WIDTH / 2;
-        Camera.y = Player.y - CANVAS_HEIGHT / 2;
-        // Clamp
-        const maxX = Level.width * TILE_SIZE - CANVAS_WIDTH;
-        const maxY = Level.height * TILE_SIZE - CANVAS_HEIGHT;
-        Camera.x = Math.max(0, Math.min(Camera.x, maxX));
-        Camera.y = Math.max(0, Math.min(Camera.y, maxY));
+        HUD.init();
+        GameState.init();
+        Menu.initTitle();
+        Transition.active = false;
 
         this.running = true;
         this.lastTime = performance.now();
@@ -42,6 +33,10 @@ const Game = {
             frameCount: 0,
             fps: 60,
             frameTimes: this.frameTimes,
+            // Game state exposure (C-24)
+            get gameState() { return GameState.current; },
+            get currentState() { return GameState.current; },
+            get state() { return GameState.current; },
             getPlayer: () => ({
                 x: Player.x,
                 y: Player.y,
@@ -92,6 +87,23 @@ const Game = {
             },
             setPlayerLives: (lives) => {
                 Player.lives = lives;
+            },
+            // State machine helpers for testing
+            triggerGameOver: () => {
+                Player.hp = 0;
+                Player.lives = 0;
+                Player.gameOver = true;
+                GameState.transitionTo(GameState.GAME_OVER, () => {
+                    GameState.setupGameOver();
+                });
+            },
+            triggerStageComplete: () => {
+                GameState.transitionTo(GameState.STAGE_COMPLETE, () => {
+                    GameState.setupStageComplete();
+                });
+            },
+            transitionTo: (state) => {
+                GameState.transitionTo(state);
             },
             getTile: (col, row) => Level.getTile(col, row),
             setTile: (col, row, type) => Level.setTile(col, row, type),
@@ -170,19 +182,13 @@ const Game = {
     },
 
     _update() {
-        Input.update();
-        Level.updateMovingPlatforms();
-        Player.update();
-        Particles.update();
-        Camera.update(Player);
+        // All update logic delegated to state machine
+        GameState.update();
     },
 
     _render() {
         Renderer.clear();
-        Renderer.renderParallax();
-        Renderer.renderTiles();
-        Renderer.renderMovingPlatforms();
-        Renderer.renderPlayer(Player);
-        Renderer.renderParticles();
+        // All render logic delegated to state machine
+        GameState.render(Renderer.ctx);
     }
 };
