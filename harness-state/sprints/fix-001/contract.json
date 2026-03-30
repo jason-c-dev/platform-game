@@ -1,0 +1,58 @@
+{
+  "sprintNumber": "fix-001",
+  "name": "Add MIT LICENSE file and README badges",
+  "theme": "Add missing MIT LICENSE file referenced in README.md and add appropriate badges/labels to README.md",
+  "issueRef": "Fixes #2",
+  "features": ["F1: MIT LICENSE file", "F2: README badges/labels"],
+  "criteria": [
+    {
+      "id": "FIX-001-C01",
+      "category": "license",
+      "description": "A LICENSE file exists at the repository root containing a valid MIT license",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Verify a file named LICENSE exists at the repository root",
+        "Verify the file contains the standard MIT license text",
+        "Verify it includes a copyright line with a year"
+      ],
+      "threshold": "LICENSE file exists with valid MIT license text"
+    },
+    {
+      "id": "FIX-001-C02",
+      "category": "readme",
+      "description": "The README.md LICENSE link correctly resolves to the LICENSE file",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Find the license reference in README.md",
+        "Verify the link [LICENSE](LICENSE) points to the existing LICENSE file",
+        "Verify the license section text accurately describes MIT license"
+      ],
+      "threshold": "README license link resolves to the actual LICENSE file"
+    },
+    {
+      "id": "FIX-001-C03",
+      "category": "readme",
+      "description": "README.md includes appropriate badges/labels near the top (license badge at minimum, plus other relevant badges)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Check the top of README.md for badge images",
+        "Verify a license badge is present showing MIT",
+        "Verify other appropriate badges are present (e.g., vanilla JS, no dependencies, HTML5 Canvas)",
+        "Verify badges use standard shield.io or similar format"
+      ],
+      "threshold": "README has license badge and at least 2 other relevant badges near the top"
+    },
+    {
+      "id": "FIX-001-C04",
+      "category": "regression",
+      "description": "The game still loads and runs without errors after changes",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html in a browser",
+        "Verify the canvas element exists and renders content",
+        "Verify no JavaScript errors in the console"
+      ],
+      "threshold": "Game loads and renders without JS errors"
+    }
+  ]
+}

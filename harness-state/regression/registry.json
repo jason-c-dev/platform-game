@@ -414,5 +414,15 @@
       "contractPath": "sprints/sprint-12/contract.json"
     }
   },
+    "fix-001": {
+      "criteria": [
+        "FIX-001-C01",
+        "FIX-001-C02",
+        "FIX-001-C03",
+        "FIX-001-C04"
+      ],
+      "contractPath": "sprints/fix-001/contract.json"
+    }
+  },
   "lastFullRun": null
 }
