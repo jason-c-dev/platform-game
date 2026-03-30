@@ -19,6 +19,11 @@ const Camera = {
     minX: null,
     maxX: null,
 
+    // Auto-scroll for stage 3-3
+    autoScroll: false,
+    autoScrollSpeed: 0,
+    autoScrollX: 0,
+
     // Parallax layers (Forest theme)
     layers: [],
     parallaxLayers: [], // Alias for test access
@@ -34,12 +39,29 @@ const Camera = {
         this.arenaRight = 0;
         this.minX = null;
         this.maxX = null;
+        this.autoScroll = false;
+        this.autoScrollSpeed = 0;
+        this.autoScrollX = 0;
 
         // Create 4 parallax layers (world-aware)
         const stageId = GameState.currentStageId || '1-1';
         const world = parseInt(stageId.charAt(0)) - 1;
 
-        if (world === 1) {
+        if (world === 2) {
+            // Tundra parallax
+            this.layers = [
+                { speed: 0.05, color1: COLORS.tundra.deepIce, color2: COLORS.tundra.shadow, elements: this._generateMountains() },
+                { speed: 0.15, color1: COLORS.tundra.shadow, color2: COLORS.tundra.deepIce, elements: this._generateFarTrees() },
+                { speed: 0.3, color1: COLORS.tundra.iceBlue, color2: COLORS.tundra.snowWhite, elements: this._generateMidTrees() },
+                { speed: 0.5, color1: COLORS.tundra.snowWhite, color2: COLORS.tundra.auroraGreen, elements: this._generateForegroundLeaves() }
+            ];
+            // Enable auto-scroll for stage 3-3
+            if (stageId === '3-3') {
+                this.autoScroll = true;
+                this.autoScrollSpeed = 1.2;
+                this.autoScrollX = 0;
+            }
+        } else if (world === 1) {
             // Desert parallax
             this.layers = [
                 { speed: 0.05, color1: '#B8843A', color2: '#8B6B2E', elements: this._generateMountains() },
@@ -77,6 +99,38 @@ const Camera = {
     },
 
     update(targetEntity) {
+        // Auto-scroll mode (stage 3-3)
+        if (this.autoScroll && !this.locked) {
+            this.autoScrollX += this.autoScrollSpeed;
+            const levelMaxX = Level.width * TILE_SIZE - CANVAS_WIDTH;
+            if (this.autoScrollX > levelMaxX) this.autoScrollX = levelMaxX;
+            this.x = this.autoScrollX;
+
+            // Vertical: still follow player
+            const entityScreenY = targetEntity.y - this.y;
+            const topThreshold = CANVAS_HEIGHT * CAMERA_DEADZONE_TOP;
+            const bottomThreshold = CANVAS_HEIGHT * (1 - CAMERA_DEADZONE_BOTTOM);
+            if (entityScreenY < topThreshold) {
+                this.targetY = targetEntity.y - topThreshold;
+            } else if (entityScreenY + targetEntity.height > bottomThreshold) {
+                this.targetY = targetEntity.y + targetEntity.height - bottomThreshold;
+            }
+            this.y += (this.targetY - this.y) * CAMERA_SMOOTH;
+
+            // Clamp vertical
+            const levelMaxY = Level.height * TILE_SIZE - CANVAS_HEIGHT;
+            if (this.y < 0) this.y = 0;
+            if (this.y > levelMaxY) this.y = levelMaxY;
+
+            // Damage/kill player if they fall behind the left edge
+            if (targetEntity.x + targetEntity.width < this.x - 16) {
+                if (targetEntity.state !== 'dead' && targetEntity.state !== 'hurt') {
+                    targetEntity.takeDamage();
+                }
+            }
+            return;
+        }
+
         // Horizontal: smooth follow
         this.targetX = targetEntity.x + targetEntity.width / 2 - CANVAS_WIDTH / 2;
 
