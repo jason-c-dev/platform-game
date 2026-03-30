@@ -328,6 +328,14 @@ const Enemies = {
     // UPDATE
     // =============================================
 
+    // Public boss update for testing (called by evaluator)
+    updateBoss(dt) {
+        if (this.boss) {
+            this.boss.animTimer += dt || (1 / 60);
+            this._updateBoss(this.boss);
+        }
+    },
+
     update() {
         // Decrement hit cooldowns
         for (const key in this._hitCooldowns) {

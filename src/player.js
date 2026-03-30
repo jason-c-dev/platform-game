@@ -48,6 +48,9 @@ const Player = {
     // Variable jump
     _jumpCut: false,
 
+    // Chain swing (volcano)
+    grabbedChain: null,
+
     // Wall slide
     wallDir: 0, // -1 = wall on left, 1 = wall on right
 
