@@ -264,7 +264,20 @@ const GameState = {
         if (Level.pressurePlates.length > 0) Level.updatePressurePlates();
         if (Level.mirrors.length > 0) Level.updateMirrors();
         // Tundra mechanics
-        if (Level.iceBlocks.length > 0) Level.updateIceBlocks();
+        if (Level.iceBlocks.length > 0) {
+            Level.updateIceBlocks();
+            // Check player-ice block push interaction
+            for (const block of Level.iceBlocks) {
+                if (block.melted || block.sliding) continue;
+                const bx = block.x, by = block.y;
+                if (Player.x + Player.width > bx && Player.x < bx + 32 &&
+                    Player.y + Player.height > by && Player.y < by + 32) {
+                    // Player is touching block — push it
+                    const pushDir = Player.x + Player.width / 2 < bx + 16 ? 1 : -1;
+                    Level.pushIceBlock(block, pushDir);
+                }
+            }
+        }
         if (Level.meltableBlocks.length > 0) Level.updateMeltableBlocks();
         Player.update();
         Enemies.update();
