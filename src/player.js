@@ -12,6 +12,8 @@ const Player = {
     width: PLAYER_WIDTH,
     height: PLAYER_HEIGHT,
     onGround: false,
+    onIce: false,
+    icePhysics: false,
     facing: 1, // 1 = right, -1 = left
     invincible: false,
     invincibleTimer: 0,
@@ -67,6 +69,8 @@ const Player = {
         this.width = PLAYER_WIDTH;
         this.height = PLAYER_HEIGHT;
         this.onGround = false;
+        this.onIce = false;
+        this.icePhysics = false;
         this.facing = 1;
         this.invincible = false;
         this.invincibleTimer = 0;

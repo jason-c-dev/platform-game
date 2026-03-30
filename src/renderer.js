@@ -21,9 +21,17 @@ const Renderer = {
     drawDarkOverlay(ctx) { this.renderDarkOverlay(ctx); },
     _heatShimmerTimer: 0,
 
+    // Snow particles for tundra world
+    _snowParticles: [],
+    _snowInitialized: false,
+
     clear() {
         const world = this._getCurrentWorld();
-        if (world === 1) {
+        if (world === 2) {
+            // Tundra background - deep night sky
+            this.ctx.fillStyle = '#0A1520';
+            this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        } else if (world === 1) {
             // Desert background
             this.ctx.fillStyle = '#2A1A0A';
             this.ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -49,7 +57,10 @@ const Renderer = {
         // Advance animation timer
         this.frameTime += 1 / 60;
 
-        if (world === 1) {
+        if (world === 2) {
+            // Tundra parallax
+            this._renderTundraParallax();
+        } else if (world === 1) {
             // Desert parallax
             this._renderDesertParallax();
         } else {
@@ -165,6 +176,149 @@ const Renderer = {
             ctx.closePath();
             ctx.fill();
         }
+        ctx.restore();
+    },
+
+    // =======================
+    // TUNDRA PARALLAX
+    // =======================
+    _renderTundraParallax() {
+        const ctx = this.ctx;
+
+        // Layer 0: Night sky gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+        grad.addColorStop(0, '#0A1520');
+        grad.addColorStop(0.3, '#152535');
+        grad.addColorStop(0.6, COLORS.tundra.shadow);
+        grad.addColorStop(1, COLORS.tundra.deepIce);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Aurora borealis effect - animated glowing curtains
+        this._renderAuroraBorealis(ctx);
+
+        // Layer 1: Distant snow-capped mountains
+        if (Camera.layers[0]) {
+            const layer = Camera.layers[0];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 120;
+
+            for (const m of layer.elements) {
+                const sx = m.x - offsetX;
+                if (sx + m.width < -50 || sx > CANVAS_WIDTH + 50) continue;
+
+                // Mountain body
+                ctx.fillStyle = COLORS.tundra.shadow;
+                ctx.beginPath();
+                ctx.moveTo(sx, baseY);
+                ctx.lineTo(sx + m.width / 2, baseY - m.height);
+                ctx.lineTo(sx + m.width, baseY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Snow cap
+                ctx.fillStyle = COLORS.tundra.snowWhite;
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.moveTo(sx + m.width / 2 - 15, baseY - m.height + 25);
+                ctx.lineTo(sx + m.width / 2, baseY - m.height);
+                ctx.lineTo(sx + m.width / 2 + 15, baseY - m.height + 25);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+
+            // Horizon fill
+            ctx.fillStyle = COLORS.tundra.shadow;
+            ctx.fillRect(0, baseY, CANVAS_WIDTH, CANVAS_HEIGHT - baseY);
+        }
+
+        // Layer 2: Mid-distance ice formations / frozen trees
+        if (Camera.layers[1]) {
+            const layer = Camera.layers[1];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 70;
+
+            for (const t of layer.elements) {
+                const sx = t.x - offsetX;
+                if (sx + t.width < -20 || sx > CANVAS_WIDTH + 20) continue;
+
+                if (t.trunk > 12) {
+                    // Ice formation / pillar
+                    ctx.fillStyle = COLORS.tundra.deepIce;
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillRect(sx + t.width / 2 - 5, baseY - t.height * 0.4, 10, t.height * 0.4);
+                    // Ice cap
+                    ctx.fillStyle = COLORS.tundra.snowWhite;
+                    ctx.fillRect(sx + t.width / 2 - 8, baseY - t.height * 0.4, 16, 4);
+                    ctx.globalAlpha = 1.0;
+                } else {
+                    // Frozen pine tree
+                    ctx.fillStyle = COLORS.tundra.deepIce;
+                    ctx.globalAlpha = 0.4;
+                    // Trunk
+                    ctx.fillRect(sx + t.width / 2 - 2, baseY - t.height * 0.3, 4, t.height * 0.3);
+                    // Triangular canopy
+                    ctx.beginPath();
+                    ctx.moveTo(sx + t.width / 2, baseY - t.height * 0.7);
+                    ctx.lineTo(sx + t.width / 2 - 10, baseY - t.height * 0.2);
+                    ctx.lineTo(sx + t.width / 2 + 10, baseY - t.height * 0.2);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Snow on branches
+                    ctx.fillStyle = COLORS.tundra.snowWhite;
+                    ctx.fillRect(sx + t.width / 2 - 8, baseY - t.height * 0.45, 16, 3);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+
+        // Layer 3: Near snow-covered ground
+        if (Camera.layers[2]) {
+            const layer = Camera.layers[2];
+            const offsetX = Camera.x * layer.speed;
+            const baseY = CANVAS_HEIGHT - 20;
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.globalAlpha = 0.4;
+            for (const t of layer.elements) {
+                const sx = t.x - offsetX;
+                if (sx + t.width < -30 || sx > CANVAS_WIDTH + 30) continue;
+                ctx.beginPath();
+                ctx.moveTo(sx, baseY);
+                ctx.quadraticCurveTo(sx + t.width / 2, baseY - t.height * 0.2, sx + t.width, baseY);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    _renderAuroraBorealis(ctx) {
+        ctx.save();
+        const t = this.frameTime;
+
+        // Draw 5 aurora curtain bands
+        for (let i = 0; i < 5; i++) {
+            const baseY = 30 + i * 25 + Math.sin(t * 0.3 + i * 1.5) * 20;
+            const waveAmp = 15 + Math.sin(t * 0.5 + i * 0.8) * 8;
+            const alpha = 0.08 + Math.sin(t * 0.7 + i * 1.2) * 0.04;
+
+            // Alternate between green and teal aurora colors
+            const isGreen = i % 2 === 0;
+            ctx.fillStyle = isGreen ? COLORS.tundra.auroraGreen : COLORS.tundra.iceBlue;
+            ctx.globalAlpha = alpha;
+
+            ctx.beginPath();
+            ctx.moveTo(0, baseY);
+            for (let x = 0; x <= CANVAS_WIDTH; x += 15) {
+                const dy = Math.sin(t * 0.8 + x * 0.008 + i * 2) * waveAmp;
+                ctx.lineTo(x, baseY + dy);
+            }
+            ctx.lineTo(CANVAS_WIDTH, baseY + 40);
+            ctx.lineTo(0, baseY + 40);
+            ctx.closePath();
+            ctx.fill();
+        }
+
         ctx.restore();
     },
 
@@ -355,6 +509,9 @@ const Renderer = {
             case TILE_GATE:
                 this._drawGateTile(ctx, x, y, s);
                 break;
+            case TILE_ICE:
+                this._drawIceTile(ctx, x, y, s, col, row);
+                break;
         }
     },
 
@@ -364,9 +521,13 @@ const Renderer = {
         const isSurface = (tileAbove === TILE_EMPTY || tileAbove === TILE_ONE_WAY ||
                            tileAbove === TILE_HAZARD || tileAbove === TILE_BOUNCE ||
                            tileAbove === TILE_WATER || tileAbove === TILE_WATER_SURFACE ||
-                           tileAbove === TILE_QUICKSAND || tileAbove === TILE_QUICKSAND_DEEP);
+                           tileAbove === TILE_QUICKSAND || tileAbove === TILE_QUICKSAND_DEEP ||
+                           tileAbove === TILE_ICE);
 
-        if (world === 1) {
+        if (world === 2) {
+            // TUNDRA TILES
+            this._drawTundraSolidTile(ctx, x, y, s, col, row, isSurface);
+        } else if (world === 1) {
             // DESERT TILES
             this._drawDesertSolidTile(ctx, x, y, s, col, row, isSurface);
         } else {
@@ -470,9 +631,125 @@ const Renderer = {
         }
     },
 
+    _drawTundraSolidTile(ctx, x, y, s, col, row, isSurface) {
+        if (isSurface) {
+            // Snow-covered surface
+            ctx.fillStyle = COLORS.tundra.deepIce;
+            ctx.fillRect(x, y, s, s);
+            // Snow cap on top
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.fillRect(x, y, s, 5);
+            // Ice body
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.fillRect(x, y + 10, s, s - 10);
+
+            // Frost texture lines
+            ctx.strokeStyle = COLORS.tundra.shadow;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.25;
+            for (let i = 0; i < 3; i++) {
+                const ly = y + 14 + i * 6;
+                ctx.beginPath();
+                ctx.moveTo(x + 2 + (col * 3 + i * 7) % 8, ly);
+                ctx.lineTo(x + s - 2 - (col * 5 + i * 3) % 8, ly + 2);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+
+            ctx.fillStyle = COLORS.tundra.shadow;
+            ctx.fillRect(x, y + s - 1, s, 1);
+        } else {
+            // Underground frozen stone
+            ctx.fillStyle = COLORS.tundra.shadow;
+            ctx.fillRect(x, y, s, s);
+
+            // Ice crystal texture
+            ctx.fillStyle = COLORS.tundra.deepIce;
+            ctx.globalAlpha = 0.4;
+            const seed = col * 17 + row * 31;
+            for (let i = 0; i < 5; i++) {
+                const px = x + ((seed + i * 13) % 26) + 3;
+                const py = y + ((seed + i * 19) % 26) + 3;
+                ctx.fillRect(px, py, 2, 2);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Frost edge lines
+            ctx.fillStyle = COLORS.tundra.deepIce;
+            ctx.globalAlpha = 0.2;
+            ctx.fillRect(x, y, s, 1);
+            ctx.fillRect(x, y, 1, s);
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    _drawIceTile(ctx, x, y, s, col, row) {
+        // Translucent ice surface - light blue with shimmer
+        ctx.fillStyle = COLORS.tundra.iceBlue;
+        ctx.fillRect(x, y, s, s);
+
+        // Glassy highlight on top
+        ctx.fillStyle = COLORS.tundra.snowWhite;
+        ctx.globalAlpha = 0.6;
+        ctx.fillRect(x, y, s, 3);
+        ctx.globalAlpha = 1.0;
+
+        // Ice crack pattern
+        ctx.strokeStyle = COLORS.tundra.deepIce;
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.4;
+        const seed = col * 13 + row * 23;
+        ctx.beginPath();
+        ctx.moveTo(x + (seed % 12) + 4, y + 6);
+        ctx.lineTo(x + (seed % 16) + 8, y + s / 2);
+        ctx.lineTo(x + s - (seed % 10) - 4, y + s - 6);
+        ctx.stroke();
+        // Branch crack
+        ctx.beginPath();
+        ctx.moveTo(x + (seed % 16) + 8, y + s / 2);
+        ctx.lineTo(x + s - (seed % 8) - 2, y + (seed % 10) + 8);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+
+        // Shimmer effect (time-based)
+        const shimmer = Math.sin(this.frameTime * 2 + col * 0.5) * 0.1 + 0.1;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = shimmer;
+        ctx.fillRect(x + 4, y + 4, 6, 3);
+        ctx.fillRect(x + s - 12, y + s - 10, 5, 3);
+        ctx.globalAlpha = 1.0;
+
+        // Edge shadow
+        ctx.fillStyle = COLORS.tundra.shadow;
+        ctx.globalAlpha = 0.3;
+        ctx.fillRect(x, y + s - 1, s, 1);
+        ctx.fillRect(x + s - 1, y, 1, s);
+        ctx.globalAlpha = 1.0;
+    },
+
     _drawOneWayTile(ctx, x, y, s) {
         const world = this._getCurrentWorld();
-        if (world === 1) {
+        if (world === 2) {
+            // Tundra one-way: ice shelf
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.fillRect(x, y, s, 10);
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.fillRect(x, y, s, 3);
+            ctx.strokeStyle = COLORS.tundra.deepIce;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x + 3, y + 5);
+            ctx.lineTo(x + s - 3, y + 6);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+            // Icicle drips
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(x + 6, y + 10, 2, 5);
+            ctx.fillRect(x + s - 8, y + 10, 2, 4);
+            ctx.globalAlpha = 1.0;
+        } else if (world === 1) {
             // Desert one-way: stone slab
             ctx.fillStyle = COLORS.desert.lightStone;
             ctx.fillRect(x, y, s, 10);
@@ -1814,6 +2091,189 @@ const Renderer = {
     // =======================
     renderParticles() {
         Particles.render(this.ctx);
+    },
+
+    // =======================
+    // SNOW PARTICLES (Tundra foreground effect)
+    // =======================
+    _initSnowParticles() {
+        this._snowParticles = [];
+        for (let i = 0; i < 80; i++) {
+            this._snowParticles.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * CANVAS_HEIGHT,
+                size: 1.5 + Math.random() * 2.5,
+                speedY: 0.3 + Math.random() * 0.8,
+                speedX: -0.2 + Math.random() * 0.4,
+                wobble: Math.random() * Math.PI * 2,
+                wobbleSpeed: 0.5 + Math.random() * 1.5,
+                alpha: 0.3 + Math.random() * 0.5,
+            });
+        }
+        this._snowInitialized = true;
+    },
+
+    updateAndRenderSnow() {
+        const world = this._getCurrentWorld();
+        if (world !== 2) {
+            this._snowInitialized = false;
+            return;
+        }
+
+        if (!this._snowInitialized) this._initSnowParticles();
+
+        const ctx = this.ctx;
+        for (const p of this._snowParticles) {
+            // Update
+            p.y += p.speedY;
+            p.wobble += p.wobbleSpeed * (1 / 60);
+            p.x += p.speedX + Math.sin(p.wobble) * 0.3;
+
+            // Wrap around
+            if (p.y > CANVAS_HEIGHT + 5) {
+                p.y = -5;
+                p.x = Math.random() * CANVAS_WIDTH;
+            }
+            if (p.x < -5) p.x = CANVAS_WIDTH + 5;
+            if (p.x > CANVAS_WIDTH + 5) p.x = -5;
+
+            // Render
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.globalAlpha = p.alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+    },
+
+    // =======================
+    // ICE BLOCKS, FIRE SOURCES, MELTABLE BLOCKS (Tundra)
+    // =======================
+    renderIceBlocks(ctx) {
+        const camX = Camera.x;
+        const camY = Camera.y;
+        for (const block of Level.iceBlocks) {
+            if (block.melted) continue;
+            const x = block.x - camX;
+            const y = block.y - camY;
+            if (x + 32 < -10 || x > CANVAS_WIDTH + 10 || y + 32 < -10 || y > CANVAS_HEIGHT + 10) continue;
+
+            // Ice block body
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.globalAlpha = 0.85;
+            ctx.fillRect(x + 1, y + 1, 30, 30);
+
+            // Ice highlight
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(x + 3, y + 3, 12, 4);
+            ctx.fillRect(x + 3, y + 3, 4, 12);
+
+            // Ice cracks
+            ctx.strokeStyle = COLORS.tundra.deepIce;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + 10);
+            ctx.lineTo(x + 20, y + 18);
+            ctx.lineTo(x + 16, y + 26);
+            ctx.stroke();
+
+            // Outline
+            ctx.strokeStyle = COLORS.tundra.deepIce;
+            ctx.lineWidth = 2;
+            ctx.globalAlpha = 0.7;
+            ctx.strokeRect(x + 1, y + 1, 30, 30);
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    renderFireSources(ctx) {
+        const camX = Camera.x;
+        const camY = Camera.y;
+        for (const fire of Level.fireSources) {
+            const x = fire.x - camX;
+            const y = fire.y - camY;
+            if (x + 32 < -20 || x > CANVAS_WIDTH + 20 || y + 32 < -20 || y > CANVAS_HEIGHT + 20) continue;
+
+            // Torch base
+            ctx.fillStyle = '#5A3A1A';
+            ctx.fillRect(x + 12, y + 16, 8, 16);
+
+            // Flame (animated)
+            const t = this.frameTime;
+            const flicker1 = Math.sin(t * 8 + fire.x * 0.1) * 3;
+            const flicker2 = Math.cos(t * 6 + fire.x * 0.2) * 2;
+
+            // Outer flame (orange)
+            ctx.fillStyle = '#FF8800';
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x + 10 + flicker2, y + 18);
+            ctx.quadraticCurveTo(x + 16 + flicker1, y + 2 + flicker2, x + 22 - flicker2, y + 18);
+            ctx.fill();
+
+            // Inner flame (yellow)
+            ctx.fillStyle = '#FFD700';
+            ctx.globalAlpha = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(x + 13 + flicker1 * 0.5, y + 18);
+            ctx.quadraticCurveTo(x + 16 + flicker2 * 0.5, y + 8 + flicker1, x + 19 - flicker1 * 0.5, y + 18);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Glow effect
+            ctx.fillStyle = '#FF8800';
+            ctx.globalAlpha = 0.1;
+            ctx.beginPath();
+            ctx.arc(x + 16, y + 12, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+        }
+    },
+
+    renderMeltableBlocks(ctx) {
+        const camX = Camera.x;
+        const camY = Camera.y;
+        for (const block of Level.meltableBlocks) {
+            if (block.melted) continue;
+            const x = block.x - camX;
+            const y = block.y - camY;
+            if (x + 32 < -10 || x > CANVAS_WIDTH + 10 || y + 32 < -10 || y > CANVAS_HEIGHT + 10) continue;
+
+            // Thick ice wall
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.globalAlpha = block.health > 0 ? 0.9 : 0.5;
+            ctx.fillRect(x, y, 32, 32);
+
+            // Frost pattern
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(x + 2, y + 2, 28, 3);
+            ctx.fillRect(x + 2, y + 2, 3, 28);
+
+            // Cross-hatch ice pattern
+            ctx.strokeStyle = COLORS.tundra.deepIce;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.3;
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(x + 4 + i * 10, y + 4);
+                ctx.lineTo(x + 4 + i * 10 + 8, y + 28);
+                ctx.stroke();
+            }
+
+            // Melt indicator (dripping when partially melted)
+            if (block.health < 3) {
+                ctx.fillStyle = COLORS.tundra.iceBlue;
+                ctx.globalAlpha = 0.5;
+                const drip = Math.sin(this.frameTime * 3 + block.x * 0.1) * 3;
+                ctx.fillRect(x + 10, y + 32, 4, 4 + drip);
+                ctx.fillRect(x + 20, y + 32, 3, 2 + drip * 0.5);
+            }
+            ctx.globalAlpha = 1.0;
+        }
     },
 
     // =======================

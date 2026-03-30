@@ -263,6 +263,22 @@ const GameState = {
         if (Level.waterTiles.length > 0) Level.updateWater();
         if (Level.pressurePlates.length > 0) Level.updatePressurePlates();
         if (Level.mirrors.length > 0) Level.updateMirrors();
+        // Tundra mechanics
+        if (Level.iceBlocks.length > 0) {
+            Level.updateIceBlocks();
+            // Check player-ice block push interaction
+            for (const block of Level.iceBlocks) {
+                if (block.melted || block.sliding) continue;
+                const bx = block.x, by = block.y;
+                if (Player.x + Player.width > bx && Player.x < bx + 32 &&
+                    Player.y + Player.height > by && Player.y < by + 32) {
+                    // Player is touching block — push it
+                    const pushDir = Player.x + Player.width / 2 < bx + 16 ? 1 : -1;
+                    Level.pushIceBlock(block, pushDir);
+                }
+            }
+        }
+        if (Level.meltableBlocks.length > 0) Level.updateMeltableBlocks();
         Player.update();
         Enemies.update();
         Enemies.checkPlayerAttackCollisions();
@@ -358,6 +374,10 @@ const GameState = {
     _renderStage(ctx) {
         Renderer.renderParallax();
         Renderer.renderTiles();
+        // Tundra-specific renders
+        if (Level.iceBlocks && Level.iceBlocks.length > 0) Renderer.renderIceBlocks(ctx);
+        if (Level.fireSources && Level.fireSources.length > 0) Renderer.renderFireSources(ctx);
+        if (Level.meltableBlocks && Level.meltableBlocks.length > 0) Renderer.renderMeltableBlocks(ctx);
         Renderer.renderMovingPlatforms();
         // Desert-specific renders
         if (Level.mirrors.length > 0) Renderer.renderMirrors(ctx);
@@ -365,6 +385,8 @@ const GameState = {
         Enemies.render(ctx);
         Renderer.renderPlayer(Player);
         Renderer.renderParticles();
+        // Snow overlay for tundra (above everything except HUD)
+        Renderer.updateAndRenderSnow();
         // Dark room overlay (after everything else, before HUD)
         if (Level.isDark) Renderer.renderDarkOverlay(ctx);
         HUD.render(ctx);

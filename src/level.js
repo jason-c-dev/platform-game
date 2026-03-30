@@ -36,6 +36,18 @@ const Level = {
     darkZones: [],
     isDark: false,
 
+    // Tundra-specific data
+    iceBlocks: [],       // Pushable ice blocks for puzzles
+    fireSources: [],     // Fire/torch elements for melt puzzles
+    meltableBlocks: [],  // Ice walls that can be melted by fire
+    iceZones: [],        // Areas with ice physics
+    iceTiles: [],        // Track ice tile positions
+    forkSections: [],    // Path fork data for auto-scroll stages
+    pathForks: [],       // Alias for forkSections
+    autoScroll: false,
+    autoScrollSpeed: 0,
+    puzzleElements: [],  // Generic puzzle element tracking
+
     loadStage(stageId) {
         this.currentStageId = stageId;
         this.movingPlatforms = [];
@@ -53,6 +65,17 @@ const Level = {
         this.mirrors = [];
         this.darkZones = [];
         this.isDark = false;
+        // Tundra reset
+        this.iceBlocks = [];
+        this.fireSources = [];
+        this.meltableBlocks = [];
+        this.iceZones = [];
+        this.iceTiles = [];
+        this.forkSections = [];
+        this.pathForks = [];
+        this.autoScroll = false;
+        this.autoScrollSpeed = 0;
+        this.puzzleElements = [];
 
         switch (stageId) {
             case '1-1': this._buildStage1_1(); break;
@@ -61,6 +84,9 @@ const Level = {
             case '2-1': this._buildStage2_1(); break;
             case '2-2': this._buildStage2_2(); break;
             case '2-3': this._buildStage2_3(); break;
+            case '3-1': this._buildStage3_1(); break;
+            case '3-2': this._buildStage3_2(); break;
+            case '3-3': this._buildStage3_3(); break;
             default: this._buildStage1_1(); break;
         }
     },
@@ -1207,7 +1233,7 @@ const Level = {
 
     isSolid(col, row) {
         const t = this.getTile(col, row);
-        return t === TILE_SOLID || t === TILE_BREAKABLE || t === TILE_CRUMBLE || t === TILE_GATE;
+        return t === TILE_SOLID || t === TILE_BREAKABLE || t === TILE_CRUMBLE || t === TILE_GATE || t === TILE_ICE;
     },
 
     // =============================================
@@ -1278,5 +1304,611 @@ const Level = {
                 }
             }
         }
+    },
+
+    // =============================================
+    // TUNDRA MECHANICS
+    // =============================================
+
+    updateIceBlocks() {
+        for (const block of this.iceBlocks) {
+            if (block.melted || !block.sliding) continue;
+
+            // Slide until hitting wall or obstacle
+            const nextX = block.x + block.vx;
+            const col = block.vx > 0
+                ? Math.floor((nextX + 31) / TILE_SIZE)
+                : Math.floor(nextX / TILE_SIZE);
+            const row = Math.floor(block.y / TILE_SIZE);
+
+            const tile = this.getTile(col, row);
+            if (tile === TILE_SOLID || tile === TILE_ICE || tile === TILE_BREAKABLE) {
+                // Stop at wall
+                block.vx = 0;
+                block.sliding = false;
+                block.x = block.vx > 0
+                    ? col * TILE_SIZE - 32
+                    : (col + 1) * TILE_SIZE;
+            } else {
+                block.x = nextX;
+            }
+
+            // Check if block collided with another ice block
+            for (const other of this.iceBlocks) {
+                if (other === block || other.melted) continue;
+                if (Math.abs(block.x - other.x) < 30 && Math.abs(block.y - other.y) < 30) {
+                    block.sliding = false;
+                    block.vx = 0;
+                    break;
+                }
+            }
+        }
+    },
+
+    pushIceBlock(block, direction) {
+        if (block.sliding || block.melted) return;
+        block.sliding = true;
+        block.vx = direction * 3; // slide speed
+    },
+
+    updateMeltableBlocks() {
+        for (const block of this.meltableBlocks) {
+            if (block.melted) continue;
+
+            // Check proximity to fire sources
+            for (const fire of this.fireSources) {
+                const dx = block.x - fire.x;
+                const dy = block.y - fire.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < 80) {
+                    block.health--;
+                    if (block.health <= 0) {
+                        block.melted = true;
+                        // Clear the tile
+                        const col = Math.floor(block.x / TILE_SIZE);
+                        const row = Math.floor(block.y / TILE_SIZE);
+                        this.setTile(col, row, TILE_EMPTY);
+                        Particles.spawnBlockBreak(col, row);
+                    }
+                }
+            }
+
+            // Check proximity to lured fire enemies (fire sources can also be moved)
+            for (const fire of this.fireSources) {
+                if (fire.lured) {
+                    const dx = block.x - fire.x;
+                    const dy = block.y - fire.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 60) {
+                        block.health -= 2;
+                        if (block.health <= 0) {
+                            block.melted = true;
+                            const col = Math.floor(block.x / TILE_SIZE);
+                            const row = Math.floor(block.y / TILE_SIZE);
+                            this.setTile(col, row, TILE_EMPTY);
+                            Particles.spawnBlockBreak(col, row);
+                        }
+                    }
+                }
+            }
+        }
+    },
+
+    // Helper to place ICE tiles and track them
+    _placeIce(c1, c2, r1, r2) {
+        for (let r = r1; r <= r2; r++) {
+            for (let c = c1; c <= c2; c++) {
+                if (r >= 0 && r < this.height && c >= 0 && c < this.width) {
+                    this.tiles[r][c] = TILE_ICE;
+                    this.iceTiles.push({ x: c, y: r });
+                }
+            }
+        }
+    },
+
+    // =============================================
+    // STAGE 3-1: FROZEN LAKE (Ice physics intro, 120 tiles)
+    // =============================================
+    _buildStage3_1() {
+        const W = 120;
+        const H = 20;
+        this._initGrid(W, H);
+        this.name = 'Frozen Lake';
+        this.id = '3-1';
+
+        // Ground floor (rows 17-19) — mostly ice in this stage
+        this._fill(0, W - 1, 17, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 5, 16, TILE_SOLID);
+
+        // SECTION A: Starting area with normal ground (cols 1-12)
+        // Flat solid ground, gentle intro
+
+        // SECTION B: First ice lake (cols 13-25) — ice floor
+        this._placeIce(13, 25, 17, 17);
+
+        // Small gap (cols 18-19)
+        this._fill(18, 19, 17, H - 1, TILE_EMPTY);
+
+        // One-way platform over gap
+        this._fill(17, 20, 14, 14, TILE_ONE_WAY);
+
+        // Elevated platforms
+        this._fill(22, 25, 13, 13, TILE_ONE_WAY);
+
+        // SECTION C: Mixed terrain with enemies (cols 26-40)
+        this._fill(28, 32, 14, 14, TILE_SOLID);
+        this._placeIce(33, 38, 17, 17);
+
+        // Hazard pit (cols 35-36)
+        this._fill(35, 36, 17, H - 1, TILE_EMPTY);
+        this.tiles[17][35] = TILE_HAZARD;
+        this.tiles[17][36] = TILE_HAZARD;
+
+        // Platforms over hazard
+        this._fill(34, 37, 14, 14, TILE_ONE_WAY);
+
+        // SECTION D: Ice physics challenge (cols 41-55) — large ice surface
+        this._placeIce(41, 55, 17, 17);
+
+        // Elevated ice platform
+        this._placeIce(44, 48, 13, 13);
+
+        // Breakable blocks
+        this._fill(50, 51, 14, 16, TILE_BREAKABLE);
+
+        // SECTION E: Fire-lure puzzle (cols 56-68)
+        this._fill(56, 68, 17, H - 1, TILE_SOLID);
+
+        // Meltable ice wall blocking path
+        this.tiles[15][62] = TILE_ICE;
+        this.tiles[16][62] = TILE_ICE;
+        this.meltableBlocks.push(
+            { x: 62 * TILE_SIZE, y: 15 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
+            { x: 62 * TILE_SIZE, y: 16 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' }
+        );
+        this.puzzleElements.push(
+            { type: 'meltable_ice', x: 62, y: 15 },
+            { type: 'meltable_ice', x: 62, y: 16 }
+        );
+
+        // Fire source (torch)
+        this.fireSources.push(
+            { x: 58 * TILE_SIZE, y: 14 * TILE_SIZE, type: 'torch', lured: false }
+        );
+        this.puzzleElements.push(
+            { type: 'torch', x: 58, y: 14 },
+            { type: 'fire', x: 58, y: 14 },
+            { type: 'fire_lure', x: 58, y: 14 }
+        );
+
+        // Platforms in puzzle area
+        this._fill(57, 60, 14, 14, TILE_SOLID);
+        this._fill(63, 68, 14, 14, TILE_SOLID);
+
+        // SECTION F: Vertical climb (cols 69-78)
+        this._fill(69, 72, 14, 14, TILE_SOLID);
+        this._fill(74, 77, 11, 11, TILE_ONE_WAY);
+        this._fill(69, 72, 8, 8, TILE_SOLID);
+        this._placeIce(74, 78, 17, 17);
+
+        // SECTION G: Pre-boss area (cols 79-90)
+        this._fill(79, 85, 15, 15, TILE_SOLID);
+        this._placeIce(86, 90, 17, 17);
+        this._fill(87, 90, 13, 13, TILE_ONE_WAY);
+
+        // =====================
+        // BOSS ARENA (cols 91-119)
+        // =====================
+        this.bossArenaX = 91 * TILE_SIZE;
+        // Arena walls
+        this._fill(91, 91, 5, 16, TILE_SOLID);
+        this._fill(119, 119, 5, 16, TILE_SOLID);
+        // Arena ceiling
+        this._fill(91, 119, 5, 5, TILE_SOLID);
+        // Arena floor — ice!
+        this._placeIce(91, 119, 17, 17);
+        this._fill(91, 119, 18, H - 1, TILE_SOLID);
+        // Arena platforms (tiered for boss fight)
+        this._fill(95, 99, 13, 13, TILE_ONE_WAY);
+        this._fill(107, 111, 13, 13, TILE_ONE_WAY);
+        this._fill(100, 105, 10, 10, TILE_ONE_WAY);
+
+        // Boss data
+        this.bossData = {
+            type: 'frost_bear',
+            spawnX: 108 * TILE_SIZE,
+            spawnY: 13 * TILE_SIZE,
+        };
+
+        // Exit after boss
+        this.exitX = 117 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        // Player spawn
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 15 * TILE_SIZE;
+
+        // Enemy spawns (Frost Imps and Ice Golems)
+        this.enemySpawns = [
+            { type: 'frost_imp', x: 15 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'ice_golem', x: 30 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'frost_imp', x: 42 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'ice_golem', x: 52 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'frost_imp', x: 65 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'ice_golem', x: 80 * TILE_SIZE, y: 13 * TILE_SIZE },
+        ];
+
+        // Coins (20 total)
+        const coinSpots = [
+            [3,15],[5,15],[7,15],        // Starting area
+            [14,15],[16,15],             // First ice
+            [18,12],[23,11],             // Above platforms
+            [29,12],[31,12],             // Mid-section
+            [37,12],[39,15],             // Mixed terrain
+            [43,15],[45,11],[47,11],     // Ice challenge
+            [53,15],[55,15],             // Before puzzle
+            [60,12],[66,12],             // Puzzle area
+            [76,9],[83,13],              // Pre-boss
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups (2)
+        this.healthPositions = [
+            { x: 40 * TILE_SIZE + 8, y: 15 * TILE_SIZE },
+            { x: 75 * TILE_SIZE + 8, y: 15 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 3-2: CRYSTAL CAVERNS (Ice block puzzles, 135 tiles)
+    // =============================================
+    _buildStage3_2() {
+        const W = 135;
+        const H = 22;
+        this._initGrid(W, H);
+        this.name = 'Crystal Caverns';
+        this.id = '3-2';
+
+        // Ground floor (rows 19-21)
+        this._fill(0, W - 1, 19, H - 1, TILE_SOLID);
+
+        // Ceiling (cavern roof, rows 0-2)
+        this._fill(0, W - 1, 0, 2, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 3, 18, TILE_SOLID);
+
+        // SECTION A: Cavern entrance (cols 1-12)
+        // Crystal formations on ceiling
+        this.tiles[3][5] = TILE_SOLID;
+        this.tiles[3][6] = TILE_SOLID;
+        this.tiles[4][5] = TILE_SOLID;
+        this.tiles[3][10] = TILE_SOLID;
+        this.tiles[4][10] = TILE_SOLID;
+
+        // SECTION B: First ice block puzzle (cols 13-28)
+        this._placeIce(13, 28, 19, 19);
+        // Ice block that can be pushed
+        this.iceBlocks.push(
+            { x: 18 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' }
+        );
+        // Wall the block needs to hit
+        this._fill(25, 25, 15, 18, TILE_SOLID);
+        // Platform above that needs block as step
+        this._fill(26, 30, 14, 14, TILE_SOLID);
+        // Gap that block fills
+        this._fill(23, 24, 19, H - 1, TILE_EMPTY);
+
+        // SECTION C: Crystal chamber (cols 29-45)
+        this._fill(29, 34, 16, 16, TILE_SOLID);
+        this._fill(36, 40, 13, 13, TILE_ONE_WAY);
+        this._fill(41, 45, 16, 16, TILE_SOLID);
+
+        // Crystal stalactites
+        this._fill(33, 33, 3, 6, TILE_SOLID);
+        this._fill(38, 38, 3, 5, TILE_SOLID);
+        this._fill(43, 43, 3, 7, TILE_SOLID);
+
+        // SECTION D: Second ice block puzzle (cols 46-62)
+        this._placeIce(46, 62, 19, 19);
+        // Multiple ice blocks for puzzle
+        this.iceBlocks.push(
+            { x: 50 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' },
+            { x: 56 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' }
+        );
+        // Walls and gaps
+        this._fill(54, 54, 14, 18, TILE_SOLID);
+        this._fill(60, 60, 15, 18, TILE_SOLID);
+        this._fill(48, 49, 19, H - 1, TILE_EMPTY);
+
+        // SECTION E: Vertical crystal shaft (cols 63-72)
+        this._fill(63, 66, 16, 16, TILE_SOLID);
+        this._fill(68, 71, 12, 12, TILE_ONE_WAY);
+        this._fill(63, 66, 8, 8, TILE_SOLID);
+        this._fill(68, 72, 19, H - 1, TILE_SOLID);
+
+        // Bouncing crystal
+        this.tiles[19][65] = TILE_BOUNCE;
+        this.tiles[19][66] = TILE_BOUNCE;
+
+        // SECTION F: Deep cavern (cols 73-88)
+        this._fill(73, 78, 15, 15, TILE_SOLID);
+        this._placeIce(79, 85, 19, 19);
+        this._fill(83, 88, 13, 13, TILE_ONE_WAY);
+
+        // Crumbling platforms
+        this.tiles[11][76] = TILE_CRUMBLE;
+        this.tiles[11][77] = TILE_CRUMBLE;
+        this.tiles[11][78] = TILE_CRUMBLE;
+
+        // Hazards
+        this.tiles[18][80] = TILE_HAZARD;
+        this.tiles[18][81] = TILE_HAZARD;
+
+        // SECTION G: Pre-boss crystal gallery (cols 89-104)
+        this._fill(89, 95, 16, 16, TILE_SOLID);
+        this._fill(96, 100, 13, 13, TILE_ONE_WAY);
+        this._fill(101, 104, 16, 16, TILE_SOLID);
+        this._placeIce(97, 104, 19, 19);
+
+        // =====================
+        // BOSS ARENA (cols 105-134)
+        // =====================
+        this.bossArenaX = 105 * TILE_SIZE;
+        // Arena walls
+        this._fill(105, 105, 3, 18, TILE_SOLID);
+        this._fill(134, 134, 3, 18, TILE_SOLID);
+        // Arena ceiling
+        this._fill(105, 134, 2, 3, TILE_SOLID);
+        // Arena floor
+        this._fill(105, 134, 19, H - 1, TILE_SOLID);
+        // Boss platforms (crystal pillars)
+        this._fill(110, 113, 14, 14, TILE_ONE_WAY);
+        this._fill(118, 122, 11, 11, TILE_ONE_WAY);
+        this._fill(125, 129, 14, 14, TILE_ONE_WAY);
+        this._fill(115, 120, 7, 7, TILE_ONE_WAY);
+
+        // Boss data
+        this.bossData = {
+            type: 'crystal_witch',
+            spawnX: 120 * TILE_SIZE,
+            spawnY: 8 * TILE_SIZE,
+        };
+
+        // Exit after boss
+        this.exitX = 132 * TILE_SIZE;
+        this.exitY = 18 * TILE_SIZE;
+
+        // Player spawn
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 17 * TILE_SIZE;
+
+        // Enemy spawns (mixed types)
+        this.enemySpawns = [
+            { type: 'frost_imp', x: 10 * TILE_SIZE, y: 16 * TILE_SIZE },
+            { type: 'ice_golem', x: 20 * TILE_SIZE, y: 16 * TILE_SIZE },
+            { type: 'snow_owl', x: 35 * TILE_SIZE, y: 8 * TILE_SIZE },
+            { type: 'frost_imp', x: 48 * TILE_SIZE, y: 16 * TILE_SIZE },
+            { type: 'ice_golem', x: 58 * TILE_SIZE, y: 16 * TILE_SIZE },
+            { type: 'snow_owl', x: 70 * TILE_SIZE, y: 6 * TILE_SIZE },
+            { type: 'frost_imp', x: 82 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'ice_golem', x: 95 * TILE_SIZE, y: 14 * TILE_SIZE },
+        ];
+
+        // Coins (24 total)
+        const coinSpots = [
+            [3,17],[5,17],[8,17],         // Entrance
+            [14,17],[16,17],[20,15],       // First puzzle
+            [27,12],[30,14],[33,14],       // Crystal chamber
+            [37,11],[40,11],[44,14],       // Chamber cont.
+            [49,17],[52,15],[55,15],       // Second puzzle
+            [59,17],[64,14],[69,10],       // Crystal shaft
+            [72,10],[75,13],[80,17],       // Deep cavern
+            [85,11],[90,14],[100,11],      // Pre-boss
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups (2)
+        this.healthPositions = [
+            { x: 42 * TILE_SIZE + 8, y: 17 * TILE_SIZE },
+            { x: 88 * TILE_SIZE + 8, y: 17 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 3-3: AVALANCHE PEAK (Auto-scroll + path forks, 165 tiles)
+    // =============================================
+    _buildStage3_3() {
+        const W = 165;
+        const H = 20;
+        this._initGrid(W, H);
+        this.name = 'Avalanche Peak';
+        this.id = '3-3';
+        this.autoScroll = true;
+        this.autoScrollSpeed = 1.2;
+
+        // Ground floor
+        this._fill(0, W - 1, 17, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 5, 16, TILE_SOLID);
+
+        // SECTION A: Starting area (cols 1-12) — safe zone before scroll starts
+        this._placeIce(5, 12, 17, 17);
+
+        // SECTION B: First platforming section (cols 13-30)
+        this._fill(13, 16, 14, 14, TILE_SOLID);
+        this._placeIce(17, 22, 17, 17);
+        this._fill(23, 26, 12, 12, TILE_ONE_WAY);
+        this._fill(27, 30, 15, 15, TILE_SOLID);
+
+        // Gap
+        this._fill(20, 21, 17, H - 1, TILE_EMPTY);
+
+        // SECTION C: FORK 1 — Upper and lower path (cols 31-50)
+        // Define fork section for tests
+        this.forkSections.push({ startCol: 31, endCol: 50, type: 'split' });
+        this.pathForks.push({ startCol: 31, endCol: 50, type: 'split' });
+
+        // UPPER PATH (rows 6-10)
+        this._fill(31, 35, 9, 9, TILE_ONE_WAY);
+        this._fill(37, 41, 7, 7, TILE_ONE_WAY);
+        this._fill(43, 47, 9, 9, TILE_ONE_WAY);
+
+        // LOWER PATH (rows 14-17)
+        this._placeIce(31, 36, 15, 15);
+        this._fill(38, 42, 15, 15, TILE_SOLID);
+        this._placeIce(44, 50, 15, 15);
+
+        // Divider between paths
+        this._fill(31, 50, 11, 11, TILE_SOLID);
+
+        // Rejoin at col 50
+        this._fill(48, 52, 14, 14, TILE_SOLID);
+
+        // SECTION D: Hazard gauntlet (cols 51-65)
+        this._fill(51, 55, 15, 15, TILE_SOLID);
+        this._fill(57, 60, 13, 13, TILE_ONE_WAY);
+        this._placeIce(61, 65, 17, 17);
+
+        // Hazards
+        this.tiles[16][53] = TILE_HAZARD;
+        this.tiles[16][54] = TILE_HAZARD;
+        this.tiles[16][63] = TILE_HAZARD;
+        this.tiles[16][64] = TILE_HAZARD;
+
+        // SECTION E: FORK 2 — Upper and lower path (cols 66-85)
+        this.forkSections.push({ startCol: 66, endCol: 85, type: 'split' });
+        this.pathForks.push({ startCol: 66, endCol: 85, type: 'split' });
+
+        // UPPER PATH
+        this._fill(66, 70, 8, 8, TILE_ONE_WAY);
+        this._fill(72, 76, 6, 6, TILE_ONE_WAY);
+        this._fill(78, 82, 8, 8, TILE_ONE_WAY);
+
+        // LOWER PATH
+        this._fill(66, 70, 15, 15, TILE_SOLID);
+        this._placeIce(72, 76, 15, 15);
+        this._fill(78, 85, 15, 15, TILE_SOLID);
+
+        // Divider
+        this._fill(66, 85, 11, 11, TILE_SOLID);
+
+        // Rejoin
+        this._fill(83, 88, 13, 13, TILE_SOLID);
+
+        // SECTION F: Mountain ascent (cols 86-105)
+        this._fill(86, 90, 15, 15, TILE_SOLID);
+        this._fill(92, 95, 13, 13, TILE_ONE_WAY);
+        this._fill(97, 100, 11, 11, TILE_ONE_WAY);
+        this._fill(101, 105, 14, 14, TILE_SOLID);
+
+        // Bouncy ice crystals
+        this.tiles[17][94] = TILE_BOUNCE;
+        this.tiles[17][95] = TILE_BOUNCE;
+
+        // SECTION G: FORK 3 (cols 106-125)
+        this.forkSections.push({ startCol: 106, endCol: 125, type: 'split' });
+        this.pathForks.push({ startCol: 106, endCol: 125, type: 'split' });
+
+        // UPPER PATH
+        this._fill(106, 110, 8, 8, TILE_ONE_WAY);
+        this._placeIce(112, 116, 7, 7);
+        this._fill(118, 122, 8, 8, TILE_ONE_WAY);
+
+        // LOWER PATH
+        this._placeIce(106, 112, 15, 15);
+        this._fill(114, 118, 15, 15, TILE_SOLID);
+        this._placeIce(120, 125, 15, 15);
+
+        // Divider
+        this._fill(106, 125, 11, 11, TILE_SOLID);
+
+        // Rejoin
+        this._fill(123, 128, 13, 13, TILE_SOLID);
+
+        // SECTION H: Pre-boss sprint (cols 126-134)
+        this._fill(126, 130, 15, 15, TILE_SOLID);
+        this._placeIce(131, 134, 17, 17);
+
+        // =====================
+        // BOSS ARENA (cols 135-164)
+        // =====================
+        this.bossArenaX = 135 * TILE_SIZE;
+        // Arena walls
+        this._fill(135, 135, 3, 16, TILE_SOLID);
+        this._fill(164, 164, 3, 16, TILE_SOLID);
+        // Arena ceiling
+        this._fill(135, 164, 3, 3, TILE_SOLID);
+        // Arena floor
+        this._fill(135, 164, 17, H - 1, TILE_SOLID);
+        // Tiered platforms (multiple heights for Yeti Monarch fight)
+        this._fill(139, 143, 14, 14, TILE_ONE_WAY);
+        this._fill(147, 151, 11, 11, TILE_ONE_WAY);
+        this._fill(153, 157, 14, 14, TILE_ONE_WAY);
+        this._fill(143, 148, 8, 8, TILE_ONE_WAY);
+        this._fill(155, 160, 8, 8, TILE_ONE_WAY);
+
+        // Boss data
+        this.bossData = {
+            type: 'yeti_monarch',
+            spawnX: 155 * TILE_SIZE,
+            spawnY: 12 * TILE_SIZE,
+        };
+
+        // Exit after boss
+        this.exitX = 162 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        // Player spawn
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 15 * TILE_SIZE;
+
+        // Enemy spawns (all 3 tundra enemy types)
+        this.enemySpawns = [
+            { type: 'frost_imp', x: 8 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'ice_golem', x: 25 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'snow_owl', x: 40 * TILE_SIZE, y: 6 * TILE_SIZE },
+            { type: 'frost_imp', x: 55 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'ice_golem', x: 70 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'snow_owl', x: 80 * TILE_SIZE, y: 5 * TILE_SIZE },
+            { type: 'frost_imp', x: 95 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'ice_golem', x: 110 * TILE_SIZE, y: 13 * TILE_SIZE },
+            { type: 'snow_owl', x: 120 * TILE_SIZE, y: 6 * TILE_SIZE },
+        ];
+
+        // Coins (30 total)
+        const coinSpots = [
+            [3,15],[6,15],[9,15],          // Start
+            [14,12],[17,15],[20,10],        // Section B
+            [33,7],[37,5],[46,7],            // Fork 1 upper
+            [32,13],[36,13],[45,13],        // Fork 1 lower
+            [53,13],[57,11],[62,15],        // Gauntlet
+            [68,6],[73,4],[79,6],           // Fork 2 upper
+            [67,13],[74,13],[82,13],        // Fork 2 lower
+            [88,13],[93,11],[99,9],         // Mountain ascent
+            [108,6],[114,5],[120,6],        // Fork 3 upper
+            [109,13],[118,13],[127,13],     // Fork 3 lower + pre-boss
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups (3)
+        this.healthPositions = [
+            { x: 35 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+            { x: 75 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+            { x: 115 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+        ];
     }
 };

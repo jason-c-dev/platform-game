@@ -24,6 +24,7 @@ const TILE_WATER = 10;
 const TILE_WATER_SURFACE = 11;
 const TILE_PRESSURE_PLATE = 12;
 const TILE_GATE = 13;
+const TILE_ICE = 14;
 
 // TILES convenience object for test access
 const TILES = {
@@ -40,7 +41,8 @@ const TILES = {
     WATER: 10,
     WATER_SURFACE: 11,
     PRESSURE_PLATE: 12,
-    GATE: 13
+    GATE: 13,
+    ICE: 14
 };
 
 // Physics
@@ -70,6 +72,10 @@ const WALL_JUMP_VY = -10;
 // Crouch-slide
 const CROUCH_SLIDE_FRICTION = 0.975;
 const CROUCH_SLIDE_MIN_SPEED = 5;
+
+// Ice physics
+const ICE_FRICTION = 0.97;          // Much less friction than ground (0.78)
+const ICE_ACCELERATION = 0.04;      // Much slower direction changes on ice
 
 // Variable jump & assist
 const VARIABLE_JUMP_MULTIPLIER = 0.4;
