@@ -729,7 +729,27 @@ const Renderer = {
 
     _drawOneWayTile(ctx, x, y, s) {
         const world = this._getCurrentWorld();
-        if (world === 1) {
+        if (world === 2) {
+            // Tundra one-way: ice shelf
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.fillRect(x, y, s, 10);
+            ctx.fillStyle = COLORS.tundra.snowWhite;
+            ctx.fillRect(x, y, s, 3);
+            ctx.strokeStyle = COLORS.tundra.deepIce;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(x + 3, y + 5);
+            ctx.lineTo(x + s - 3, y + 6);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+            // Icicle drips
+            ctx.fillStyle = COLORS.tundra.iceBlue;
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(x + 6, y + 10, 2, 5);
+            ctx.fillRect(x + s - 8, y + 10, 2, 4);
+            ctx.globalAlpha = 1.0;
+        } else if (world === 1) {
             // Desert one-way: stone slab
             ctx.fillStyle = COLORS.desert.lightStone;
             ctx.fillRect(x, y, s, 10);
