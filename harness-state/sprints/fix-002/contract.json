@@ -1,0 +1,81 @@
+{
+  "sprintNumber": "fix-002",
+  "name": "Fix Stage 1-1 boss arena entry and boss health bar persistence",
+  "theme": "Fix boss arena layout so player enters from below (not above) and fix boss health bar hiding when player leaves arena",
+  "issueRef": "Fixes #3",
+  "features": ["F1: Boss arena entry funnel", "F2: Boss health bar hide on exit"],
+  "criteria": [
+    {
+      "id": "FIX-002-C01",
+      "category": "arena-layout",
+      "description": "The left wall of the boss arena (col 65) must extend from row 0 down to at least row 13 as solid tiles, preventing the player from wall-jumping above the arena ceiling",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Read src/level.js _buildStage1_1() boss arena section",
+        "Verify col 65 is filled SOLID from row 0 to row 13 (no empty tiles above the ceiling that would let a player climb over)",
+        "Verify the arena ceiling at row 5 (cols 65-84) remains intact"
+      ],
+      "threshold": "Col 65 rows 0-13 are all TILE_SOLID, no gap above ceiling"
+    },
+    {
+      "id": "FIX-002-C02",
+      "category": "arena-layout",
+      "description": "The boss arena has an open entry gap in the left wall at ground level (approximately rows 14-16) that funnels the player DOWN into the arena floor where the Elder Shroomba is",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Read src/level.js _buildStage1_1() boss arena section",
+        "Verify there is an opening in col 65 at approximately rows 14-16 (or similar ground-level rows) that allows the player to walk into the arena at floor level",
+        "Verify the entry is below the arena ceiling (row 5) so the player enters the playable space, not above it"
+      ],
+      "threshold": "Entry gap exists at ground level in col 65, funneling player into arena floor"
+    },
+    {
+      "id": "FIX-002-C03",
+      "category": "arena-layout",
+      "description": "The boss trigger wall-sealing code in states.js still seals the entry gap when the boss fight begins (fills empty tiles in col 65)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Read src/states.js _checkBossArena()",
+        "Verify the wall-sealing loop fills empty tiles in col 65 from row 0 to Level.height - 3",
+        "Confirm that the entry gap (rows 14-16) will be filled with TILE_SOLID when the boss triggers"
+      ],
+      "threshold": "Trigger code seals the entry gap, preventing player from leaving during boss fight"
+    },
+    {
+      "id": "FIX-002-C04",
+      "category": "hud",
+      "description": "The boss health bar (including the 'Elder Shroomba' label) hides when the player is outside the boss arena area",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Read src/hud.js render() method",
+        "Verify that the boss health bar rendering includes a position check — the bar should only render when the player is within the boss arena X bounds (Player.x >= Level.bossArenaX or equivalent)",
+        "Verify that leaving the boss area causes the health bar to disappear"
+      ],
+      "threshold": "Boss health bar is not rendered when player is outside boss arena bounds"
+    },
+    {
+      "id": "FIX-002-C05",
+      "category": "regression",
+      "description": "The game still loads and runs without errors after changes",
+      "testMethod": "playwright",
+      "testSteps": [
+        "Open index.html in a browser",
+        "Verify the canvas element exists and renders",
+        "Verify no JavaScript errors in the console"
+      ],
+      "threshold": "Game loads and renders without JS errors"
+    },
+    {
+      "id": "FIX-002-C06",
+      "category": "regression",
+      "description": "The boss arena right wall and ceiling remain intact (unchanged)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Verify right wall col 84 is still SOLID rows 5-16",
+        "Verify ceiling row 5 cols 65-84 is still SOLID",
+        "Verify floor rows 17-19 cols 65-84 is still SOLID"
+      ],
+      "threshold": "Right wall, ceiling, and floor are unchanged"
+    }
+  ]
+}

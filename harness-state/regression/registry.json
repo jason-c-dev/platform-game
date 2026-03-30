@@ -422,6 +422,17 @@
         "FIX-001-C04"
       ],
       "contractPath": "sprints/fix-001/contract.json"
+    },
+    "fix-002": {
+      "criteria": [
+        "FIX-002-C01",
+        "FIX-002-C02",
+        "FIX-002-C03",
+        "FIX-002-C04",
+        "FIX-002-C05",
+        "FIX-002-C06"
+      ],
+      "contractPath": "sprints/fix-002/contract.json"
     }
   },
   "lastFullRun": null
