@@ -970,7 +970,7 @@ const Level = {
         this.bossData = {
             type: 'hydra_cactus',
             spawnX: 134 * TILE_SIZE,
-            spawnY: 10 * TILE_SIZE,
+            spawnY: 16 * TILE_SIZE - 56,  // Position so bottom sits near ground
         };
 
         this.exitX = 142 * TILE_SIZE;

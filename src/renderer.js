@@ -18,7 +18,7 @@ const Renderer = {
 
     // Dark mode rendering: spotlight for dark rooms
     darkMode: false,
-    drawDarkOverlay: null,
+    drawDarkOverlay(ctx) { this.renderDarkOverlay(ctx); },
     _heatShimmerTimer: 0,
 
     clear() {
