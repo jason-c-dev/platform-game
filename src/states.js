@@ -1,12 +1,13 @@
 // ============================================================
 // states.js — Game State Machine
-// States: TITLE, CONTROLS, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE
+// States: TITLE, CONTROLS, WORLD_MAP, STAGE, PAUSED, GAME_OVER, STAGE_COMPLETE
 // ============================================================
 
 const GameState = {
     // State constants
     TITLE: 'TITLE',
     CONTROLS: 'CONTROLS',
+    WORLD_MAP: 'WORLD_MAP',
     STAGE: 'STAGE',
     PAUSED: 'PAUSED',
     GAME_OVER: 'GAME_OVER',
@@ -18,7 +19,8 @@ const GameState = {
 
     // Stage info
     stageName: 'Test Stage',
-    stageTime: 0,       // seconds elapsed in current stage
+    currentStageId: '1-1',   // Current stage ID for save system
+    stageTime: 0,            // seconds elapsed in current stage
     coinsCollected: 0,
 
     // Transition lock — blocks input during iris-wipe
@@ -28,6 +30,7 @@ const GameState = {
         this.current = this.TITLE;
         this.previous = null;
         this.stageName = 'Test Stage';
+        this.currentStageId = '1-1';
         this.stageTime = 0;
         this.coinsCollected = 0;
         this.transitioning = false;
@@ -69,6 +72,10 @@ const GameState = {
         Menu.initTitle();
     },
 
+    setupWorldMap() {
+        WorldMap.init();
+    },
+
     setupStage() {
         Level.init();
         Particles.init();
@@ -82,6 +89,11 @@ const GameState = {
         Camera.y = Math.max(0, Math.min(Camera.y, maxY));
         this.stageTime = 0;
         this.coinsCollected = 0;
+        // Initialize collectibles for this stage
+        Collectibles.init(
+            Level.coinPositions || [],
+            Level.healthPositions || []
+        );
     },
 
     restartStage() {
@@ -97,6 +109,11 @@ const GameState = {
         Camera.y = Math.max(0, Math.min(Camera.y, maxY));
         this.stageTime = 0;
         this.coinsCollected = 0;
+        // Re-initialize collectibles
+        Collectibles.init(
+            Level.coinPositions || [],
+            Level.healthPositions || []
+        );
     },
 
     setupGameOver() {
@@ -104,7 +121,13 @@ const GameState = {
     },
 
     setupStageComplete() {
-        Menu.initStageComplete(this.stageTime, this.coinsCollected);
+        // Get total coins for this stage
+        const stageInfo = WorldMap.STAGES.find(s => s.id === this.currentStageId);
+        const totalCoins = stageInfo ? stageInfo.totalCoins : Collectibles.totalCoins;
+        Menu.initStageComplete(this.stageTime, this.coinsCollected, totalCoins);
+
+        // Record completion in save system
+        WorldMap.completeStage(this.currentStageId, this.stageTime, this.coinsCollected);
     },
 
     // =============================================
@@ -122,6 +145,9 @@ const GameState = {
                 break;
             case this.CONTROLS:
                 this._updateControls();
+                break;
+            case this.WORLD_MAP:
+                this._updateWorldMap();
                 break;
             case this.STAGE:
                 this._updateStage();
@@ -148,6 +174,9 @@ const GameState = {
                 break;
             case this.CONTROLS:
                 Menu.renderControls(ctx);
+                break;
+            case this.WORLD_MAP:
+                WorldMap.render(ctx);
                 break;
             case this.STAGE:
                 this._renderStage(ctx);
@@ -188,6 +217,12 @@ const GameState = {
         Menu.updateControls();
     },
 
+    _updateWorldMap() {
+        if (this.transitioning) return;
+        Input.update();
+        WorldMap.update();
+    },
+
     _updateStage() {
         if (this.transitioning) return;
 
@@ -206,6 +241,7 @@ const GameState = {
         // Normal gameplay update
         Level.updateMovingPlatforms();
         Player.update();
+        Collectibles.update();
         Particles.update();
         Camera.update(Player);
 
@@ -242,6 +278,7 @@ const GameState = {
         Renderer.renderParallax();
         Renderer.renderTiles();
         Renderer.renderMovingPlatforms();
+        Collectibles.render(ctx);
         Renderer.renderPlayer(Player);
         Renderer.renderParticles();
         HUD.render(ctx);

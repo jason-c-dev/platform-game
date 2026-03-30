@@ -15,6 +15,12 @@ const Menu = {
     _titleBgOffset: 0,
     _titleStars: [],
     _titleParticles: [],
+    _titleOptions: [],
+    _titleHasSave: false,
+
+    // New Game confirmation dialog
+    _showNewGameConfirm: false,
+    _confirmSelectedIndex: 0,
 
     // =============================================
     // TITLE SCREEN
@@ -23,6 +29,16 @@ const Menu = {
         this.selectedIndex = 0;
         this.animTimer = 0;
         this._titleBgOffset = 0;
+        this._showNewGameConfirm = false;
+        this._confirmSelectedIndex = 0;
+
+        // Build title menu options based on save data
+        this._titleHasSave = SaveSystem.hasSaveData();
+        if (this._titleHasSave) {
+            this._titleOptions = ['Continue', 'New Game', 'Controls'];
+        } else {
+            this._titleOptions = ['New Game', 'Controls'];
+        }
 
         // Generate decorative stars for title background
         this._titleStars = [];
@@ -68,17 +84,71 @@ const Menu = {
             if (p.y > CANVAS_HEIGHT + 10) p.y = -10;
         }
 
-        // Handle input
-        if (Input.isJustPressed('Enter')) {
-            // Start game
-            GameState.transitionTo(GameState.STAGE, () => {
-                GameState.setupStage();
-            });
+        // Handle New Game confirmation dialog
+        if (this._showNewGameConfirm) {
+            this._updateNewGameConfirm();
+            return;
         }
 
-        if (Input.isJustPressed('c') || Input.isJustPressed('C')) {
-            GameState.changeTo(GameState.CONTROLS);
-            this.initControls();
+        // Navigate menu
+        if (Input.isJustPressed('ArrowDown')) {
+            this.selectedIndex = (this.selectedIndex + 1) % this._titleOptions.length;
+        }
+        if (Input.isJustPressed('ArrowUp')) {
+            this.selectedIndex = (this.selectedIndex - 1 + this._titleOptions.length) % this._titleOptions.length;
+        }
+
+        // Handle input
+        if (Input.isJustPressed('Enter')) {
+            const selected = this._titleOptions[this.selectedIndex];
+            if (selected === 'Continue') {
+                // Continue — load save and go to world map
+                GameState.transitionTo(GameState.WORLD_MAP, () => {
+                    GameState.setupWorldMap();
+                });
+            } else if (selected === 'New Game') {
+                if (this._titleHasSave) {
+                    // Show confirmation dialog
+                    this._showNewGameConfirm = true;
+                    this._confirmSelectedIndex = 1; // Default to "No"
+                } else {
+                    // No save data — just start new game
+                    SaveSystem.clearSave();
+                    GameState.transitionTo(GameState.WORLD_MAP, () => {
+                        GameState.setupWorldMap();
+                    });
+                }
+            } else if (selected === 'Controls') {
+                GameState.changeTo(GameState.CONTROLS);
+                this.initControls();
+            }
+        }
+    },
+
+    _updateNewGameConfirm() {
+        if (Input.isJustPressed('ArrowLeft') || Input.isJustPressed('ArrowRight')) {
+            this._confirmSelectedIndex = this._confirmSelectedIndex === 0 ? 1 : 0;
+        }
+        if (Input.isJustPressed('ArrowUp') || Input.isJustPressed('ArrowDown')) {
+            this._confirmSelectedIndex = this._confirmSelectedIndex === 0 ? 1 : 0;
+        }
+
+        if (Input.isJustPressed('Enter')) {
+            if (this._confirmSelectedIndex === 0) {
+                // Yes — clear save and start new
+                SaveSystem.clearSave();
+                this._showNewGameConfirm = false;
+                GameState.transitionTo(GameState.WORLD_MAP, () => {
+                    GameState.setupWorldMap();
+                });
+            } else {
+                // No — cancel
+                this._showNewGameConfirm = false;
+            }
+        }
+
+        if (Input.isJustPressed('Escape')) {
+            this._showNewGameConfirm = false;
         }
     },
 
@@ -138,25 +208,52 @@ const Menu = {
             '14px sans-serif',
             COLORS.steelBlue, COLORS.deepCharcoal, 'center');
 
-        // "Press Enter to Start" — pulsing animation
-        const pulseAlpha = 0.4 + 0.6 * Math.abs(Math.sin(this.animTimer * 2.5));
-        const pulseScale = 1.0 + 0.03 * Math.sin(this.animTimer * 2.5);
-        ctx.save();
-        ctx.globalAlpha = pulseAlpha;
-        ctx.translate(CANVAS_WIDTH / 2, 340);
-        ctx.scale(pulseScale, pulseScale);
-        ctx.translate(-CANVAS_WIDTH / 2, -340);
-        this._drawTextWithOutline(ctx, 'Press Enter to Start',
-            CANVAS_WIDTH / 2, 340,
-            '22px sans-serif',
-            COLORS.softCream, COLORS.deepCharcoal, 'center');
-        ctx.restore();
+        // Menu options
+        const menuStartY = 290;
+        const buttonW = 240;
+        const buttonH = 40;
+        const buttonGap = 8;
 
-        // Controls hint
-        this._drawTextWithOutline(ctx, 'Press C for Controls',
-            CANVAS_WIDTH / 2, 400,
-            '14px sans-serif',
-            COLORS.steelBlue, COLORS.deepCharcoal, 'center');
+        for (let i = 0; i < this._titleOptions.length; i++) {
+            const bx = (CANVAS_WIDTH - buttonW) / 2;
+            const by = menuStartY + i * (buttonH + buttonGap);
+            const selected = i === this.selectedIndex;
+
+            // Button background
+            if (selected) {
+                ctx.fillStyle = '#3D3D54';
+                this._roundRect(ctx, bx, by, buttonW, buttonH, 4);
+                ctx.strokeStyle = COLORS.mutedGold;
+                ctx.lineWidth = 2;
+            } else {
+                ctx.fillStyle = COLORS.warmSlate;
+                this._roundRect(ctx, bx, by, buttonW, buttonH, 4);
+                ctx.strokeStyle = COLORS.mutedGold;
+                ctx.lineWidth = 1;
+            }
+            ctx.beginPath();
+            this._roundRectPath(ctx, bx, by, buttonW, buttonH, 4);
+            ctx.stroke();
+
+            // Selection triangle
+            if (selected) {
+                ctx.fillStyle = COLORS.mutedGold;
+                const triX = bx + 16;
+                const triY = by + buttonH / 2;
+                ctx.beginPath();
+                ctx.moveTo(triX, triY - 6);
+                ctx.lineTo(triX + 8, triY);
+                ctx.lineTo(triX, triY + 6);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // Button text
+            this._drawTextWithOutline(ctx, this._titleOptions[i],
+                bx + buttonW / 2, by + buttonH / 2 + 7,
+                '22px sans-serif',
+                COLORS.softCream, COLORS.deepCharcoal, 'center');
+        }
 
         // Version / credits at bottom
         ctx.globalAlpha = 0.5;
@@ -165,6 +262,98 @@ const Menu = {
             '12px sans-serif',
             COLORS.steelBlue, COLORS.deepCharcoal, 'center');
         ctx.globalAlpha = 1.0;
+
+        // New Game confirmation dialog
+        if (this._showNewGameConfirm) {
+            this._renderNewGameConfirm(ctx);
+        }
+    },
+
+    _renderNewGameConfirm(ctx) {
+        // Dark overlay
+        ctx.fillStyle = 'rgba(26, 26, 46, 0.85)';
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Dialog box (320x180, centered)
+        const dw = 320;
+        const dh = 180;
+        const dx = (CANVAS_WIDTH - dw) / 2;
+        const dy = (CANVAS_HEIGHT - dh) / 2;
+
+        // Background
+        ctx.fillStyle = 'rgba(26, 26, 46, 0.95)';
+        ctx.beginPath();
+        this._roundRectPath(ctx, dx, dy, dw, dh, 8);
+        ctx.fill();
+
+        // Border
+        ctx.strokeStyle = COLORS.mutedGold;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        this._roundRectPath(ctx, dx, dy, dw, dh, 8);
+        ctx.stroke();
+
+        // Title
+        this._drawTextWithOutline(ctx, 'Start New Game?',
+            CANVAS_WIDTH / 2, dy + 40,
+            'bold 22px sans-serif',
+            COLORS.softCream, COLORS.deepCharcoal, 'center');
+
+        // Message
+        this._drawTextWithOutline(ctx, 'This will erase your',
+            CANVAS_WIDTH / 2, dy + 75,
+            '14px sans-serif',
+            COLORS.steelBlue, COLORS.deepCharcoal, 'center');
+        this._drawTextWithOutline(ctx, 'save data.',
+            CANVAS_WIDTH / 2, dy + 95,
+            '14px sans-serif',
+            COLORS.steelBlue, COLORS.deepCharcoal, 'center');
+
+        // Yes/No buttons
+        const btnW = 100;
+        const btnH = 36;
+        const btnGap = 32;
+        const totalBtnW = btnW * 2 + btnGap;
+        const btnStartX = dx + (dw - totalBtnW) / 2;
+        const btnY = dy + dh - 50;
+
+        const labels = ['Yes', 'No'];
+        for (let i = 0; i < 2; i++) {
+            const bx = btnStartX + i * (btnW + btnGap);
+            const selected = i === this._confirmSelectedIndex;
+
+            if (selected) {
+                ctx.fillStyle = '#3D3D54';
+                this._roundRect(ctx, bx, btnY, btnW, btnH, 4);
+                ctx.strokeStyle = COLORS.mutedGold;
+                ctx.lineWidth = 2;
+            } else {
+                ctx.fillStyle = COLORS.warmSlate;
+                this._roundRect(ctx, bx, btnY, btnW, btnH, 4);
+                ctx.strokeStyle = COLORS.mutedGold;
+                ctx.lineWidth = 1;
+            }
+            ctx.beginPath();
+            this._roundRectPath(ctx, bx, btnY, btnW, btnH, 4);
+            ctx.stroke();
+
+            if (selected) {
+                ctx.fillStyle = COLORS.mutedGold;
+                const triX = bx + 10;
+                const triY = btnY + btnH / 2;
+                ctx.beginPath();
+                ctx.moveTo(triX, triY - 5);
+                ctx.lineTo(triX + 7, triY);
+                ctx.lineTo(triX, triY + 5);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            this._drawTextWithOutline(ctx, labels[i],
+                bx + btnW / 2, btnY + btnH / 2 + 6,
+                '22px sans-serif',
+                COLORS.softCream, COLORS.deepCharcoal, 'center');
+        }
     },
 
     _renderTitleMountains(ctx) {
@@ -318,7 +507,7 @@ const Menu = {
     // =============================================
     // PAUSE MENU
     // =============================================
-    _pauseOptions: ['Resume', 'Restart Stage', 'Quit to Title'],
+    _pauseOptions: ['Resume', 'Restart Stage', 'Return to World Map', 'Quit to Title'],
 
     initPause() {
         this.selectedIndex = 0;
@@ -352,7 +541,12 @@ const Menu = {
                         GameState.restartStage();
                     });
                     break;
-                case 2: // Quit to Title
+                case 2: // Return to World Map
+                    GameState.transitionTo(GameState.WORLD_MAP, () => {
+                        GameState.setupWorldMap();
+                    });
+                    break;
+                case 3: // Quit to Title
                     GameState.transitionTo(GameState.TITLE, () => {
                         GameState.setupTitle();
                     });
@@ -459,19 +653,22 @@ const Menu = {
     _stageCompleteOptions: ['Continue'],
     _completionTime: 0,
     _completionCoins: 0,
+    _completionTotalCoins: 0,
 
-    initStageComplete(time, coins) {
+    initStageComplete(time, coins, totalCoins) {
         this.selectedIndex = 0;
         this._completionTime = time;
         this._completionCoins = coins;
+        this._completionTotalCoins = totalCoins || 0;
     },
 
     updateStageComplete() {
         this.animTimer += 1 / 60;
 
         if (Input.isJustPressed('Enter')) {
-            GameState.transitionTo(GameState.TITLE, () => {
-                GameState.setupTitle();
+            // Return to world map (not title)
+            GameState.transitionTo(GameState.WORLD_MAP, () => {
+                GameState.setupWorldMap();
             });
         }
     },
@@ -504,7 +701,7 @@ const Menu = {
         // Time
         const minutes = Math.floor(this._completionTime / 60);
         const seconds = Math.floor(this._completionTime % 60);
-        const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
 
         this._drawTextWithOutline(ctx, 'Time',
             panelX + 40, panelY + 40,
@@ -515,12 +712,13 @@ const Menu = {
             'bold 22px "Courier New", monospace',
             COLORS.softCream, COLORS.deepCharcoal, 'right');
 
-        // Coins
+        // Coins — show collected / total
+        const coinStr = this._completionCoins + ' / ' + this._completionTotalCoins;
         this._drawTextWithOutline(ctx, 'Coins',
             panelX + 40, panelY + 80,
             '14px sans-serif',
             COLORS.steelBlue, COLORS.deepCharcoal, 'left');
-        this._drawTextWithOutline(ctx, String(this._completionCoins),
+        this._drawTextWithOutline(ctx, coinStr,
             panelX + panelW - 40, panelY + 80,
             'bold 22px "Courier New", monospace',
             COLORS.mutedGold, COLORS.deepCharcoal, 'right');
@@ -531,7 +729,7 @@ const Menu = {
             '18px sans-serif',
             COLORS.softCream, COLORS.deepCharcoal, 'center');
 
-        // Continue option
+        // Continue option — goes to world map
         const continueY = panelY + panelH + 20;
         const pulseAlpha = 0.5 + 0.5 * Math.abs(Math.sin(this.animTimer * 2.5));
         ctx.globalAlpha = pulseAlpha;

@@ -189,5 +189,47 @@ const Particles = {
                 shape: 'circle'
             });
         }
+    },
+
+    // Coin collection particles — gold sparkles
+    spawnCoinCollect(x, y) {
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const speed = 1 + Math.random() * 1.5;
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1,
+                gravity: 0.03,
+                size: 2 + Math.random() * 2,
+                color: Math.random() > 0.3 ? COLORS.coinGold : COLORS.coinGlint,
+                life: 0.4,
+                maxLife: 0.4,
+                shrink: true,
+                shape: 'circle'
+            });
+        }
+    },
+
+    // Health collection particles — green sparkles
+    spawnHealthCollect(x, y) {
+        for (let i = 0; i < 6; i++) {
+            const angle = (i / 6) * Math.PI * 2;
+            const speed = 1 + Math.random() * 1.5;
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed - 1,
+                gravity: 0.03,
+                size: 2 + Math.random() * 2,
+                color: Math.random() > 0.5 ? COLORS.mossGreen : '#90EE90',
+                life: 0.4,
+                maxLife: 0.4,
+                shrink: true,
+                shape: 'circle'
+            });
+        }
     }
 };
