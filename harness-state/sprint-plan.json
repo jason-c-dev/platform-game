@@ -1,0 +1,136 @@
+{
+  "sprints": [
+    {
+      "number": 1,
+      "name": "Core Engine",
+      "theme": "Game loop, canvas rendering, tile system, physics, camera with parallax scrolling",
+      "features": [
+        "F1: Game Loop & Renderer",
+        "F2: Tile System & Level Data",
+        "F3: Physics & Collision",
+        "F4: Camera System"
+      ],
+      "dependsOn": [],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 2,
+      "name": "Player Character",
+      "theme": "Full movement vocabulary, combat mechanics, and animated Canvas-drawn sprite",
+      "features": [
+        "F5: Player Movement",
+        "F6: Player Combat",
+        "F7: Player Animation & Visuals"
+      ],
+      "dependsOn": [1],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 3,
+      "name": "Game Structure & UI",
+      "theme": "State machine, title screen, pause menu, HUD, game over, and screen transitions",
+      "features": [
+        "F8: Game State Machine",
+        "F9: HUD",
+        "F10: Menu System"
+      ],
+      "dependsOn": [2],
+      "estimatedComplexity": "medium"
+    },
+    {
+      "number": 4,
+      "name": "World Map & Progression",
+      "theme": "Top-down world map, stage selection, save/load, collectible tracking",
+      "features": [
+        "F11: World Map",
+        "F20: Collectible System",
+        "F21: Save System"
+      ],
+      "dependsOn": [3],
+      "estimatedComplexity": "medium"
+    },
+    {
+      "number": 5,
+      "name": "Enemy & Boss Framework + World 1: Whispering Forest",
+      "theme": "Enemy AI framework, boss fight system, and all 3 Forest stages with enemies, puzzles, and bosses",
+      "features": [
+        "F12: Enemy System Framework",
+        "F13: Boss Fight Framework",
+        "F14: Puzzle Mechanics",
+        "F15: World 1 — Whispering Forest"
+      ],
+      "dependsOn": [4],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 6,
+      "name": "World 2: Scorching Desert",
+      "theme": "Desert stages with quicksand, dark rooms, water/swimming physics, mirror puzzles, and 3 unique bosses",
+      "features": [
+        "F16: World 2 — Scorching Desert"
+      ],
+      "dependsOn": [5],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 7,
+      "name": "World 3: Frozen Tundra",
+      "theme": "Tundra stages with ice physics, auto-scrolling, aurora backgrounds, and 3 unique bosses",
+      "features": [
+        "F17: World 3 — Frozen Tundra"
+      ],
+      "dependsOn": [6],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 8,
+      "name": "World 4: Molten Volcano",
+      "theme": "Volcano stages with lava hazards, chain-swinging, steam vents, multi-phase dragon boss",
+      "features": [
+        "F18: World 4 — Molten Volcano"
+      ],
+      "dependsOn": [7],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 9,
+      "name": "The Citadel & Final Boss",
+      "theme": "Final remix stage combining all worlds, 5-phase final boss, victory screen with stats",
+      "features": [
+        "F19: The Citadel & Final Boss"
+      ],
+      "dependsOn": [8],
+      "estimatedComplexity": "high"
+    },
+    {
+      "number": 10,
+      "name": "Audio System",
+      "theme": "Synthesized sound effects, per-world ambient audio, dynamic boss percussion",
+      "features": [
+        "F22: Synthesized Audio System"
+      ],
+      "dependsOn": [5],
+      "estimatedComplexity": "medium"
+    },
+    {
+      "number": 11,
+      "name": "Visual Effects & Polish",
+      "theme": "Particles, screen shake, hit flash, death animation, boss defeat slow-mo, iris-wipe transitions",
+      "features": [
+        "F23: Visual Effects & Screen Polish"
+      ],
+      "dependsOn": [9],
+      "estimatedComplexity": "medium"
+    },
+    {
+      "number": 12,
+      "name": "Integration, Balance & Performance",
+      "theme": "60fps optimization, game feel verification, full playthrough validation, bug fixes",
+      "features": [
+        "All features — integration and polish pass"
+      ],
+      "dependsOn": [10, 11],
+      "estimatedComplexity": "medium"
+    }
+  ]
+}
