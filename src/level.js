@@ -48,6 +48,20 @@ const Level = {
     autoScrollSpeed: 0,
     puzzleElements: [],  // Generic puzzle element tracking
 
+    // Volcano-specific data
+    lavaLevel: null,         // Rising lava Y position (pixels from bottom)
+    risingLava: null,        // Alias for lavaLevel
+    lavaRiseSpeed: 0,        // Pixels per second the lava rises
+    lavaSpeed: 0,            // Alias for lavaRiseSpeed
+    lavaDirection: 1,        // 1 = rising, -1 = falling
+    lavaMinLevel: 0,         // Minimum lava height (pixels)
+    lavaMaxLevel: 0,         // Maximum lava height (pixels)
+    chains: [],              // Chain swing points [{x, y, length, chainLength, canGrab, grabbed, angle, angularVel}]
+    swingPoints: [],         // Alias for chains
+    chainPoints: [],         // Alias for chains
+    valves: [],              // Interactive valves/levers [{x, y, activated, target, type}]
+    levers: [],              // Alias for valves
+
     loadStage(stageId) {
         this.currentStageId = stageId;
         this.movingPlatforms = [];
@@ -76,6 +90,19 @@ const Level = {
         this.autoScroll = false;
         this.autoScrollSpeed = 0;
         this.puzzleElements = [];
+        // Volcano reset
+        this.lavaLevel = null;
+        this.risingLava = null;
+        this.lavaRiseSpeed = 0;
+        this.lavaSpeed = 0;
+        this.lavaDirection = 1;
+        this.lavaMinLevel = 0;
+        this.lavaMaxLevel = 0;
+        this.chains = [];
+        this.swingPoints = [];
+        this.chainPoints = [];
+        this.valves = [];
+        this.levers = [];
 
         switch (stageId) {
             case '1-1': this._buildStage1_1(); break;
@@ -87,6 +114,9 @@ const Level = {
             case '3-1': this._buildStage3_1(); break;
             case '3-2': this._buildStage3_2(); break;
             case '3-3': this._buildStage3_3(); break;
+            case '4-1': this._buildStage4_1(); break;
+            case '4-2': this._buildStage4_2(); break;
+            case '4-3': this._buildStage4_3(); break;
             default: this._buildStage1_1(); break;
         }
     },
@@ -1909,6 +1939,504 @@ const Level = {
             { x: 35 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
             { x: 75 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
             { x: 115 * TILE_SIZE + 8, y: 13 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // VOLCANO MECHANICS
+    // =============================================
+
+    update(dt) {
+        // Rising/falling lava mechanic
+        if (this.lavaLevel !== null && this.lavaRiseSpeed > 0) {
+            this.lavaLevel += this.lavaDirection * this.lavaRiseSpeed * dt;
+            // Oscillate between min and max
+            if (this.lavaLevel >= this.lavaMaxLevel) {
+                this.lavaLevel = this.lavaMaxLevel;
+                this.lavaDirection = -1;
+            } else if (this.lavaLevel <= this.lavaMinLevel) {
+                this.lavaLevel = this.lavaMinLevel;
+                this.lavaDirection = 1;
+            }
+            this.risingLava = this.lavaLevel;
+
+            // Check if player is in lava
+            const lavaWorldY = this.height * TILE_SIZE - this.lavaLevel;
+            if (Player.y + Player.height > lavaWorldY && Player.state !== 'dead' && Player.state !== 'hurt') {
+                if (!Player.invincible) {
+                    Player.takeDamage();
+                }
+            }
+        }
+
+        // Update chain swing physics
+        for (const chain of this.chains) {
+            if (chain.grabbed && Player.grabbedChain === chain) {
+                // Pendulum physics
+                const gravity = 0.003;
+                chain.angularVel += -gravity * Math.sin(chain.angle);
+                chain.angularVel *= 0.995; // Damping
+                chain.angle += chain.angularVel;
+                // Update player position on chain
+                Player.x = chain.x + Math.sin(chain.angle) * chain.length - Player.width / 2;
+                Player.y = chain.y + Math.cos(chain.angle) * chain.length - Player.height / 2;
+                Player.vy = 0;
+                Player.vx = 0;
+            }
+        }
+    },
+
+    // =============================================
+    // STAGE 4-1: LAVA FIELDS (120 tiles wide)
+    // Rising lava mechanic, magma slimes, fire bats
+    // =============================================
+    _buildStage4_1() {
+        const W = 125;
+        const H = 20;
+        this._initGrid(W, H);
+        this.name = 'Lava Fields';
+        this.id = '4-1';
+
+        // Ground floor (rows 17-19) — dark stone
+        this._fill(0, W - 1, 17, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 5, 16, TILE_SOLID);
+
+        // Lava pools at bottom (replacing some ground with lava)
+        this._fill(12, 16, 17, 17, TILE_LAVA);
+        this._fill(12, 16, 18, H - 1, TILE_SOLID);
+        this._fill(25, 30, 17, 17, TILE_LAVA);
+        this._fill(25, 30, 18, H - 1, TILE_SOLID);
+        this._fill(42, 47, 17, 17, TILE_LAVA);
+        this._fill(42, 47, 18, H - 1, TILE_SOLID);
+        this._fill(55, 60, 17, 17, TILE_LAVA);
+        this._fill(55, 60, 18, H - 1, TILE_SOLID);
+        this._fill(68, 73, 17, 17, TILE_LAVA);
+        this._fill(68, 73, 18, H - 1, TILE_SOLID);
+
+        // SECTION A: Starting area (cols 1-10) — flat ground
+        // Safe intro with solid ground
+
+        // SECTION B: First lava pool (cols 11-20)
+        // Platforms over lava
+        this._fill(11, 11, 14, 16, TILE_SOLID);
+        this._fill(17, 20, 14, 14, TILE_ONE_WAY);
+
+        // SECTION C: Rising platforms (cols 21-35)
+        this._fill(22, 24, 14, 14, TILE_SOLID);
+        this._fill(31, 34, 12, 12, TILE_ONE_WAY);
+        this._fill(31, 34, 15, 15, TILE_SOLID);
+
+        // SECTION D: Crumbling over lava (cols 36-50)
+        this._fill(36, 39, 14, 14, TILE_SOLID);
+        this.tiles[14][40] = TILE_CRUMBLE;
+        this.tiles[14][41] = TILE_CRUMBLE;
+        this._fill(48, 52, 13, 13, TILE_SOLID);
+
+        // Breakable blocks
+        this._fill(49, 49, 14, 16, TILE_BREAKABLE);
+
+        // SECTION E: Vertical climb with lava below (cols 51-65)
+        this._fill(52, 54, 10, 10, TILE_ONE_WAY);
+        this._fill(56, 58, 7, 7, TILE_ONE_WAY);
+        this._fill(53, 55, 15, 15, TILE_SOLID);
+        this._fill(61, 64, 13, 13, TILE_SOLID);
+        this._fill(61, 64, 9, 9, TILE_ONE_WAY);
+
+        // SECTION F: Lava gauntlet (cols 66-80)
+        this._fill(66, 67, 14, 14, TILE_SOLID);
+        this._fill(74, 77, 14, 14, TILE_ONE_WAY);
+        this._fill(78, 80, 12, 12, TILE_SOLID);
+        this._fill(80, 82, 15, 15, TILE_SOLID);
+
+        // SECTION G: Pre-boss area (cols 83-94)
+        this._fill(83, 88, 14, 14, TILE_SOLID);
+        this._fill(90, 93, 12, 12, TILE_ONE_WAY);
+
+        // =====================
+        // BOSS ARENA (cols 95-124)
+        // =====================
+        this.bossArenaX = 95 * TILE_SIZE;
+        // Arena walls
+        this._fill(95, 95, 3, 16, TILE_SOLID);
+        this._fill(124, 124, 3, 16, TILE_SOLID);
+        // Arena ceiling
+        this._fill(95, 124, 3, 3, TILE_SOLID);
+        // Arena floor
+        this._fill(95, 124, 17, H - 1, TILE_SOLID);
+        // Lava in arena floor
+        this._fill(100, 108, 17, 17, TILE_LAVA);
+        this._fill(112, 120, 17, 17, TILE_LAVA);
+        // Arena platforms
+        this._fill(99, 103, 13, 13, TILE_ONE_WAY);
+        this._fill(109, 113, 13, 13, TILE_ONE_WAY);
+        this._fill(104, 108, 9, 9, TILE_ONE_WAY);
+        this._fill(115, 119, 13, 13, TILE_ONE_WAY);
+
+        // Boss data
+        this.bossData = {
+            type: 'lava_serpent',
+            spawnX: 112 * TILE_SIZE,
+            spawnY: 10 * TILE_SIZE,
+        };
+
+        // Exit after boss
+        this.exitX = 122 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        // Player spawn
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 15 * TILE_SIZE;
+
+        // Rising lava setup (oscillates between min and max)
+        this.lavaLevel = 40;
+        this.risingLava = 40;
+        this.lavaRiseSpeed = 12;
+        this.lavaSpeed = 12;
+        this.lavaDirection = 1;
+        this.lavaMinLevel = 40;
+        this.lavaMaxLevel = 120;
+
+        // Enemy spawns (Magma Slimes and Fire Bats)
+        this.enemySpawns = [
+            { type: 'magma_slime', x: 18 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'fire_bat', x: 28 * TILE_SIZE, y: 8 * TILE_SIZE },
+            { type: 'magma_slime', x: 37 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'fire_bat', x: 45 * TILE_SIZE, y: 6 * TILE_SIZE },
+            { type: 'magma_slime', x: 62 * TILE_SIZE, y: 11 * TILE_SIZE },
+            { type: 'fire_bat', x: 70 * TILE_SIZE, y: 8 * TILE_SIZE },
+            { type: 'magma_slime', x: 79 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'fire_bat', x: 85 * TILE_SIZE, y: 8 * TILE_SIZE },
+        ];
+
+        // Coins (22 total)
+        const coinSpots = [
+            [3,15],[5,15],[7,15],            // Starting area
+            [13,12],[15,12],                 // Over first lava
+            [19,12],[23,12],                 // Platforms
+            [32,10],[34,10],                 // High platforms
+            [38,12],[41,12],                 // Crumble section
+            [49,11],[51,8],                  // Vertical climb
+            [57,5],[59,5],                   // High platforms
+            [63,11],[65,7],                  // More climb
+            [67,12],[70,12],                 // Gauntlet
+            [75,12],[78,10],                 // Platforms
+            [84,12],                         // Pre-boss
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups (2)
+        this.healthPositions = [
+            { x: 40 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
+            { x: 80 * TILE_SIZE + 8, y: 10 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 4-2: FORGE OF CHAINS (140 tiles wide)
+    // Chain-swinging, Obsidian Knights, valve puzzles
+    // =============================================
+    _buildStage4_2() {
+        const W = 145;
+        const H = 20;
+        this._initGrid(W, H);
+        this.name = 'Forge of Chains';
+        this.id = '4-2';
+
+        // Ground floor (rows 17-19)
+        this._fill(0, W - 1, 17, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 5, 16, TILE_SOLID);
+
+        // Large lava pits throughout
+        this._fill(15, 22, 17, 17, TILE_LAVA);
+        this._fill(15, 22, 18, H - 1, TILE_SOLID);
+        this._fill(35, 45, 17, 17, TILE_LAVA);
+        this._fill(35, 45, 18, H - 1, TILE_SOLID);
+        this._fill(58, 68, 17, 17, TILE_LAVA);
+        this._fill(58, 68, 18, H - 1, TILE_SOLID);
+        this._fill(80, 88, 17, 17, TILE_LAVA);
+        this._fill(80, 88, 18, H - 1, TILE_SOLID);
+        this._fill(100, 108, 17, 17, TILE_LAVA);
+        this._fill(100, 108, 18, H - 1, TILE_SOLID);
+
+        // SECTION A: Starting area (cols 1-14)
+        this._fill(1, 14, 17, H - 1, TILE_SOLID);
+
+        // SECTION B: First chain crossing (cols 15-28)
+        this._fill(14, 14, 10, 16, TILE_SOLID);
+        this._fill(23, 28, 14, 14, TILE_SOLID);
+
+        // SECTION C: Forge platforms (cols 29-45)
+        this._fill(29, 34, 14, 14, TILE_SOLID);
+        this._fill(46, 50, 13, 13, TILE_SOLID);
+        this._fill(33, 34, 10, 10, TILE_ONE_WAY);
+
+        // SECTION D: Second chain crossing (cols 46-70)
+        this._fill(51, 57, 14, 14, TILE_SOLID);
+        this._fill(69, 74, 14, 14, TILE_SOLID);
+        this._fill(54, 57, 10, 10, TILE_ONE_WAY);
+
+        // SECTION E: Obsidian Knight area (cols 75-95)
+        this._fill(75, 79, 14, 14, TILE_SOLID);
+        this._fill(89, 95, 14, 14, TILE_SOLID);
+        this._fill(82, 87, 12, 12, TILE_ONE_WAY);
+        this._fill(91, 94, 10, 10, TILE_ONE_WAY);
+
+        // SECTION F: Valve puzzle area (cols 96-110)
+        this._fill(96, 99, 14, 14, TILE_SOLID);
+        this._fill(109, 114, 14, 14, TILE_SOLID);
+        this._fill(112, 114, 10, 10, TILE_ONE_WAY);
+
+        // SECTION G: Pre-boss (cols 115-120)
+        this._fill(115, 120, 14, 14, TILE_SOLID);
+
+        // =====================
+        // BOSS ARENA (cols 121-144)
+        // =====================
+        this.bossArenaX = 121 * TILE_SIZE;
+        this._fill(121, 121, 3, 16, TILE_SOLID);
+        this._fill(144, 144, 3, 16, TILE_SOLID);
+        this._fill(121, 144, 3, 3, TILE_SOLID);
+        this._fill(121, 144, 17, H - 1, TILE_SOLID);
+        // Arena lava
+        this._fill(126, 132, 17, 17, TILE_LAVA);
+        this._fill(136, 142, 17, 17, TILE_LAVA);
+        // Arena platforms
+        this._fill(125, 129, 13, 13, TILE_ONE_WAY);
+        this._fill(132, 136, 10, 10, TILE_ONE_WAY);
+        this._fill(138, 142, 13, 13, TILE_ONE_WAY);
+
+        // Boss data
+        this.bossData = {
+            type: 'iron_warden',
+            spawnX: 135 * TILE_SIZE,
+            spawnY: 10 * TILE_SIZE,
+        };
+
+        // Exit
+        this.exitX = 142 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        // Spawn
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 15 * TILE_SIZE;
+
+        // Chain swing points
+        const chainData = [
+            { x: 18 * TILE_SIZE, y: 3 * TILE_SIZE, length: 160, chainLength: 160 },
+            { x: 40 * TILE_SIZE, y: 3 * TILE_SIZE, length: 160, chainLength: 160 },
+            { x: 62 * TILE_SIZE, y: 3 * TILE_SIZE, length: 160, chainLength: 160 },
+            { x: 84 * TILE_SIZE, y: 3 * TILE_SIZE, length: 160, chainLength: 160 },
+            { x: 104 * TILE_SIZE, y: 3 * TILE_SIZE, length: 160, chainLength: 160 },
+        ];
+        this.chains = chainData.map(c => ({
+            ...c, canGrab: true, grabbed: false, angle: 0, angularVel: 0
+        }));
+        this.swingPoints = this.chains;
+        this.chainPoints = this.chains;
+
+        // Valve/lever puzzle
+        const valveData = [
+            { x: 97 * TILE_SIZE, y: 13 * TILE_SIZE, activated: false, type: 'valve',
+              target: { type: 'platform', startX: 100, endX: 108 } },
+            { x: 110 * TILE_SIZE, y: 13 * TILE_SIZE, activated: false, type: 'lever',
+              target: { type: 'gate', col: 112, rowStart: 11, rowEnd: 13 } },
+        ];
+        this.valves = valveData;
+        this.levers = valveData;
+        this.puzzleElements = valveData.map(v => ({
+            type: v.type, x: Math.floor(v.x / TILE_SIZE), y: Math.floor(v.y / TILE_SIZE)
+        }));
+
+        // Enemy spawns
+        this.enemySpawns = [
+            { type: 'magma_slime', x: 10 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'fire_bat', x: 30 * TILE_SIZE, y: 8 * TILE_SIZE },
+            { type: 'obsidian_knight', x: 52 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'magma_slime', x: 70 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'obsidian_knight', x: 78 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'fire_bat', x: 90 * TILE_SIZE, y: 7 * TILE_SIZE },
+            { type: 'obsidian_knight', x: 96 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'magma_slime', x: 115 * TILE_SIZE, y: 12 * TILE_SIZE },
+        ];
+
+        // Coins (26 total)
+        const coinSpots = [
+            [3,15],[6,15],[9,15],            // Start
+            [16,8],[18,6],[20,8],            // Chain 1
+            [26,12],[30,12],                 // After chain
+            [33,8],[38,6],[40,8],            // Chain 2
+            [47,11],[50,11],                 // Forge
+            [55,8],[60,6],[65,8],            // Chain 3
+            [70,12],[74,12],                 // Platforms
+            [82,10],[85,6],[88,10],          // Chain 4
+            [92,12],[95,8],                  // Knight area
+            [102,6],[106,8],                 // Chain 5
+            [116,12],                        // Pre-boss
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups (2)
+        this.healthPositions = [
+            { x: 48 * TILE_SIZE + 8, y: 11 * TILE_SIZE },
+            { x: 95 * TILE_SIZE + 8, y: 8 * TILE_SIZE },
+        ];
+    },
+
+    // =============================================
+    // STAGE 4-3: CALDERA (155 tiles wide)
+    // All 3 enemy types, Dragon boss (2-phase, 11 HP)
+    // =============================================
+    _buildStage4_3() {
+        const W = 155;
+        const H = 20;
+        this._initGrid(W, H);
+        this.name = 'Caldera';
+        this.id = '4-3';
+
+        // Ground floor (rows 17-19)
+        this._fill(0, W - 1, 17, H - 1, TILE_SOLID);
+
+        // Left wall
+        this._fill(0, 0, 5, 16, TILE_SOLID);
+
+        // Extensive lava throughout
+        this._fill(14, 20, 17, 17, TILE_LAVA);
+        this._fill(14, 20, 18, H - 1, TILE_SOLID);
+        this._fill(30, 38, 17, 17, TILE_LAVA);
+        this._fill(30, 38, 18, H - 1, TILE_SOLID);
+        this._fill(48, 55, 17, 17, TILE_LAVA);
+        this._fill(48, 55, 18, H - 1, TILE_SOLID);
+        this._fill(65, 72, 17, 17, TILE_LAVA);
+        this._fill(65, 72, 18, H - 1, TILE_SOLID);
+        this._fill(82, 90, 17, 17, TILE_LAVA);
+        this._fill(82, 90, 18, H - 1, TILE_SOLID);
+        this._fill(100, 108, 17, 17, TILE_LAVA);
+        this._fill(100, 108, 18, H - 1, TILE_SOLID);
+        this._fill(115, 120, 17, 17, TILE_LAVA);
+        this._fill(115, 120, 18, H - 1, TILE_SOLID);
+
+        // SECTION A: Starting area (cols 1-13)
+        // Solid ground with some hazards
+
+        // SECTION B: Slime gauntlet (cols 14-28)
+        this._fill(13, 13, 10, 16, TILE_SOLID);
+        this._fill(21, 25, 14, 14, TILE_SOLID);
+        this._fill(26, 29, 12, 12, TILE_ONE_WAY);
+
+        // SECTION C: Fire Bat crossing (cols 29-45)
+        this._fill(39, 42, 14, 14, TILE_SOLID);
+        this._fill(43, 47, 12, 12, TILE_ONE_WAY);
+
+        // SECTION D: Knight fortress (cols 46-62)
+        this._fill(46, 47, 14, 14, TILE_SOLID);
+        this._fill(56, 60, 14, 14, TILE_SOLID);
+        this._fill(50, 54, 11, 11, TILE_SOLID);
+        this._fill(56, 60, 8, 8, TILE_ONE_WAY);
+        this._fill(61, 64, 14, 14, TILE_SOLID);
+
+        // SECTION E: Mixed enemy gauntlet (cols 63-80)
+        this._fill(73, 76, 14, 14, TILE_SOLID);
+        this._fill(77, 81, 12, 12, TILE_ONE_WAY);
+        this._fill(73, 76, 9, 9, TILE_ONE_WAY);
+
+        // SECTION F: Vertical challenge (cols 81-98)
+        this._fill(91, 95, 14, 14, TILE_SOLID);
+        this._fill(88, 90, 11, 11, TILE_ONE_WAY);
+        this._fill(93, 96, 8, 8, TILE_ONE_WAY);
+        this._fill(96, 99, 14, 14, TILE_SOLID);
+
+        // SECTION G: Final gauntlet (cols 99-115)
+        this._fill(109, 114, 14, 14, TILE_SOLID);
+        this._fill(105, 108, 11, 11, TILE_ONE_WAY);
+        this._fill(109, 114, 8, 8, TILE_ONE_WAY);
+
+        // SECTION H: Pre-boss (cols 116-125)
+        this._fill(121, 125, 14, 14, TILE_SOLID);
+
+        // =====================
+        // BOSS ARENA (cols 126-154)
+        // =====================
+        this.bossArenaX = 126 * TILE_SIZE;
+        this._fill(126, 126, 2, 16, TILE_SOLID);
+        this._fill(154, 154, 2, 16, TILE_SOLID);
+        this._fill(126, 154, 2, 2, TILE_SOLID);
+        this._fill(126, 154, 17, H - 1, TILE_SOLID);
+        // Arena lava
+        this._fill(131, 138, 17, 17, TILE_LAVA);
+        this._fill(143, 150, 17, 17, TILE_LAVA);
+        // Arena platforms (tiered)
+        this._fill(130, 134, 13, 13, TILE_ONE_WAY);
+        this._fill(137, 141, 9, 9, TILE_ONE_WAY);
+        this._fill(144, 148, 13, 13, TILE_ONE_WAY);
+        this._fill(134, 137, 6, 6, TILE_ONE_WAY);
+        this._fill(148, 152, 9, 9, TILE_ONE_WAY);
+
+        // Boss data — Dragon of the Caldera
+        this.bossData = {
+            type: 'dragon_caldera',
+            spawnX: 142 * TILE_SIZE,
+            spawnY: 6 * TILE_SIZE,
+        };
+
+        // Exit
+        this.exitX = 152 * TILE_SIZE;
+        this.exitY = 16 * TILE_SIZE;
+
+        // Spawn
+        this.spawnX = 2 * TILE_SIZE;
+        this.spawnY = 15 * TILE_SIZE;
+
+        // Enemy spawns (all 3 volcano types)
+        this.enemySpawns = [
+            { type: 'magma_slime', x: 8 * TILE_SIZE, y: 14 * TILE_SIZE },
+            { type: 'magma_slime', x: 22 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'fire_bat', x: 32 * TILE_SIZE, y: 6 * TILE_SIZE },
+            { type: 'fire_bat', x: 38 * TILE_SIZE, y: 8 * TILE_SIZE },
+            { type: 'fire_bat', x: 44 * TILE_SIZE, y: 6 * TILE_SIZE },
+            { type: 'obsidian_knight', x: 51 * TILE_SIZE, y: 9 * TILE_SIZE },
+            { type: 'obsidian_knight', x: 58 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'magma_slime', x: 74 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'fire_bat', x: 85 * TILE_SIZE, y: 6 * TILE_SIZE },
+            { type: 'obsidian_knight', x: 92 * TILE_SIZE, y: 12 * TILE_SIZE },
+            { type: 'magma_slime', x: 106 * TILE_SIZE, y: 9 * TILE_SIZE },
+            { type: 'fire_bat', x: 118 * TILE_SIZE, y: 7 * TILE_SIZE },
+        ];
+
+        // Coins (32 total)
+        const coinSpots = [
+            [3,15],[5,15],[8,15],[10,15],     // Start
+            [15,8],[17,8],[19,12],            // Section B
+            [23,12],[25,10],[28,10],          // After slimes
+            [32,6],[35,6],[38,12],            // Bat crossing
+            [41,12],[44,10],                  // Platforms
+            [47,12],[50,9],[53,9],            // Knight fortress
+            [57,12],[60,6],                   // More fortress
+            [67,6],[70,8],[74,12],            // Mixed gauntlet
+            [78,10],[80,10],                  // Platforms
+            [85,6],[89,9],[93,6],             // Vertical
+            [97,12],[102,6],[106,9],          // Final gauntlet
+            [122,12],                         // Pre-boss
+        ];
+        this.coinPositions = [];
+        for (const [c, r] of coinSpots) {
+            this.coinPositions.push({ x: c * TILE_SIZE + 8, y: r * TILE_SIZE });
+        }
+
+        // Health pickups (3)
+        this.healthPositions = [
+            { x: 30 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
+            { x: 75 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
+            { x: 110 * TILE_SIZE + 8, y: 12 * TILE_SIZE },
         ];
     }
 };

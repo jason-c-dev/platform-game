@@ -47,7 +47,15 @@ const Camera = {
         const stageId = GameState.currentStageId || '1-1';
         const world = parseInt(stageId.charAt(0)) - 1;
 
-        if (world === 2) {
+        if (world === 3) {
+            // Volcano parallax
+            this.layers = [
+                { speed: 0.05, color1: COLORS.volcano.darkStone, color2: COLORS.volcano.shadow, elements: this._generateMountains() },
+                { speed: 0.15, color1: COLORS.volcano.shadow, color2: COLORS.volcano.darkRed, elements: this._generateFarTrees() },
+                { speed: 0.3, color1: COLORS.volcano.darkRed, color2: COLORS.volcano.lavaOrange, elements: this._generateMidTrees() },
+                { speed: 0.5, color1: COLORS.volcano.lavaOrange, color2: COLORS.volcano.moltenYellow, elements: this._generateForegroundLeaves() }
+            ];
+        } else if (world === 2) {
             // Tundra parallax
             this.layers = [
                 { speed: 0.05, color1: COLORS.tundra.deepIce, color2: COLORS.tundra.shadow, elements: this._generateMountains() },

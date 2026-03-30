@@ -29,6 +29,10 @@ const Player = {
     lives: PLAYER_START_LIVES,
     gameOver: false,
 
+    // Health alias (for test compatibility)
+    get health() { return this.hp; },
+    set health(v) { this.hp = v; },
+
     // Animation
     animFrame: 0,
     animTimer: 0,
@@ -47,6 +51,9 @@ const Player = {
 
     // Variable jump
     _jumpCut: false,
+
+    // Chain swing (volcano)
+    grabbedChain: null,
 
     // Wall slide
     wallDir: 0, // -1 = wall on left, 1 = wall on right

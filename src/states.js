@@ -279,6 +279,10 @@ const GameState = {
             }
         }
         if (Level.meltableBlocks.length > 0) Level.updateMeltableBlocks();
+        // Volcano mechanics
+        if (Level.lavaLevel !== null || Level.chains.length > 0) {
+            Level.update(1 / 60);
+        }
         Player.update();
         Enemies.update();
         Enemies.checkPlayerAttackCollisions();
@@ -378,6 +382,10 @@ const GameState = {
         if (Level.iceBlocks && Level.iceBlocks.length > 0) Renderer.renderIceBlocks(ctx);
         if (Level.fireSources && Level.fireSources.length > 0) Renderer.renderFireSources(ctx);
         if (Level.meltableBlocks && Level.meltableBlocks.length > 0) Renderer.renderMeltableBlocks(ctx);
+        // Volcano-specific renders
+        if (Level.chains && Level.chains.length > 0) Renderer.renderChains(ctx);
+        if (Level.valves && Level.valves.length > 0) Renderer.renderValves(ctx);
+        Renderer.renderRisingLava(ctx);
         Renderer.renderMovingPlatforms();
         // Desert-specific renders
         if (Level.mirrors.length > 0) Renderer.renderMirrors(ctx);
@@ -387,6 +395,8 @@ const GameState = {
         Renderer.renderParticles();
         // Snow overlay for tundra (above everything except HUD)
         Renderer.updateAndRenderSnow();
+        // Ember overlay for volcano (above everything except HUD)
+        Renderer.updateAndRenderEmbers();
         // Dark room overlay (after everything else, before HUD)
         if (Level.isDark) Renderer.renderDarkOverlay(ctx);
         HUD.render(ctx);
