@@ -298,8 +298,8 @@ const Player = {
     // AIRBORNE (jump / fall)
     // =============================================
     _updateAirborne(inputDir) {
-        // Update facing
-        if (inputDir !== 0) {
+        // Update facing — but NOT immediately after a wall jump (preserve facing change)
+        if (inputDir !== 0 && !(this.prevState === 'wallSlide' && this.stateTimer < 8)) {
             this.facing = inputDir;
         }
 
