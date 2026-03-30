@@ -157,6 +157,12 @@ const Enemies = {
                 attackPattern: 'fire_breath', attackType: 'fire_breath',
                 patterns: ['fire_breath', 'dive_bomb']
             },
+            // Final boss — The Architect
+            'the_architect': {
+                health: 19, maxHealth: 19, width: 48, height: 52, speed: 2,
+                attackPattern: 'multi_phase', attackType: 'multi_phase',
+                patterns: ['shockwave', 'teleport', 'frost_beam', 'fire_breath', 'combined']
+            },
         };
 
         const cfg = configs[type] || configs['elder_shroomba'];
@@ -236,6 +242,7 @@ const Enemies = {
             'lava_serpent': 'Lava Serpent',
             'iron_warden': 'Iron Warden',
             'dragon_caldera': 'Dragon of the Caldera',
+            'the_architect': 'The Architect',
         };
         HUD.bossName = names[type] || type;
         boss.name = names[type] || type;
@@ -277,6 +284,23 @@ const Enemies = {
             boss.breathTimer = 0;
             boss.diveTimer = 0;
             boss.flying = true;
+        }
+
+        // The Architect — 5-phase final boss
+        if (type === 'the_architect') {
+            boss.phase = 1;
+            boss.phases = [1, 2, 3, 4, 5];
+            boss.architectAttackTimer = 0;
+            boss.architectAttackCycle = 0;
+            boss.teleportTimer = 0;
+            boss.beamTimer = 0;
+            boss.beamActive = false;
+            boss.breathTimer = 0;
+            boss.diveTimer = 0;
+            boss.flying = false;
+            boss.shockwaveActive = false;
+            boss.architectArenaLeft = 0;
+            boss.architectArenaRight = 0;
         }
 
         return boss;
@@ -1159,8 +1183,47 @@ const Enemies = {
             return;
         }
 
-        // Phase check
-        if (b.health <= Math.floor(b.maxHealth * 0.5) && b.phase === 1) {
+        // Phase check (skip for the_architect — has its own 5-phase system)
+        if (b.type === 'the_architect') {
+            // 5-phase transitions for The Architect
+            if (b.health <= 3 && b.phase < 5) {
+                b.phase = 5;
+                b.hitFlash = 15;
+                for (let i = 0; i < 12; i++) {
+                    Particles.spawnAttackSparks(
+                        b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
+                        b.y + b.height / 2 + (Math.random() - 0.5) * b.height
+                    );
+                }
+            } else if (b.health <= 7 && b.phase < 4) {
+                b.phase = 4;
+                b.hitFlash = 15;
+                for (let i = 0; i < 12; i++) {
+                    Particles.spawnAttackSparks(
+                        b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
+                        b.y + b.height / 2 + (Math.random() - 0.5) * b.height
+                    );
+                }
+            } else if (b.health <= 11 && b.phase < 3) {
+                b.phase = 3;
+                b.hitFlash = 15;
+                for (let i = 0; i < 12; i++) {
+                    Particles.spawnAttackSparks(
+                        b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
+                        b.y + b.height / 2 + (Math.random() - 0.5) * b.height
+                    );
+                }
+            } else if (b.health <= 15 && b.phase < 2) {
+                b.phase = 2;
+                b.hitFlash = 15;
+                for (let i = 0; i < 12; i++) {
+                    Particles.spawnAttackSparks(
+                        b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
+                        b.y + b.height / 2 + (Math.random() - 0.5) * b.height
+                    );
+                }
+            }
+        } else if (b.health <= Math.floor(b.maxHealth * 0.5) && b.phase === 1) {
             b.phase = 2;
             b.hitFlash = 15;
             // Spawn phase transition particles
@@ -1188,11 +1251,13 @@ const Enemies = {
             case 'lava_serpent': this._updateLavaSerpent(b); break;
             case 'iron_warden': this._updateIronWarden(b); break;
             case 'dragon_caldera': this._updateDragonCaldera(b); break;
+            case 'the_architect': this._updateArchitect(b); break;
         }
 
         // Apply gravity to bosses that use it
         if (b.type !== 'vine_mother' && b.type !== 'pharaoh_specter' && b.type !== 'hydra_cactus'
-            && b.type !== 'crystal_witch' && b.type !== 'lava_serpent' && b.type !== 'dragon_caldera') {
+            && b.type !== 'crystal_witch' && b.type !== 'lava_serpent' && b.type !== 'dragon_caldera'
+            && b.type !== 'the_architect') {
             b.vy += GRAVITY;
             if (b.vy > TERMINAL_VELOCITY) b.vy = TERMINAL_VELOCITY;
             b.y += b.vy;
@@ -2265,14 +2330,276 @@ const Enemies = {
         // Unlock camera
         Camera.locked = false;
 
-        // Trigger stage complete after delay
+        // Trigger stage complete or victory after delay
         setTimeout(() => {
             if (GameState.current === GameState.STAGE) {
-                GameState.transitionTo(GameState.STAGE_COMPLETE, () => {
-                    GameState.setupStageComplete();
-                });
+                if (GameState.currentStageId === '5-1') {
+                    // Final boss defeated — Victory!
+                    GameState.transitionTo(GameState.VICTORY, () => {
+                        GameState.setupVictory();
+                    });
+                } else {
+                    GameState.transitionTo(GameState.STAGE_COMPLETE, () => {
+                        GameState.setupStageComplete();
+                    });
+                }
             }
         }, 1500);
+    },
+
+    // =============================================
+    // THE ARCHITECT — Final Boss (5 Phases, 19 HP)
+    // Phase 1: Forest (Shockwave jumps)
+    // Phase 2: Desert (Teleport + summon)
+    // Phase 3: Tundra (Frost beams)
+    // Phase 4: Volcano (Fire breath + dive)
+    // Phase 5: All Combined
+    // =============================================
+    _updateArchitect(b) {
+        const vulnDuration = Math.max(40, 90 - b.phase * 10); // Less vuln time as phases progress
+
+        // Handle gravity manually for the Architect
+        if (!b.flying) {
+            b.vy += GRAVITY;
+            if (b.vy > TERMINAL_VELOCITY) b.vy = TERMINAL_VELOCITY;
+            b.y += b.vy;
+
+            // Floor collision
+            const footRow = Math.floor((b.y + b.height) / TILE_SIZE);
+            const leftCol = Math.floor(b.x / TILE_SIZE);
+            const rightCol = Math.floor((b.x + b.width - 1) / TILE_SIZE);
+            for (let c = leftCol; c <= rightCol; c++) {
+                const tile = Level.getTile(c, footRow);
+                if (tile === TILE_SOLID) {
+                    b.y = footRow * TILE_SIZE - b.height;
+                    b.vy = 0;
+                    break;
+                }
+            }
+        }
+
+        if (b.state === 'attacking') {
+            b.vulnerable = false;
+            b.attackTimer++;
+            b.facing = Player.x > b.x ? 1 : -1;
+
+            // Dispatch to phase-specific attack
+            switch (b.phase) {
+                case 1: this._architectPhase1(b); break;
+                case 2: this._architectPhase2(b); break;
+                case 3: this._architectPhase3(b); break;
+                case 4: this._architectPhase4(b); break;
+                case 5: this._architectPhase5(b); break;
+            }
+
+            // After attack duration, become vulnerable
+            const attackDuration = b.phase === 5 ? 100 : 70 + b.phase * 5;
+            if (b.attackTimer >= attackDuration) {
+                b.state = 'vulnerable';
+                b.vulnerable = true;
+                b.vulnerableTimer = vulnDuration;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+                b.flying = false;
+            }
+        } else if (b.state === 'vulnerable') {
+            b.vulnerable = true;
+            b.vulnerableTimer--;
+            // Pulse flash when vulnerable
+            b.hitFlash = b.vulnerableTimer % 8 < 4 ? 1 : 0;
+            if (b.vulnerableTimer <= 0) {
+                b.state = 'attacking';
+                b.vulnerable = false;
+                b.hitFlash = 0;
+                b.stateTimer = 0;
+                b.attackTimer = 0;
+                b.architectAttackCycle++;
+            }
+        }
+    },
+
+    // Phase 1: Forest — Jump + Shockwave (like Elder Shroomba)
+    _architectPhase1(b) {
+        if (b.attackTimer === 1) {
+            b.vy = -11;
+            b.vx = b.facing * 2;
+        }
+        if (b.attackTimer > 20 && b.vy === 0) {
+            b.vx = 0;
+            // Shockwave
+            const waveSpeed = 3.5;
+            this.projectiles.push({
+                x: b.x - 10, y: b.y + b.height - 12,
+                vx: -waveSpeed, vy: 0,
+                width: 24, height: 12, life: 1.2, hostile: true,
+                type: 'shockwave', ignoreWalls: false, animTimer: 0,
+            });
+            this.projectiles.push({
+                x: b.x + b.width, y: b.y + b.height - 12,
+                vx: waveSpeed, vy: 0,
+                width: 24, height: 12, life: 1.2, hostile: true,
+                type: 'shockwave', ignoreWalls: false, animTimer: 0,
+            });
+            // Force advance to end of attack
+            b.attackTimer = 200;
+        }
+    },
+
+    // Phase 2: Desert — Teleport + Projectile Burst (like Pharaoh Specter)
+    _architectPhase2(b) {
+        if (b.attackTimer === 1) {
+            // Teleport near player
+            const targetX = Player.x + (Math.random() > 0.5 ? 120 : -120);
+            const clampedX = Math.max(Level.bossArenaX + TILE_SIZE, Math.min(targetX, (Level.width - 2) * TILE_SIZE));
+            b.x = clampedX;
+            b.y = (Level.height - 6) * TILE_SIZE;
+            b.hitFlash = 8;
+        }
+        if (b.attackTimer === 20 || b.attackTimer === 40) {
+            // Fire homing-ish projectiles
+            const dx = Player.x - b.x;
+            const dy = Player.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            this.projectiles.push({
+                x: b.x + b.width / 2, y: b.y,
+                vx: (dx / dist) * 3, vy: (dy / dist) * 3,
+                width: 10, height: 10, life: 2, hostile: true,
+                type: 'sand_bolt', ignoreWalls: false, animTimer: 0,
+            });
+        }
+    },
+
+    // Phase 3: Tundra — Frost Beam (like Frost Bear)
+    _architectPhase3(b) {
+        // Horizontal movement
+        b.vx = b.facing * 1.5;
+        b.x += b.vx;
+
+        // Wall bounce
+        const wallCol = b.facing > 0
+            ? Math.floor((b.x + b.width) / TILE_SIZE)
+            : Math.floor(b.x / TILE_SIZE);
+        const midRow = Math.floor((b.y + b.height / 2) / TILE_SIZE);
+        const tile = Level.getTile(wallCol, midRow);
+        if (tile === TILE_SOLID) {
+            b.facing *= -1;
+            b.vx = 0;
+        }
+
+        // Fire frost beams periodically
+        if (b.attackTimer % 25 === 0) {
+            const dx = Player.x - b.x;
+            const dy = Player.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            this.projectiles.push({
+                x: b.x + b.width / 2, y: b.y + b.height / 2,
+                vx: (dx / dist) * 4, vy: (dy / dist) * 4,
+                width: 12, height: 8, life: 1.5, hostile: true,
+                type: 'frost_beam', ignoreWalls: false, animTimer: 0,
+            });
+        }
+    },
+
+    // Phase 4: Volcano — Fire breath + Dive (like Dragon)
+    _architectPhase4(b) {
+        // Float above ground
+        b.flying = true;
+        const t = b.stateTimer * 0.03;
+        b.x += Math.sin(t) * 1.8;
+        b.y = (Level.height - 8) * TILE_SIZE + Math.cos(t * 0.7) * 20;
+
+        // Fire breath
+        if (b.attackTimer === 25) {
+            for (let i = 0; i < 3; i++) {
+                this.projectiles.push({
+                    x: b.x + (b.facing > 0 ? b.width : -10),
+                    y: b.y + b.height * 0.3 + i * 8,
+                    vx: b.facing * (3 + i * 0.5), vy: (i - 1) * 0.5,
+                    width: 14, height: 10, life: 1.5, hostile: true,
+                    type: 'fireball', ignoreWalls: false, animTimer: 0,
+                });
+            }
+        }
+
+        // Dive bomb at player
+        if (b.attackTimer === 50) {
+            b.vy = 6;
+            b.diveTimer = 15;
+        }
+        if (b.diveTimer > 0) {
+            b.diveTimer--;
+            b.y += b.vy;
+            if (b.diveTimer === 0) {
+                b.vy = -3;
+                b.flying = false;
+            }
+        }
+    },
+
+    // Phase 5: All Combined — Rapid mix of all attack types
+    _architectPhase5(b) {
+        const cycle = b.attackTimer % 50;
+
+        if (cycle < 12) {
+            // Shockwave jump (Forest)
+            if (cycle === 0) { b.vy = -10; b.vx = b.facing * 3; }
+            if (cycle === 10 && b.vy === 0) {
+                b.vx = 0;
+                this.projectiles.push({
+                    x: b.x - 10, y: b.y + b.height - 12,
+                    vx: -4, vy: 0, width: 24, height: 12,
+                    life: 1.2, hostile: true, type: 'shockwave',
+                    ignoreWalls: false, animTimer: 0,
+                });
+                this.projectiles.push({
+                    x: b.x + b.width, y: b.y + b.height - 12,
+                    vx: 4, vy: 0, width: 24, height: 12,
+                    life: 1.2, hostile: true, type: 'shockwave',
+                    ignoreWalls: false, animTimer: 0,
+                });
+            }
+        } else if (cycle === 20) {
+            // Desert teleport + bolt
+            const targetX = Player.x + (b.facing > 0 ? 100 : -100);
+            const clampedX = Math.max(Level.bossArenaX + TILE_SIZE, Math.min(targetX, (Level.width - 2) * TILE_SIZE));
+            b.x = clampedX;
+            b.hitFlash = 5;
+            const dx = Player.x - b.x;
+            const dy = Player.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            this.projectiles.push({
+                x: b.x + b.width / 2, y: b.y,
+                vx: (dx / dist) * 3.5, vy: (dy / dist) * 3.5,
+                width: 10, height: 10, life: 2, hostile: true,
+                type: 'sand_bolt', ignoreWalls: false, animTimer: 0,
+            });
+        } else if (cycle === 35) {
+            // Frost beam (Tundra)
+            const dx = Player.x - b.x;
+            const dy = Player.y - b.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+            this.projectiles.push({
+                x: b.x + b.width / 2, y: b.y + b.height / 2,
+                vx: (dx / dist) * 4.5, vy: (dy / dist) * 4.5,
+                width: 12, height: 8, life: 1.5, hostile: true,
+                type: 'frost_beam', ignoreWalls: false, animTimer: 0,
+            });
+        } else if (cycle === 45) {
+            // Fire breath (Volcano)
+            for (let i = 0; i < 2; i++) {
+                this.projectiles.push({
+                    x: b.x + (b.facing > 0 ? b.width : -10),
+                    y: b.y + b.height * 0.3 + i * 10,
+                    vx: b.facing * (3.5 + i * 0.5), vy: (i - 0.5) * 0.5,
+                    width: 14, height: 10, life: 1.5, hostile: true,
+                    type: 'fireball', ignoreWalls: false, animTimer: 0,
+                });
+            }
+        }
+
+        // Move toward player
+        b.vx = b.facing * 1.2;
+        b.x += b.vx;
     },
 
     // =============================================
