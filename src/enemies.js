@@ -205,6 +205,10 @@ const Enemies = {
         this.boss = boss;
         this.enemies.push(boss);
 
+        // Audio: boss entrance + start boss music
+        AudioManager.playBossEntrance();
+        AudioManager.startBossMusic();
+
         // Set HUD
         HUD.bossActive = true;
         HUD.bossHP = boss.health;
@@ -1172,6 +1176,11 @@ const Enemies = {
         // Update HUD
         HUD.bossHP = b.health;
 
+        // Update boss music tempo based on health ratio
+        if (b.maxHealth > 0) {
+            AudioManager.updateBossMusic(b.health / b.maxHealth);
+        }
+
         // Intro state
         if (b.state === 'intro') {
             b.introTimer--;
@@ -1189,6 +1198,7 @@ const Enemies = {
             if (b.health <= 3 && b.phase < 5) {
                 b.phase = 5;
                 b.hitFlash = 15;
+                AudioManager.playBossPhaseTransition();
                 for (let i = 0; i < 12; i++) {
                     Particles.spawnAttackSparks(
                         b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
@@ -1198,6 +1208,7 @@ const Enemies = {
             } else if (b.health <= 7 && b.phase < 4) {
                 b.phase = 4;
                 b.hitFlash = 15;
+                AudioManager.playBossPhaseTransition();
                 for (let i = 0; i < 12; i++) {
                     Particles.spawnAttackSparks(
                         b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
@@ -1207,6 +1218,7 @@ const Enemies = {
             } else if (b.health <= 11 && b.phase < 3) {
                 b.phase = 3;
                 b.hitFlash = 15;
+                AudioManager.playBossPhaseTransition();
                 for (let i = 0; i < 12; i++) {
                     Particles.spawnAttackSparks(
                         b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
@@ -1216,6 +1228,7 @@ const Enemies = {
             } else if (b.health <= 15 && b.phase < 2) {
                 b.phase = 2;
                 b.hitFlash = 15;
+                AudioManager.playBossPhaseTransition();
                 for (let i = 0; i < 12; i++) {
                     Particles.spawnAttackSparks(
                         b.x + b.width / 2 + (Math.random() - 0.5) * b.width,
@@ -1226,6 +1239,7 @@ const Enemies = {
         } else if (b.health <= Math.floor(b.maxHealth * 0.5) && b.phase === 1) {
             b.phase = 2;
             b.hitFlash = 15;
+            AudioManager.playBossPhaseTransition();
             // Spawn phase transition particles
             for (let i = 0; i < 12; i++) {
                 Particles.spawnAttackSparks(
@@ -2304,6 +2318,7 @@ const Enemies = {
 
     _onBossDefeated() {
         HUD.bossActive = false;
+        AudioManager.stopBossMusic();
 
         // Spawn celebration particles
         const cx = Level.bossArenaX ? Level.bossArenaX + 8 * TILE_SIZE : CANVAS_WIDTH / 2 + Camera.x;
@@ -2692,6 +2707,13 @@ const Enemies = {
             e.x += dir * 8;
         }
 
+        // Audio feedback
+        if (e.isBoss) {
+            AudioManager.playBossHit();
+        } else {
+            AudioManager.playEnemyHit();
+        }
+
         // Spawn hit particles
         Particles.spawnAttackSparks(e.x + e.width / 2, e.y + e.height / 2);
 
@@ -2727,6 +2749,13 @@ const Enemies = {
             }
 
             e.health = 0;
+
+            // Audio: enemy/boss defeat
+            if (e.isBoss) {
+                AudioManager.playBossDefeat();
+            } else {
+                AudioManager.playEnemyDefeat();
+            }
 
             // Ice Golem shatter effect
             if (e.shattersOnDeath || e.deathType === 'shatter') {

@@ -9,6 +9,11 @@ const Collectibles = {
     totalCoins: 0,    // Total coins defined for the current stage
     _animTimer: 0,
 
+    // Alias for test compatibility — filtered view of coin items
+    get coins() {
+        return this.items.filter(i => i.type === 'coin' && !i.collected);
+    },
+
     /**
      * Initialize collectibles for a stage.
      * @param {Array} coinPositions - [{x, y}, ...] world positions for coins
@@ -98,6 +103,7 @@ const Collectibles = {
             GameState.coinsCollected++;
             // Spawn collection particles
             Particles.spawnCoinCollect(item.x + item.width / 2, item.y + item.height / 2);
+            AudioManager.playCoinCollect();
         } else if (item.type === 'health') {
             // Only collect if player is damaged
             if (Player.hp < PLAYER_MAX_HP) {
@@ -105,6 +111,7 @@ const Collectibles = {
                 Player.hp = Math.min(Player.hp + 1, PLAYER_MAX_HP);
                 // Spawn health collect particles
                 Particles.spawnHealthCollect(item.x + item.width / 2, item.y + item.height / 2);
+                AudioManager.playHealthPickup();
             }
             // If at full HP, don't collect — item stays
         }

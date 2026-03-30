@@ -15,6 +15,7 @@ const Game = {
         Renderer.init();
         Input.init();
         HUD.init();
+        AudioManager.init();
         GameState.init();
         Menu.initTitle();
         Transition.active = false;

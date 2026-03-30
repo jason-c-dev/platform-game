@@ -274,6 +274,7 @@ const Player = {
             this.coyoteTimer = 0;
             this.jumpBufferTimer = 0;
             this._changeState('jump');
+            AudioManager.playJump();
             return;
         }
 
@@ -283,6 +284,7 @@ const Player = {
                 this.x + this.width / 2,
                 this.y + this.height
             );
+            AudioManager.playLand();
         }
 
         // ---- State transitions ----
@@ -334,6 +336,7 @@ const Player = {
             this.coyoteTimer = 0;
             this.jumpBufferTimer = 0;
             this._changeState('jump');
+            AudioManager.playJump();
             return;
         }
 
@@ -391,6 +394,7 @@ const Player = {
                     this.x + this.width / 2,
                     this.y + this.height
                 );
+                AudioManager.playLand();
             }
             // Check for buffered jump
             if (this.jumpBufferTimer > 0) {
@@ -398,6 +402,7 @@ const Player = {
                 this.onGround = false;
                 this.jumpBufferTimer = 0;
                 this._changeState('jump');
+                AudioManager.playJump();
             } else if (Math.abs(this.vx) > 0.5) {
                 this._changeState('walk');
             } else {
@@ -449,6 +454,11 @@ const Player = {
             Particles.spawnWallSlideSparks(sparkX, this.y + this.height / 2, this.wallDir);
         }
 
+        // Wall slide sound (periodic)
+        if (this.stateTimer % 8 === 1) {
+            AudioManager.playWallSlide();
+        }
+
         // ---- Wall jump ----
         if (Input.isJump()) {
             this.vx = -this.wallDir * WALL_JUMP_VX;
@@ -458,6 +468,7 @@ const Player = {
             this.jumpBufferTimer = 0;
             this.onGround = false;
             this._changeState('jump');
+            AudioManager.playJump();
             return;
         }
 
@@ -627,6 +638,7 @@ const Player = {
         this.isCharging = true;
         this.chargeTimer = 0;
         this._changeState('attack');
+        AudioManager.playAttack();
     },
 
     _updateAttack(inputDir) {
@@ -738,6 +750,7 @@ const Player = {
     _startJumpAttack() {
         this.attackTimer = 30; // Long duration — ends on landing or timeout
         this._changeState('jumpAttack');
+        AudioManager.playAttack();
     },
 
     _updateJumpAttack(inputDir) {
@@ -861,6 +874,7 @@ const Player = {
         if (this.invincible || this.state === 'dead' || this.state === 'hurt') return;
 
         this.hp--;
+        AudioManager.playHurt();
         if (this.hp <= 0) {
             this.hp = 0;
             this._die();
@@ -891,6 +905,7 @@ const Player = {
         if (this.state === 'dead') return;
 
         this.lives--;
+        AudioManager.playDeath();
 
         // Track deaths globally
         this.deathCount++;
