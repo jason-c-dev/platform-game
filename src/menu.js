@@ -741,6 +741,214 @@ const Menu = {
     },
 
     // =============================================
+    // VICTORY SCREEN
+    // =============================================
+
+    // Victory state
+    victoryScrollY: 0,
+    creditsY: 0,
+    scrollOffset: 0,
+    _victoryTime: 0,
+    _victoryCoins: 0,
+    _victoryDeaths: 0,
+    _victoryStars: [],
+
+    initVictory(totalTime, totalCoins, totalDeaths) {
+        this.selectedIndex = 0;
+        this.animTimer = 0;
+        this.victoryScrollY = 0;
+        this.creditsY = 0;
+        this.scrollOffset = 0;
+        this._victoryTime = totalTime || 0;
+        this._victoryCoins = totalCoins || 0;
+        this._victoryDeaths = totalDeaths || 0;
+
+        // Generate decorative stars
+        this._victoryStars = [];
+        for (let i = 0; i < 100; i++) {
+            this._victoryStars.push({
+                x: Math.random() * CANVAS_WIDTH,
+                y: Math.random() * CANVAS_HEIGHT,
+                size: 0.5 + Math.random() * 2,
+                brightness: 0.2 + Math.random() * 0.6,
+                twinkleSpeed: 1 + Math.random() * 3
+            });
+        }
+    },
+
+    updateVictory() {
+        this.animTimer += 1 / 60;
+
+        // Scroll credits upward
+        this.victoryScrollY += 0.5;
+        this.creditsY = this.victoryScrollY;
+        this.scrollOffset = this.victoryScrollY;
+
+        // Return to title on Enter
+        if (Input.isJustPressed('Enter')) {
+            GameState.transitionTo(GameState.TITLE, () => {
+                GameState.setupTitle();
+            });
+        }
+    },
+
+    renderVictory(ctx) {
+        // Dark background
+        ctx.fillStyle = COLORS.deepCharcoal;
+        ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+        // Twinkling stars background
+        for (const star of this._victoryStars) {
+            const alpha = star.brightness * (0.5 + 0.5 * Math.sin(this.animTimer * star.twinkleSpeed + star.x));
+            ctx.fillStyle = COLORS.softCream;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1.0;
+
+        // Scrolling credits content
+        const scrollY = this.victoryScrollY;
+        const baseY = CANVAS_HEIGHT - scrollY;
+
+        // Victory title (fixed at top until scrolled past)
+        const titleY = Math.max(80, baseY + 40);
+        if (titleY < CANVAS_HEIGHT + 50) {
+            // Golden glow behind title
+            const glowAlpha = 0.3 + 0.1 * Math.sin(this.animTimer * 2);
+            ctx.fillStyle = COLORS.mutedGold;
+            ctx.globalAlpha = glowAlpha;
+            ctx.beginPath();
+            ctx.arc(CANVAS_WIDTH / 2, titleY - 10, 120, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            this._drawTextWithOutline(ctx, 'VICTORY!',
+                CANVAS_WIDTH / 2, titleY,
+                'bold 48px sans-serif',
+                COLORS.mutedGold, COLORS.deepCharcoal, 'center');
+        }
+
+        // Subtitle
+        const subY = baseY + 100;
+        if (subY > -30 && subY < CANVAS_HEIGHT + 30) {
+            this._drawTextWithOutline(ctx, 'The Architect Has Fallen',
+                CANVAS_WIDTH / 2, subY,
+                'bold 28px sans-serif',
+                COLORS.softCream, COLORS.deepCharcoal, 'center');
+        }
+
+        // Congratulation text
+        const congY = baseY + 160;
+        if (congY > -30 && congY < CANVAS_HEIGHT + 30) {
+            this._drawTextWithOutline(ctx, 'You have conquered all four kingdoms',
+                CANVAS_WIDTH / 2, congY,
+                '18px sans-serif',
+                COLORS.steelBlue, COLORS.deepCharcoal, 'center');
+        }
+        const cong2Y = baseY + 190;
+        if (cong2Y > -30 && cong2Y < CANVAS_HEIGHT + 30) {
+            this._drawTextWithOutline(ctx, 'and restored peace to the Canvas!',
+                CANVAS_WIDTH / 2, cong2Y,
+                '18px sans-serif',
+                COLORS.steelBlue, COLORS.deepCharcoal, 'center');
+        }
+
+        // Stats panel
+        const statsY = baseY + 250;
+        if (statsY > -200 && statsY < CANVAS_HEIGHT + 50) {
+            const panelW = 320;
+            const panelH = 160;
+            const panelX = (CANVAS_WIDTH - panelW) / 2;
+
+            ctx.fillStyle = 'rgba(45, 45, 68, 0.9)';
+            this._roundRect(ctx, panelX, statsY, panelW, panelH, 8);
+            ctx.strokeStyle = COLORS.mutedGold;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            this._roundRectPath(ctx, panelX, statsY, panelW, panelH, 8);
+            ctx.stroke();
+
+            // Total Time
+            const minutes = Math.floor(this._victoryTime / 60);
+            const seconds = Math.floor(this._victoryTime % 60);
+            const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+            this._drawTextWithOutline(ctx, 'Total Time',
+                panelX + 40, statsY + 40,
+                '14px sans-serif',
+                COLORS.steelBlue, COLORS.deepCharcoal, 'left');
+            this._drawTextWithOutline(ctx, timeStr,
+                panelX + panelW - 40, statsY + 40,
+                'bold 22px "Courier New", monospace',
+                COLORS.softCream, COLORS.deepCharcoal, 'right');
+
+            // Total Coins
+            this._drawTextWithOutline(ctx, 'Total Coins',
+                panelX + 40, statsY + 80,
+                '14px sans-serif',
+                COLORS.steelBlue, COLORS.deepCharcoal, 'left');
+            this._drawTextWithOutline(ctx, String(this._victoryCoins),
+                panelX + panelW - 40, statsY + 80,
+                'bold 22px "Courier New", monospace',
+                COLORS.mutedGold, COLORS.deepCharcoal, 'right');
+
+            // Total Deaths
+            this._drawTextWithOutline(ctx, 'Total Deaths',
+                panelX + 40, statsY + 120,
+                '14px sans-serif',
+                COLORS.steelBlue, COLORS.deepCharcoal, 'left');
+            this._drawTextWithOutline(ctx, String(this._victoryDeaths),
+                panelX + panelW - 40, statsY + 120,
+                'bold 22px "Courier New", monospace',
+                COLORS.emberRed, COLORS.deepCharcoal, 'right');
+        }
+
+        // Credits section
+        const creditsStartY = baseY + 460;
+        const creditLines = [
+            { text: 'CREDITS', font: 'bold 22px sans-serif', color: COLORS.mutedGold },
+            { text: '', font: '14px sans-serif', color: COLORS.softCream },
+            { text: 'Game Design & Programming', font: '18px sans-serif', color: COLORS.softCream },
+            { text: 'Built with HTML5 Canvas & JavaScript', font: '14px sans-serif', color: COLORS.steelBlue },
+            { text: '', font: '14px sans-serif', color: COLORS.softCream },
+            { text: 'Worlds', font: 'bold 18px sans-serif', color: COLORS.mutedGold },
+            { text: 'Whispering Forest', font: '14px sans-serif', color: COLORS.forest.leaf },
+            { text: 'Scorching Desert', font: '14px sans-serif', color: COLORS.desert.sand },
+            { text: 'Frozen Tundra', font: '14px sans-serif', color: COLORS.tundra.iceBlue },
+            { text: 'Molten Volcano', font: '14px sans-serif', color: COLORS.volcano.lavaOrange },
+            { text: 'The Citadel', font: '14px sans-serif', color: COLORS.mutedGold },
+            { text: '', font: '14px sans-serif', color: COLORS.softCream },
+            { text: 'Thank you for playing!', font: 'bold 22px sans-serif', color: COLORS.mossGreen },
+            { text: '', font: '14px sans-serif', color: COLORS.softCream },
+            { text: '', font: '14px sans-serif', color: COLORS.softCream },
+        ];
+
+        let lineY = creditsStartY;
+        for (const line of creditLines) {
+            if (lineY > -30 && lineY < CANVAS_HEIGHT + 30) {
+                if (line.text) {
+                    this._drawTextWithOutline(ctx, line.text,
+                        CANVAS_WIDTH / 2, lineY,
+                        line.font,
+                        line.color, COLORS.deepCharcoal, 'center');
+                }
+            }
+            lineY += 30;
+        }
+
+        // Fixed "Press Enter" prompt at bottom
+        const pulseAlpha = 0.5 + 0.5 * Math.abs(Math.sin(this.animTimer * 2.5));
+        ctx.globalAlpha = pulseAlpha;
+        this._drawTextWithOutline(ctx, 'Press Enter to Return to Title',
+            CANVAS_WIDTH / 2, CANVAS_HEIGHT - 30,
+            '18px sans-serif',
+            COLORS.mutedGold, COLORS.deepCharcoal, 'center');
+        ctx.globalAlpha = 1.0;
+    },
+
+    // =============================================
     // SHARED MENU RENDERING
     // =============================================
 
