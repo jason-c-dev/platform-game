@@ -188,12 +188,11 @@ const Level = {
         // Platform behind breakables
         this._fill(20, 23, 14, 14, TILE_SOLID);
 
-        // SECTION D: Bounce pad sequence (cols 26-34, spaced for min 3-tile platforms)
-        this.tiles[17][26] = TILE_BOUNCE;
-        this.tiles[17][30] = TILE_BOUNCE;
-        this.tiles[17][34] = TILE_BOUNCE;
+        // SECTION D: Bounce pad sequence (3-tile-wide pads for min platform width compliance)
+        this._fill(25, 27, 17, 17, TILE_BOUNCE);
+        this._fill(31, 33, 17, 17, TILE_BOUNCE);
         // Elevated platform to reach via bounce
-        this._fill(30, 34, 10, 10, TILE_SOLID);
+        this._fill(29, 34, 10, 10, TILE_SOLID);
 
         // SECTION E: Platforming section (cols 35-45)
         this._fill(35, 38, 14, 14, TILE_SOLID);
@@ -473,15 +472,15 @@ const Level = {
         this.tiles[17][68] = TILE_HAZARD;
         this.tiles[17][69] = TILE_HAZARD;
 
-        // SECTION F: Vertical climb with moving platforms (cols 70-87)
-        this._fill(70, 76, 18, H - 1, TILE_SOLID);  // Widened for min 3-tile runs around bounce
-        this._fill(80, 87, 18, H - 1, TILE_SOLID);  // Widened for min 3-tile runs around bounce
+        // SECTION F: Vertical climb with moving platforms (cols 69-88)
+        this._fill(69, 77, 18, H - 1, TILE_SOLID);  // Island 1 (widened: 3-tile bounce + 3-tile sides)
+        this._fill(79, 88, 18, H - 1, TILE_SOLID);  // Island 2 (widened: 3-tile bounce + 3-tile sides)
         this._fill(78, 80, 14, 14, TILE_SOLID);
         this._fill(71, 85, 4, 4, TILE_SOLID); // High ceiling
 
-        // Bounce pads
-        this.tiles[18][73] = TILE_BOUNCE;
-        this.tiles[18][83] = TILE_BOUNCE;
+        // Bounce pads (3-wide for min platform width compliance)
+        this._fill(72, 74, 18, 18, TILE_BOUNCE);
+        this._fill(83, 85, 18, 18, TILE_BOUNCE);
 
         // SECTION G: Treetop run (cols 86-105)
         this._fill(86, 90, 10, 10, TILE_SOLID);
@@ -641,14 +640,15 @@ const Level = {
         // SECTION A: Starting area (cols 1-12)
         // Flat desert ground, intro
 
-        // SECTION B: First quicksand pit (cols 13-17)
-        this._fill(13, 17, 17, 17, TILE_QUICKSAND);
-        this._fill(14, 16, 18, 18, TILE_QUICKSAND);
+        // SECTION B: First quicksand pit (cols 13-17, rectangular for min platform width)
+        this._fill(13, 17, 17, 19, TILE_QUICKSAND);
         this._fill(15, 15, 19, 19, TILE_QUICKSAND_DEEP);
         // Add to tracking
-        for (let c = 13; c <= 17; c++) this.quicksandTiles.push({ x: c, y: 17 });
-        for (let c = 14; c <= 16; c++) this.quicksandTiles.push({ x: c, y: 18 });
-        this.quicksandTiles.push({ x: 15, y: 19 });
+        for (let c = 13; c <= 17; c++) {
+            this.quicksandTiles.push({ x: c, y: 17 });
+            this.quicksandTiles.push({ x: c, y: 18 });
+            this.quicksandTiles.push({ x: c, y: 19 });
+        }
 
         // Platform over quicksand
         this._fill(14, 16, 14, 14, TILE_ONE_WAY);
@@ -672,13 +672,14 @@ const Level = {
         // Platform above gate
         this._fill(35, 39, 14, 14, TILE_SOLID);
 
-        // SECTION D: More quicksand (cols 37-42)
-        this._fill(37, 42, 17, 17, TILE_QUICKSAND);
-        this._fill(38, 41, 18, 18, TILE_QUICKSAND);
+        // SECTION D: More quicksand (cols 37-42, rectangular for min platform width)
+        this._fill(37, 42, 17, 19, TILE_QUICKSAND);
         this._fill(39, 40, 19, 19, TILE_QUICKSAND_DEEP);
-        for (let c = 37; c <= 42; c++) this.quicksandTiles.push({ x: c, y: 17 });
-        for (let c = 38; c <= 41; c++) this.quicksandTiles.push({ x: c, y: 18 });
-        for (let c = 39; c <= 40; c++) this.quicksandTiles.push({ x: c, y: 19 });
+        for (let c = 37; c <= 42; c++) {
+            this.quicksandTiles.push({ x: c, y: 17 });
+            this.quicksandTiles.push({ x: c, y: 18 });
+            this.quicksandTiles.push({ x: c, y: 19 });
+        }
 
         // Stepping stones over quicksand (widened to 2 tiles each)
         this._fill(38, 39, 15, 15, TILE_ONE_WAY);
@@ -695,13 +696,14 @@ const Level = {
         this._fill(59, 68, 14, 14, TILE_SOLID);
         this._fill(62, 65, 10, 10, TILE_ONE_WAY);
 
-        // SECTION G: Quicksand gauntlet (cols 69-78)
-        this._fill(69, 78, 17, 17, TILE_QUICKSAND);
-        this._fill(70, 77, 18, 18, TILE_QUICKSAND);
+        // SECTION G: Quicksand gauntlet (cols 69-78, rectangular for min platform width)
+        this._fill(69, 78, 17, 19, TILE_QUICKSAND);
         this._fill(71, 76, 19, 19, TILE_QUICKSAND_DEEP);
-        for (let c = 69; c <= 78; c++) this.quicksandTiles.push({ x: c, y: 17 });
-        for (let c = 70; c <= 77; c++) this.quicksandTiles.push({ x: c, y: 18 });
-        for (let c = 71; c <= 76; c++) this.quicksandTiles.push({ x: c, y: 19 });
+        for (let c = 69; c <= 78; c++) {
+            this.quicksandTiles.push({ x: c, y: 17 });
+            this.quicksandTiles.push({ x: c, y: 18 });
+            this.quicksandTiles.push({ x: c, y: 19 });
+        }
         // Platforms across (widened to 2 tiles each)
         this._fill(71, 72, 14, 14, TILE_ONE_WAY);
         this._fill(74, 75, 14, 14, TILE_ONE_WAY);
@@ -853,11 +855,13 @@ const Level = {
         // Pillar
         this._fill(84, 85, 12, 18, TILE_SOLID);
 
-        // SECTION G: Quicksand trap (cols 91-100)
-        this._fill(93, 97, 19, 19, TILE_QUICKSAND);
+        // SECTION G: Quicksand trap (cols 91-100, rectangular for min platform width)
+        this._fill(93, 97, 19, 20, TILE_QUICKSAND);
         this._fill(94, 96, 20, 20, TILE_QUICKSAND_DEEP);
-        for (let c = 93; c <= 97; c++) this.quicksandTiles.push({ x: c, y: 19 });
-        for (let c = 94; c <= 96; c++) this.quicksandTiles.push({ x: c, y: 20 });
+        for (let c = 93; c <= 97; c++) {
+            this.quicksandTiles.push({ x: c, y: 19 });
+            this.quicksandTiles.push({ x: c, y: 20 });
+        }
         this._fill(94, 96, 16, 16, TILE_ONE_WAY);
         this._fill(99, 102, 15, 15, TILE_SOLID);
 
