@@ -1,0 +1,190 @@
+{
+  "sprint": 15,
+  "decision": "accepted",
+  "reviewDate": "2026-03-30",
+  "summary": "Solid contract with thorough coverage of all sprint features: boss vulnerability windows per world, boss HP ranges per world, arena structural checks, level path fixes, and architectural code-review criteria. Criteria are specific, quantitative, and testable via the Sprint 14 validator API. Minor redundancy between per-world and aggregate criteria is acceptable for diagnostic granularity. A few suggestions noted below but nothing blocking acceptance.",
+  "criteriaReview": [
+    {
+      "id": "C-01",
+      "verdict": "accept",
+      "notes": "Fully subsumed by C-02 (which checks all World 1 including 1-1), but acceptable as a focused check on the specifically-called-out broken boss from the user prompt. Keeps it for traceability."
+    },
+    {
+      "id": "C-02",
+      "verdict": "accept",
+      "notes": "Clear threshold, testable via console. Good."
+    },
+    {
+      "id": "C-03",
+      "verdict": "accept",
+      "notes": "Clear threshold, testable via console. Good."
+    },
+    {
+      "id": "C-04",
+      "verdict": "accept",
+      "notes": "Clear threshold, testable via console. Good."
+    },
+    {
+      "id": "C-05",
+      "verdict": "accept",
+      "notes": "Clear threshold, testable via console. Good."
+    },
+    {
+      "id": "C-06",
+      "verdict": "accept",
+      "notes": "Clear threshold, testable via console. Good."
+    },
+    {
+      "id": "C-07",
+      "verdict": "accept",
+      "notes": "Aggregate of C-02 through C-06. Redundant but useful as a single summary check. Keeps the evaluator honest that nothing was skipped."
+    },
+    {
+      "id": "C-08",
+      "verdict": "accept",
+      "notes": "HP range [5,7] for World 1. Clear, testable."
+    },
+    {
+      "id": "C-09",
+      "verdict": "accept",
+      "notes": "HP range [6,8] for World 2. Clear, testable."
+    },
+    {
+      "id": "C-10",
+      "verdict": "accept",
+      "notes": "HP range [7,9] for World 3. Clear, testable."
+    },
+    {
+      "id": "C-11",
+      "verdict": "accept",
+      "notes": "HP range [7,11] for World 4. Clear, testable."
+    },
+    {
+      "id": "C-12",
+      "verdict": "accept",
+      "notes": "Exact HP = 19 for Architect. Clear, testable."
+    },
+    {
+      "id": "C-13",
+      "verdict": "accept",
+      "notes": "Aggregate HP check. Same redundancy pattern as C-07. Acceptable."
+    },
+    {
+      "id": "C-14",
+      "verdict": "accept",
+      "notes": "Platforms >= 2 per arena. Directly from user prompt requirement. Good."
+    },
+    {
+      "id": "C-15",
+      "verdict": "accept",
+      "notes": "Arena entry validation. Directly from user prompt. Good."
+    },
+    {
+      "id": "C-16",
+      "verdict": "accept",
+      "notes": "Arena enclosure validation. Good."
+    },
+    {
+      "id": "C-17",
+      "verdict": "accept",
+      "notes": "Arena minimum width >= 15 tiles. Directly from user prompt. Good."
+    },
+    {
+      "id": "C-18",
+      "verdict": "accept",
+      "notes": "Code-review method is acceptable for boss clamping. A runtime test would be stronger (spawn boss, advance frames, check x position) but code-review is pragmatic given the difficulty of automating boss movement in a headless context."
+    },
+    {
+      "id": "C-19",
+      "verdict": "accept",
+      "notes": "Code-review method is acceptable. Same reasoning as C-18 — triggering player death programmatically to verify boss reset is complex to automate."
+    },
+    {
+      "id": "C-20",
+      "verdict": "accept",
+      "notes": "Key criterion — Stage 1-2 was explicitly called out as broken/impassable. Validator confirms traversability. Good."
+    },
+    {
+      "id": "C-21",
+      "verdict": "accept",
+      "notes": "Code-review for wall-jump section widening. Threshold of 4-tile gaps and intermediate platforms is specific enough. Good."
+    },
+    {
+      "id": "C-22",
+      "verdict": "accept",
+      "notes": "Aggregate path validation — all 13 stages. Critical safety net. Good."
+    },
+    {
+      "id": "C-23",
+      "verdict": "accept",
+      "notes": "Architectural criterion ensuring per-world config lookup rather than per-boss hardcoding. Good for maintainability and correctness. Frame values specified."
+    },
+    {
+      "id": "C-24",
+      "verdict": "accept",
+      "notes": "Aggregate arena check (52 sub-checks). Redundant with C-14 through C-17 but provides a single summary number. Acceptable."
+    },
+    {
+      "id": "C-25",
+      "verdict": "accept",
+      "notes": "Aggregate boss difficulty check (26 sub-checks). Redundant with C-07 + C-13 but harmless."
+    },
+    {
+      "id": "C-26",
+      "verdict": "accept",
+      "notes": "FPS regression check. Threshold of >= 55 fps is reasonable (allows some margin from target 60). Good."
+    },
+    {
+      "id": "C-27",
+      "verdict": "accept",
+      "notes": "Validator structural regression — ensures validator still produces complete results after game data changes. Good."
+    },
+    {
+      "id": "C-28",
+      "verdict": "accept",
+      "notes": "World map regression. 13 nodes across 5 worlds. Good."
+    },
+    {
+      "id": "C-29",
+      "verdict": "accept",
+      "notes": "testMethod 'manual' may be harder to automate. Suggest the evaluator use Playwright keyboard simulation (press 'D', check for overlay elements) if available. Acceptable as-is since the debug overlay is a Sprint 14 feature and regression testing it is prudent."
+    },
+    {
+      "id": "C-30",
+      "verdict": "accept",
+      "notes": "Smoke test for core gameplay systems. Threshold is somewhat vague ('player moves, jumps, attacks normally') but checking for existence of Player/Physics/Input/Camera/Renderer objects is a reasonable minimum bar. Acceptable."
+    }
+  ],
+  "coverageAnalysis": {
+    "sprintPlanFeature": "F25: Difficulty Curve Rebalancing (level fixes + boss tuning)",
+    "coveredAreas": [
+      "Boss vulnerability windows per world (C-01 through C-07)",
+      "Boss HP ranges per world (C-08 through C-13)",
+      "Boss arena structural integrity: platforms, entry, enclosure, width (C-14 through C-17)",
+      "Boss behavioral correctness: clamping, reset on death (C-18, C-19)",
+      "Stage 1-2 layout fix and path validation (C-20, C-21)",
+      "All 13 stages path traversability (C-22)",
+      "Vulnerability window architecture (C-23)",
+      "Aggregate validation summaries (C-24, C-25)",
+      "Performance and structural regression (C-26 through C-30)"
+    ],
+    "gaps": [
+      "No explicit criterion for Stage 1-1 layout/path fix — though Stage 1-1's issue was the boss vulnerability window (covered by C-01/C-02) rather than path traversability, so this is acceptable.",
+      "User prompt mentions 'Recovery after jump landing should be obvious and generous' for Elder Shroomba — this qualitative aspect is only indirectly tested via the 3.0s vulnerability window duration. Acceptable since the 3.0s window is the quantified version of 'generous'.",
+      "No criterion verifies that bosses can be defeated using only mechanics introduced up to that point (user prompt requirement) — this is very difficult to automate and is arguably Sprint 16 scope (mechanics gating is listed in outOfScope). Acceptable omission."
+    ]
+  },
+  "outOfScopeReview": {
+    "verdict": "correct",
+    "notes": "Enemy density, hazard percentage, platform width, and mechanics gating are properly deferred to Sprint 16 as stated in the sprint plan."
+  },
+  "regressionSprintsReview": {
+    "verdict": "correct",
+    "notes": "All 14 prior sprints listed. Sprint 15 depends on 14 which depends on 13, etc. Full regression chain is covered."
+  },
+  "suggestions": [
+    "Consider converting C-29 from 'manual' to 'console' testMethod with steps like: simulate D keypress via window.dispatchEvent, then check for overlay DOM/canvas state. Would make fully automated evaluation easier.",
+    "C-30 could be strengthened by checking specific method existence (e.g., typeof Player.prototype.move === 'function') rather than just 'verify Player object exists'. Minor improvement.",
+    "The 5 aggregate criteria (C-07, C-13, C-22, C-24, C-25) overlap heavily with their per-world counterparts. Not a problem — but the evaluator should test the per-world criteria first and only check aggregates as confirmation, to avoid masking which world specifically failed."
+  ]
+}
