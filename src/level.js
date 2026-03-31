@@ -169,6 +169,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 2, 5, 5, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION A: Starting area (cols 1-10)
         // Flat ground, easy intro
@@ -187,10 +188,10 @@ const Level = {
         // Platform behind breakables
         this._fill(20, 23, 14, 14, TILE_SOLID);
 
-        // SECTION D: Bounce pad sequence (cols 26-32)
+        // SECTION D: Bounce pad sequence (cols 26-34, spaced for min 3-tile platforms)
         this.tiles[17][26] = TILE_BOUNCE;
-        this.tiles[17][29] = TILE_BOUNCE;
-        this.tiles[17][32] = TILE_BOUNCE;
+        this.tiles[17][30] = TILE_BOUNCE;
+        this.tiles[17][34] = TILE_BOUNCE;
         // Elevated platform to reach via bounce
         this._fill(30, 34, 10, 10, TILE_SOLID);
 
@@ -246,8 +247,6 @@ const Level = {
         this.enemySpawns = [
             { type: 'shroomba', x: 10 * TILE_SIZE, y: 15 * TILE_SIZE },
             { type: 'shroomba', x: 25 * TILE_SIZE, y: 15 * TILE_SIZE },
-            { type: 'shroomba', x: 37 * TILE_SIZE, y: 12 * TILE_SIZE },
-            { type: 'shroomba', x: 48 * TILE_SIZE, y: 15 * TILE_SIZE },
             { type: 'shroomba', x: 57 * TILE_SIZE, y: 13 * TILE_SIZE },
         ];
 
@@ -297,6 +296,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 21, TILE_SOLID);
+        this._fill(1, 2, 5, 5, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION A: Entry area (cols 1-10)
         // Normal ground
@@ -345,6 +345,7 @@ const Level = {
         this._fill(59, 62, 12, 12, TILE_SOLID);
         // Wall for wall slide (lowered top to allow jumping over)
         this._fill(63, 63, 9, 21, TILE_SOLID);
+        this._fill(62, 64, 9, 9, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION G: Large chamber (cols 64-80)
         this._fill(64, 80, 18, 18, TILE_ONE_WAY);
@@ -366,7 +367,7 @@ const Level = {
 
         // SECTION I: Pre-boss (cols 98-104)
         this._fill(98, 102, 19, 19, TILE_SOLID);
-        this._fill(103, 104, 16, 16, TILE_ONE_WAY);
+        this._fill(102, 104, 16, 16, TILE_ONE_WAY); // Widened to 3 tiles for min platform width
 
         // =====================
         // BOSS ARENA (cols 105-124)
@@ -397,10 +398,8 @@ const Level = {
         this.enemySpawns = [
             { type: 'shroomba', x: 8 * TILE_SIZE, y: 20 * TILE_SIZE },
             { type: 'thornvine', x: 25 * TILE_SIZE, y: 10 * TILE_SIZE - 32 },
-            { type: 'thornvine', x: 50 * TILE_SIZE, y: 14 * TILE_SIZE - 32 },
             { type: 'shroomba', x: 56 * TILE_SIZE, y: 13 * TILE_SIZE },
             { type: 'thornvine', x: 73 * TILE_SIZE, y: 10 * TILE_SIZE - 32 },
-            { type: 'shroomba', x: 87 * TILE_SIZE, y: 17 * TILE_SIZE },
             { type: 'thornvine', x: 95 * TILE_SIZE, y: 15 * TILE_SIZE },
         ];
 
@@ -443,6 +442,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 17, TILE_SOLID);
+        this._fill(1, 2, 5, 5, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION A: Starting platforms (cols 1-15)
         this._fill(8, 11, 14, 14, TILE_SOLID);
@@ -473,9 +473,9 @@ const Level = {
         this.tiles[17][68] = TILE_HAZARD;
         this.tiles[17][69] = TILE_HAZARD;
 
-        // SECTION F: Vertical climb with moving platforms (cols 71-85)
-        this._fill(71, 74, 18, H - 1, TILE_SOLID);
-        this._fill(82, 85, 18, H - 1, TILE_SOLID);
+        // SECTION F: Vertical climb with moving platforms (cols 70-87)
+        this._fill(70, 76, 18, H - 1, TILE_SOLID);  // Widened for min 3-tile runs around bounce
+        this._fill(80, 87, 18, H - 1, TILE_SOLID);  // Widened for min 3-tile runs around bounce
         this._fill(78, 80, 14, 14, TILE_SOLID);
         this._fill(71, 85, 4, 4, TILE_SOLID); // High ceiling
 
@@ -590,13 +590,9 @@ const Level = {
         // Enemy spawns
         this.enemySpawns = [
             { type: 'barkbeetle', x: 18 * TILE_SIZE, y: 9 * TILE_SIZE },
-            { type: 'barkbeetle', x: 35 * TILE_SIZE, y: 7 * TILE_SIZE },
             { type: 'shroomba', x: 55 * TILE_SIZE, y: 14 * TILE_SIZE },
-            { type: 'barkbeetle', x: 45 * TILE_SIZE, y: 7 * TILE_SIZE },
-            { type: 'shroomba', x: 65 * TILE_SIZE, y: 16 * TILE_SIZE },
             { type: 'barkbeetle', x: 90 * TILE_SIZE, y: 5 * TILE_SIZE },
             { type: 'shroomba', x: 107 * TILE_SIZE, y: 12 * TILE_SIZE },
-            { type: 'barkbeetle', x: 100 * TILE_SIZE, y: 5 * TILE_SIZE },
         ];
 
         // Coins (25 total)
@@ -640,6 +636,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 1, 5, 5, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Starting area (cols 1-12)
         // Flat desert ground, intro
@@ -683,9 +680,9 @@ const Level = {
         for (let c = 38; c <= 41; c++) this.quicksandTiles.push({ x: c, y: 18 });
         for (let c = 39; c <= 40; c++) this.quicksandTiles.push({ x: c, y: 19 });
 
-        // Stepping stones over quicksand
-        this._fill(38, 38, 15, 15, TILE_ONE_WAY);
-        this._fill(41, 41, 15, 15, TILE_ONE_WAY);
+        // Stepping stones over quicksand (widened to 2 tiles each)
+        this._fill(38, 39, 15, 15, TILE_ONE_WAY);
+        this._fill(41, 42, 15, 15, TILE_ONE_WAY);
 
         // SECTION E: Ruins section (cols 43-55)
         this._fill(43, 47, 15, 15, TILE_SOLID);
@@ -705,10 +702,10 @@ const Level = {
         for (let c = 69; c <= 78; c++) this.quicksandTiles.push({ x: c, y: 17 });
         for (let c = 70; c <= 77; c++) this.quicksandTiles.push({ x: c, y: 18 });
         for (let c = 71; c <= 76; c++) this.quicksandTiles.push({ x: c, y: 19 });
-        // Platforms across
-        this._fill(71, 71, 14, 14, TILE_ONE_WAY);
-        this._fill(74, 74, 14, 14, TILE_ONE_WAY);
-        this._fill(77, 77, 14, 14, TILE_ONE_WAY);
+        // Platforms across (widened to 2 tiles each)
+        this._fill(71, 72, 14, 14, TILE_ONE_WAY);
+        this._fill(74, 75, 14, 14, TILE_ONE_WAY);
+        this._fill(77, 78, 14, 14, TILE_ONE_WAY);
 
         // SECTION H: Pre-boss area (cols 79-89)
         this._fill(79, 89, 15, 15, TILE_SOLID);
@@ -746,7 +743,6 @@ const Level = {
             { type: 'dust_devil', x: 45 * TILE_SIZE, y: 12 * TILE_SIZE },
             { type: 'sand_skitter', x: 55 * TILE_SIZE, y: 13 * TILE_SIZE },
             { type: 'sand_skitter', x: 63 * TILE_SIZE, y: 12 * TILE_SIZE },
-            { type: 'dust_devil', x: 73 * TILE_SIZE, y: 12 * TILE_SIZE },
             { type: 'sand_skitter', x: 83 * TILE_SIZE, y: 13 * TILE_SIZE },
         ];
 
@@ -947,6 +943,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 4, 17, TILE_SOLID);
+        this._fill(1, 1, 4, 4, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Desert start (cols 1-12)
         // Dry desert terrain
@@ -1490,6 +1487,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 1, 5, 5, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Starting area with normal ground (cols 1-12)
         // Flat solid ground, gentle intro
@@ -1666,8 +1664,9 @@ const Level = {
         this.iceBlocks.push(
             { x: 18 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' }
         );
-        // Wall the block needs to hit
+        // Wall the block needs to hit (widened cap to 2 tiles)
         this._fill(25, 25, 15, 18, TILE_SOLID);
+        this._fill(24, 24, 15, 15, TILE_SOLID); // Cap adjacent tile for min platform width
         // Platform above that needs block as step
         this._fill(26, 30, 14, 14, TILE_SOLID);
         // Gap that block fills
@@ -1690,9 +1689,11 @@ const Level = {
             { x: 50 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' },
             { x: 56 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' }
         );
-        // Walls and gaps
+        // Walls and gaps (widened caps to 2 tiles)
         this._fill(54, 54, 14, 18, TILE_SOLID);
+        this._fill(53, 53, 14, 14, TILE_SOLID); // Cap adjacent tile for min platform width
         this._fill(60, 60, 15, 18, TILE_SOLID);
+        this._fill(59, 59, 15, 15, TILE_SOLID); // Cap adjacent tile for min platform width
         this._fill(48, 49, 19, H - 1, TILE_EMPTY);
 
         // SECTION E: Vertical crystal shaft (cols 63-72)
@@ -1809,6 +1810,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 1, 5, 5, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Starting area (cols 1-12) — safe zone before scroll starts
         this._placeIce(5, 12, 17, 17);
