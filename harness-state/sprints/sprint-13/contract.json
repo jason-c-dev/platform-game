@@ -1,0 +1,173 @@
+{
+  "sprint": 13,
+  "name": "Playability Validator — Path Validation Engine",
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "API",
+      "description": "window.runPlayabilityCheck() exists and is callable",
+      "testMethod": "console",
+      "testSteps": ["Call window.runPlayabilityCheck() and verify it returns a value"],
+      "threshold": "Function exists and returns a result (not undefined)"
+    },
+    {
+      "id": "C-02",
+      "category": "API",
+      "description": "runPlayabilityCheck returns a JSON report with per-stage results for all 13 stages",
+      "testMethod": "console",
+      "testSteps": ["Call window.runPlayabilityCheck() and check result has 13 stage entries"],
+      "threshold": "Result is an object/array with entries for stages 1-1 through 5-1"
+    },
+    {
+      "id": "C-03",
+      "category": "API",
+      "description": "Each stage result contains stageId, name, pathResult (PASS/FAIL), and details",
+      "testMethod": "console",
+      "testSteps": ["Inspect individual stage results in the report"],
+      "threshold": "Each entry has stageId, name, pathResult fields"
+    },
+    {
+      "id": "C-04",
+      "category": "pathfinding",
+      "description": "BFS pathfinder uses player physics: jump height of 4 tiles (128px)",
+      "testMethod": "code-review",
+      "testSteps": ["Verify pathfinder jump height constant is 4 tiles or 128px"],
+      "threshold": "Jump height parameter equals 4 tiles"
+    },
+    {
+      "id": "C-05",
+      "category": "pathfinding",
+      "description": "BFS pathfinder uses player physics: wall-jump reach of 3 tiles (96px) horizontal",
+      "testMethod": "code-review",
+      "testSteps": ["Verify wall-jump horizontal reach constant is 3 tiles or 96px"],
+      "threshold": "Wall-jump reach parameter equals 3 tiles"
+    },
+    {
+      "id": "C-06",
+      "category": "pathfinding",
+      "description": "Pathfinder finds path from spawn to boss trigger zone for each stage",
+      "testMethod": "console",
+      "testSteps": ["Run validation and check that paths connect spawn to boss area"],
+      "threshold": "Path validation checks spawn-to-boss-trigger connectivity"
+    },
+    {
+      "id": "C-07",
+      "category": "pathfinding",
+      "description": "Pathfinder treats one-way platforms as valid traversal nodes (standable from above)",
+      "testMethod": "code-review",
+      "testSteps": ["Verify TILE_ONE_WAY is handled in the pathfinder as a standable surface"],
+      "threshold": "One-way platforms are walkable/standable in BFS"
+    },
+    {
+      "id": "C-08",
+      "category": "pathfinding",
+      "description": "Pathfinder treats ladders as valid traversal nodes (climbable)",
+      "testMethod": "code-review",
+      "testSteps": ["Verify TILE_LADDER allows vertical traversal in BFS"],
+      "threshold": "Ladders enable upward movement in pathfinder"
+    },
+    {
+      "id": "C-09",
+      "category": "pathfinding",
+      "description": "Pathfinder treats bounce pads as valid traversal (higher jump)",
+      "testMethod": "code-review",
+      "testSteps": ["Verify TILE_BOUNCE grants higher vertical reach in BFS"],
+      "threshold": "Bounce pads grant extra jump height in pathfinder"
+    },
+    {
+      "id": "C-10",
+      "category": "pathfinding",
+      "description": "Pathfinder treats crumbling platforms as valid traversal nodes",
+      "testMethod": "code-review",
+      "testSteps": ["Verify TILE_CRUMBLE is treated as standable in BFS"],
+      "threshold": "Crumbling platforms are walkable in pathfinder"
+    },
+    {
+      "id": "C-11",
+      "category": "debug-ui",
+      "description": "Pressing 'D' on title screen opens debug/validator overlay",
+      "testMethod": "manual",
+      "testSteps": ["On title screen, press D key", "Verify debug overlay appears"],
+      "threshold": "Debug overlay is displayed when D is pressed on title screen"
+    },
+    {
+      "id": "C-12",
+      "category": "debug-ui",
+      "description": "Debug overlay shows validation results for all 13 stages",
+      "testMethod": "manual",
+      "testSteps": ["Open debug overlay", "Verify all 13 stages are listed with results"],
+      "threshold": "All 13 stages shown with PASS/FAIL status"
+    },
+    {
+      "id": "C-13",
+      "category": "debug-ui",
+      "description": "Debug overlay is scrollable to view all results",
+      "testMethod": "manual",
+      "testSteps": ["Open debug overlay with results", "Verify scrolling works (arrow keys)"],
+      "threshold": "Results can be scrolled through with arrow keys"
+    },
+    {
+      "id": "C-14",
+      "category": "debug-ui",
+      "description": "Debug overlay uses design spec colors (Deep Charcoal bg, Soft Cream text, Muted Gold accents)",
+      "testMethod": "code-review",
+      "testSteps": ["Verify overlay uses #1A1A2E, #E8DCC8, #C4A35A"],
+      "threshold": "Design spec colors used for overlay"
+    },
+    {
+      "id": "C-15",
+      "category": "debug-ui",
+      "description": "PASS results shown in Moss Green, FAIL results shown in Ember Red",
+      "testMethod": "code-review",
+      "testSteps": ["Verify PASS uses #5A9E6F and FAIL uses #D94F4F"],
+      "threshold": "Correct color coding for results"
+    },
+    {
+      "id": "C-16",
+      "category": "integration",
+      "description": "Validator file (src/validator.js) is loaded via script tag in index.html",
+      "testMethod": "code-review",
+      "testSteps": ["Check index.html has script tag for validator.js"],
+      "threshold": "Script tag present and loads before game.js"
+    },
+    {
+      "id": "C-17",
+      "category": "API",
+      "description": "Failed path results include coordinates of first unreachable section",
+      "testMethod": "console",
+      "testSteps": ["Check FAIL results for coordinate information"],
+      "threshold": "FAIL entries include x/y or col/row of unreachable area"
+    },
+    {
+      "id": "C-18",
+      "category": "debug-ui",
+      "description": "Pressing Escape or D from debug overlay returns to title screen",
+      "testMethod": "manual",
+      "testSteps": ["Open debug overlay", "Press Escape", "Verify return to title"],
+      "threshold": "Overlay closes and title screen is restored"
+    },
+    {
+      "id": "C-19",
+      "category": "regression",
+      "description": "Title screen still works normally (menu navigation, Enter to select)",
+      "testMethod": "manual",
+      "testSteps": ["Navigate title menu with arrows", "Press Enter to start game"],
+      "threshold": "Title screen functions as before"
+    },
+    {
+      "id": "C-20",
+      "category": "regression",
+      "description": "Game still runs at 60fps after adding validator code",
+      "testMethod": "console",
+      "testSteps": ["Play a stage and check fps via window.__gameDebug.fps"],
+      "threshold": "FPS >= 55 during normal gameplay"
+    }
+  ],
+  "outOfScope": [
+    "Boss arena validation (Sprint 14)",
+    "Difficulty parameter checks (Sprint 14)",
+    "Level layout fixes (Sprint 15)",
+    "Boss rebalancing (Sprint 15)"
+  ],
+  "regressionSprints": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+}

@@ -13,6 +13,7 @@ const GameState = {
     GAME_OVER: 'GAME_OVER',
     STAGE_COMPLETE: 'STAGE_COMPLETE',
     VICTORY: 'VICTORY',
+    DEBUG: 'DEBUG',
 
     // Current state
     current: 'TITLE',
@@ -222,6 +223,9 @@ const GameState = {
             case this.VICTORY:
                 this._updateVictory();
                 break;
+            case this.DEBUG:
+                this._updateDebug();
+                break;
         }
     },
 
@@ -257,6 +261,9 @@ const GameState = {
             case this.VICTORY:
                 Menu.renderVictory(ctx);
                 break;
+            case this.DEBUG:
+                this._renderDebug(ctx);
+                break;
         }
 
         // Always render transition overlay on top
@@ -272,6 +279,14 @@ const GameState = {
     _updateTitle() {
         if (this.transitioning) return;
         Input.update();
+
+        // Debug mode: "D" opens playability validator overlay
+        if (Input.isJustPressed('d') || Input.isJustPressed('D')) {
+            this.changeTo(this.DEBUG);
+            PlayabilityValidator.open();
+            return;
+        }
+
         Menu.updateTitle();
     },
 
@@ -460,6 +475,27 @@ const GameState = {
         if (this.transitioning) return;
         Input.update();
         Menu.updateVictory();
+    },
+
+    // =============================================
+    // DEBUG STATE (Playability Validator)
+    // =============================================
+    _updateDebug() {
+        Input.update();
+        PlayabilityValidator.update();
+
+        // If validator closed itself, return to title
+        if (!PlayabilityValidator.active) {
+            this.changeTo(this.TITLE);
+            Menu.initTitle();
+        }
+    },
+
+    _renderDebug(ctx) {
+        // Render title screen as background
+        Menu.renderTitle(ctx);
+        // Render validator overlay on top
+        PlayabilityValidator.render(ctx);
     },
 
     // Public helper for player death callback
