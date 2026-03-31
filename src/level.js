@@ -178,8 +178,8 @@ const Level = {
         this._fill(11, 13, 14, 14, TILE_ONE_WAY);
         this._fill(14, 16, 11, 11, TILE_ONE_WAY);
 
-        // Gap in ground (cols 14-15)
-        this._fill(14, 15, 17, H - 1, TILE_EMPTY);
+        // Gap in ground (col 14 only — narrowed for min 3-tile platform)
+        this._fill(14, 14, 17, H - 1, TILE_EMPTY);
 
         // SECTION C: Breakable block puzzle (cols 18-22)
         // Breakable blocks blocking a passage
@@ -950,26 +950,19 @@ const Level = {
         this._fill(8, 11, 14, 14, TILE_SOLID);
 
         // SECTION B: First oasis pool (cols 13-22)
-        // Dig out pool
-        this._fill(13, 22, 18, 18, TILE_EMPTY);
-        this._fill(14, 21, 19, 19, TILE_EMPTY);
-        this._fill(15, 20, 20, 20, TILE_EMPTY);
+        // Dig out pool (rectangular to avoid 1-tile edge platforms)
+        this._fill(13, 22, 18, 20, TILE_EMPTY);
         // Fill with water
         this._fill(13, 22, 15, 15, TILE_WATER_SURFACE);
         this._fill(13, 22, 16, 17, TILE_WATER);
-        this._fill(14, 21, 18, 19, TILE_WATER);
-        this._fill(15, 20, 20, 20, TILE_WATER);
+        this._fill(13, 22, 18, 20, TILE_WATER);
         // Track water tiles
         for (let c = 13; c <= 22; c++) {
             this.waterTiles.push({ x: c, y: 15 });
             this.waterTiles.push({ x: c, y: 16 });
             this.waterTiles.push({ x: c, y: 17 });
-        }
-        for (let c = 14; c <= 21; c++) {
             this.waterTiles.push({ x: c, y: 18 });
             this.waterTiles.push({ x: c, y: 19 });
-        }
-        for (let c = 15; c <= 20; c++) {
             this.waterTiles.push({ x: c, y: 20 });
         }
 
@@ -1528,14 +1521,20 @@ const Level = {
         // SECTION E: Fire-lure puzzle (cols 56-68)
         this._fill(56, 68, 17, H - 1, TILE_SOLID);
 
-        // Meltable ice wall blocking path
+        // Meltable ice wall blocking path (2 tiles wide for min platform width)
+        this.tiles[15][61] = TILE_ICE;
+        this.tiles[16][61] = TILE_ICE;
         this.tiles[15][62] = TILE_ICE;
         this.tiles[16][62] = TILE_ICE;
         this.meltableBlocks.push(
+            { x: 61 * TILE_SIZE, y: 15 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
+            { x: 61 * TILE_SIZE, y: 16 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
             { x: 62 * TILE_SIZE, y: 15 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
             { x: 62 * TILE_SIZE, y: 16 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' }
         );
         this.puzzleElements.push(
+            { type: 'meltable_ice', x: 61, y: 15 },
+            { type: 'meltable_ice', x: 61, y: 16 },
             { type: 'meltable_ice', x: 62, y: 15 },
             { type: 'meltable_ice', x: 62, y: 16 }
         );
