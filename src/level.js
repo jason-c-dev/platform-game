@@ -169,6 +169,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 2, 5, 5, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION A: Starting area (cols 1-10)
         // Flat ground, easy intro
@@ -177,8 +178,8 @@ const Level = {
         this._fill(11, 13, 14, 14, TILE_ONE_WAY);
         this._fill(14, 16, 11, 11, TILE_ONE_WAY);
 
-        // Gap in ground (cols 14-15)
-        this._fill(14, 15, 17, H - 1, TILE_EMPTY);
+        // Gap in ground (col 14 only — narrowed for min 3-tile platform)
+        this._fill(14, 14, 17, H - 1, TILE_EMPTY);
 
         // SECTION C: Breakable block puzzle (cols 18-22)
         // Breakable blocks blocking a passage
@@ -187,12 +188,11 @@ const Level = {
         // Platform behind breakables
         this._fill(20, 23, 14, 14, TILE_SOLID);
 
-        // SECTION D: Bounce pad sequence (cols 26-32)
-        this.tiles[17][26] = TILE_BOUNCE;
-        this.tiles[17][29] = TILE_BOUNCE;
-        this.tiles[17][32] = TILE_BOUNCE;
+        // SECTION D: Bounce pad sequence (3-tile-wide pads for min platform width compliance)
+        this._fill(25, 27, 17, 17, TILE_BOUNCE);
+        this._fill(31, 33, 17, 17, TILE_BOUNCE);
         // Elevated platform to reach via bounce
-        this._fill(30, 34, 10, 10, TILE_SOLID);
+        this._fill(29, 34, 10, 10, TILE_SOLID);
 
         // SECTION E: Platforming section (cols 35-45)
         this._fill(35, 38, 14, 14, TILE_SOLID);
@@ -246,8 +246,6 @@ const Level = {
         this.enemySpawns = [
             { type: 'shroomba', x: 10 * TILE_SIZE, y: 15 * TILE_SIZE },
             { type: 'shroomba', x: 25 * TILE_SIZE, y: 15 * TILE_SIZE },
-            { type: 'shroomba', x: 37 * TILE_SIZE, y: 12 * TILE_SIZE },
-            { type: 'shroomba', x: 48 * TILE_SIZE, y: 15 * TILE_SIZE },
             { type: 'shroomba', x: 57 * TILE_SIZE, y: 13 * TILE_SIZE },
         ];
 
@@ -297,6 +295,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 21, TILE_SOLID);
+        this._fill(1, 2, 5, 5, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION A: Entry area (cols 1-10)
         // Normal ground
@@ -345,6 +344,7 @@ const Level = {
         this._fill(59, 62, 12, 12, TILE_SOLID);
         // Wall for wall slide (lowered top to allow jumping over)
         this._fill(63, 63, 9, 21, TILE_SOLID);
+        this._fill(62, 64, 9, 9, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION G: Large chamber (cols 64-80)
         this._fill(64, 80, 18, 18, TILE_ONE_WAY);
@@ -366,7 +366,7 @@ const Level = {
 
         // SECTION I: Pre-boss (cols 98-104)
         this._fill(98, 102, 19, 19, TILE_SOLID);
-        this._fill(103, 104, 16, 16, TILE_ONE_WAY);
+        this._fill(102, 104, 16, 16, TILE_ONE_WAY); // Widened to 3 tiles for min platform width
 
         // =====================
         // BOSS ARENA (cols 105-124)
@@ -397,10 +397,8 @@ const Level = {
         this.enemySpawns = [
             { type: 'shroomba', x: 8 * TILE_SIZE, y: 20 * TILE_SIZE },
             { type: 'thornvine', x: 25 * TILE_SIZE, y: 10 * TILE_SIZE - 32 },
-            { type: 'thornvine', x: 50 * TILE_SIZE, y: 14 * TILE_SIZE - 32 },
             { type: 'shroomba', x: 56 * TILE_SIZE, y: 13 * TILE_SIZE },
             { type: 'thornvine', x: 73 * TILE_SIZE, y: 10 * TILE_SIZE - 32 },
-            { type: 'shroomba', x: 87 * TILE_SIZE, y: 17 * TILE_SIZE },
             { type: 'thornvine', x: 95 * TILE_SIZE, y: 15 * TILE_SIZE },
         ];
 
@@ -443,6 +441,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 17, TILE_SOLID);
+        this._fill(1, 2, 5, 5, TILE_SOLID); // Widen wall cap to 3 tiles
 
         // SECTION A: Starting platforms (cols 1-15)
         this._fill(8, 11, 14, 14, TILE_SOLID);
@@ -473,15 +472,15 @@ const Level = {
         this.tiles[17][68] = TILE_HAZARD;
         this.tiles[17][69] = TILE_HAZARD;
 
-        // SECTION F: Vertical climb with moving platforms (cols 71-85)
-        this._fill(71, 74, 18, H - 1, TILE_SOLID);
-        this._fill(82, 85, 18, H - 1, TILE_SOLID);
+        // SECTION F: Vertical climb with moving platforms (cols 69-88)
+        this._fill(69, 77, 18, H - 1, TILE_SOLID);  // Island 1 (widened: 3-tile bounce + 3-tile sides)
+        this._fill(79, 88, 18, H - 1, TILE_SOLID);  // Island 2 (widened: 3-tile bounce + 3-tile sides)
         this._fill(78, 80, 14, 14, TILE_SOLID);
         this._fill(71, 85, 4, 4, TILE_SOLID); // High ceiling
 
-        // Bounce pads
-        this.tiles[18][73] = TILE_BOUNCE;
-        this.tiles[18][83] = TILE_BOUNCE;
+        // Bounce pads (3-wide for min platform width compliance)
+        this._fill(72, 74, 18, 18, TILE_BOUNCE);
+        this._fill(83, 85, 18, 18, TILE_BOUNCE);
 
         // SECTION G: Treetop run (cols 86-105)
         this._fill(86, 90, 10, 10, TILE_SOLID);
@@ -590,13 +589,9 @@ const Level = {
         // Enemy spawns
         this.enemySpawns = [
             { type: 'barkbeetle', x: 18 * TILE_SIZE, y: 9 * TILE_SIZE },
-            { type: 'barkbeetle', x: 35 * TILE_SIZE, y: 7 * TILE_SIZE },
             { type: 'shroomba', x: 55 * TILE_SIZE, y: 14 * TILE_SIZE },
-            { type: 'barkbeetle', x: 45 * TILE_SIZE, y: 7 * TILE_SIZE },
-            { type: 'shroomba', x: 65 * TILE_SIZE, y: 16 * TILE_SIZE },
             { type: 'barkbeetle', x: 90 * TILE_SIZE, y: 5 * TILE_SIZE },
             { type: 'shroomba', x: 107 * TILE_SIZE, y: 12 * TILE_SIZE },
-            { type: 'barkbeetle', x: 100 * TILE_SIZE, y: 5 * TILE_SIZE },
         ];
 
         // Coins (25 total)
@@ -640,18 +635,20 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 1, 5, 5, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Starting area (cols 1-12)
         // Flat desert ground, intro
 
-        // SECTION B: First quicksand pit (cols 13-17)
-        this._fill(13, 17, 17, 17, TILE_QUICKSAND);
-        this._fill(14, 16, 18, 18, TILE_QUICKSAND);
+        // SECTION B: First quicksand pit (cols 13-17, rectangular for min platform width)
+        this._fill(13, 17, 17, 19, TILE_QUICKSAND);
         this._fill(15, 15, 19, 19, TILE_QUICKSAND_DEEP);
         // Add to tracking
-        for (let c = 13; c <= 17; c++) this.quicksandTiles.push({ x: c, y: 17 });
-        for (let c = 14; c <= 16; c++) this.quicksandTiles.push({ x: c, y: 18 });
-        this.quicksandTiles.push({ x: 15, y: 19 });
+        for (let c = 13; c <= 17; c++) {
+            this.quicksandTiles.push({ x: c, y: 17 });
+            this.quicksandTiles.push({ x: c, y: 18 });
+            this.quicksandTiles.push({ x: c, y: 19 });
+        }
 
         // Platform over quicksand
         this._fill(14, 16, 14, 14, TILE_ONE_WAY);
@@ -675,17 +672,18 @@ const Level = {
         // Platform above gate
         this._fill(35, 39, 14, 14, TILE_SOLID);
 
-        // SECTION D: More quicksand (cols 37-42)
-        this._fill(37, 42, 17, 17, TILE_QUICKSAND);
-        this._fill(38, 41, 18, 18, TILE_QUICKSAND);
+        // SECTION D: More quicksand (cols 37-42, rectangular for min platform width)
+        this._fill(37, 42, 17, 19, TILE_QUICKSAND);
         this._fill(39, 40, 19, 19, TILE_QUICKSAND_DEEP);
-        for (let c = 37; c <= 42; c++) this.quicksandTiles.push({ x: c, y: 17 });
-        for (let c = 38; c <= 41; c++) this.quicksandTiles.push({ x: c, y: 18 });
-        for (let c = 39; c <= 40; c++) this.quicksandTiles.push({ x: c, y: 19 });
+        for (let c = 37; c <= 42; c++) {
+            this.quicksandTiles.push({ x: c, y: 17 });
+            this.quicksandTiles.push({ x: c, y: 18 });
+            this.quicksandTiles.push({ x: c, y: 19 });
+        }
 
-        // Stepping stones over quicksand
-        this._fill(38, 38, 15, 15, TILE_ONE_WAY);
-        this._fill(41, 41, 15, 15, TILE_ONE_WAY);
+        // Stepping stones over quicksand (widened to 2 tiles each)
+        this._fill(38, 39, 15, 15, TILE_ONE_WAY);
+        this._fill(41, 42, 15, 15, TILE_ONE_WAY);
 
         // SECTION E: Ruins section (cols 43-55)
         this._fill(43, 47, 15, 15, TILE_SOLID);
@@ -698,17 +696,18 @@ const Level = {
         this._fill(59, 68, 14, 14, TILE_SOLID);
         this._fill(62, 65, 10, 10, TILE_ONE_WAY);
 
-        // SECTION G: Quicksand gauntlet (cols 69-78)
-        this._fill(69, 78, 17, 17, TILE_QUICKSAND);
-        this._fill(70, 77, 18, 18, TILE_QUICKSAND);
+        // SECTION G: Quicksand gauntlet (cols 69-78, rectangular for min platform width)
+        this._fill(69, 78, 17, 19, TILE_QUICKSAND);
         this._fill(71, 76, 19, 19, TILE_QUICKSAND_DEEP);
-        for (let c = 69; c <= 78; c++) this.quicksandTiles.push({ x: c, y: 17 });
-        for (let c = 70; c <= 77; c++) this.quicksandTiles.push({ x: c, y: 18 });
-        for (let c = 71; c <= 76; c++) this.quicksandTiles.push({ x: c, y: 19 });
-        // Platforms across
-        this._fill(71, 71, 14, 14, TILE_ONE_WAY);
-        this._fill(74, 74, 14, 14, TILE_ONE_WAY);
-        this._fill(77, 77, 14, 14, TILE_ONE_WAY);
+        for (let c = 69; c <= 78; c++) {
+            this.quicksandTiles.push({ x: c, y: 17 });
+            this.quicksandTiles.push({ x: c, y: 18 });
+            this.quicksandTiles.push({ x: c, y: 19 });
+        }
+        // Platforms across (widened to 2 tiles each)
+        this._fill(71, 72, 14, 14, TILE_ONE_WAY);
+        this._fill(74, 75, 14, 14, TILE_ONE_WAY);
+        this._fill(77, 78, 14, 14, TILE_ONE_WAY);
 
         // SECTION H: Pre-boss area (cols 79-89)
         this._fill(79, 89, 15, 15, TILE_SOLID);
@@ -746,7 +745,6 @@ const Level = {
             { type: 'dust_devil', x: 45 * TILE_SIZE, y: 12 * TILE_SIZE },
             { type: 'sand_skitter', x: 55 * TILE_SIZE, y: 13 * TILE_SIZE },
             { type: 'sand_skitter', x: 63 * TILE_SIZE, y: 12 * TILE_SIZE },
-            { type: 'dust_devil', x: 73 * TILE_SIZE, y: 12 * TILE_SIZE },
             { type: 'sand_skitter', x: 83 * TILE_SIZE, y: 13 * TILE_SIZE },
         ];
 
@@ -857,11 +855,13 @@ const Level = {
         // Pillar
         this._fill(84, 85, 12, 18, TILE_SOLID);
 
-        // SECTION G: Quicksand trap (cols 91-100)
-        this._fill(93, 97, 19, 19, TILE_QUICKSAND);
+        // SECTION G: Quicksand trap (cols 91-100, rectangular for min platform width)
+        this._fill(93, 97, 19, 20, TILE_QUICKSAND);
         this._fill(94, 96, 20, 20, TILE_QUICKSAND_DEEP);
-        for (let c = 93; c <= 97; c++) this.quicksandTiles.push({ x: c, y: 19 });
-        for (let c = 94; c <= 96; c++) this.quicksandTiles.push({ x: c, y: 20 });
+        for (let c = 93; c <= 97; c++) {
+            this.quicksandTiles.push({ x: c, y: 19 });
+            this.quicksandTiles.push({ x: c, y: 20 });
+        }
         this._fill(94, 96, 16, 16, TILE_ONE_WAY);
         this._fill(99, 102, 15, 15, TILE_SOLID);
 
@@ -947,32 +947,26 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 4, 17, TILE_SOLID);
+        this._fill(1, 1, 4, 4, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Desert start (cols 1-12)
         // Dry desert terrain
         this._fill(8, 11, 14, 14, TILE_SOLID);
 
         // SECTION B: First oasis pool (cols 13-22)
-        // Dig out pool
-        this._fill(13, 22, 18, 18, TILE_EMPTY);
-        this._fill(14, 21, 19, 19, TILE_EMPTY);
-        this._fill(15, 20, 20, 20, TILE_EMPTY);
+        // Dig out pool (rectangular to avoid 1-tile edge platforms)
+        this._fill(13, 22, 18, 20, TILE_EMPTY);
         // Fill with water
         this._fill(13, 22, 15, 15, TILE_WATER_SURFACE);
         this._fill(13, 22, 16, 17, TILE_WATER);
-        this._fill(14, 21, 18, 19, TILE_WATER);
-        this._fill(15, 20, 20, 20, TILE_WATER);
+        this._fill(13, 22, 18, 20, TILE_WATER);
         // Track water tiles
         for (let c = 13; c <= 22; c++) {
             this.waterTiles.push({ x: c, y: 15 });
             this.waterTiles.push({ x: c, y: 16 });
             this.waterTiles.push({ x: c, y: 17 });
-        }
-        for (let c = 14; c <= 21; c++) {
             this.waterTiles.push({ x: c, y: 18 });
             this.waterTiles.push({ x: c, y: 19 });
-        }
-        for (let c = 15; c <= 20; c++) {
             this.waterTiles.push({ x: c, y: 20 });
         }
 
@@ -1490,6 +1484,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 1, 5, 5, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Starting area with normal ground (cols 1-12)
         // Flat solid ground, gentle intro
@@ -1530,14 +1525,20 @@ const Level = {
         // SECTION E: Fire-lure puzzle (cols 56-68)
         this._fill(56, 68, 17, H - 1, TILE_SOLID);
 
-        // Meltable ice wall blocking path
+        // Meltable ice wall blocking path (2 tiles wide for min platform width)
+        this.tiles[15][61] = TILE_ICE;
+        this.tiles[16][61] = TILE_ICE;
         this.tiles[15][62] = TILE_ICE;
         this.tiles[16][62] = TILE_ICE;
         this.meltableBlocks.push(
+            { x: 61 * TILE_SIZE, y: 15 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
+            { x: 61 * TILE_SIZE, y: 16 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
             { x: 62 * TILE_SIZE, y: 15 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' },
             { x: 62 * TILE_SIZE, y: 16 * TILE_SIZE, health: 3, melted: false, type: 'meltable_ice' }
         );
         this.puzzleElements.push(
+            { type: 'meltable_ice', x: 61, y: 15 },
+            { type: 'meltable_ice', x: 61, y: 16 },
             { type: 'meltable_ice', x: 62, y: 15 },
             { type: 'meltable_ice', x: 62, y: 16 }
         );
@@ -1666,8 +1667,9 @@ const Level = {
         this.iceBlocks.push(
             { x: 18 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' }
         );
-        // Wall the block needs to hit
+        // Wall the block needs to hit (widened cap to 2 tiles)
         this._fill(25, 25, 15, 18, TILE_SOLID);
+        this._fill(24, 24, 15, 15, TILE_SOLID); // Cap adjacent tile for min platform width
         // Platform above that needs block as step
         this._fill(26, 30, 14, 14, TILE_SOLID);
         // Gap that block fills
@@ -1690,9 +1692,11 @@ const Level = {
             { x: 50 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' },
             { x: 56 * TILE_SIZE, y: 17 * TILE_SIZE, width: 32, height: 32, vx: 0, sliding: false, melted: false, type: 'ice_block' }
         );
-        // Walls and gaps
+        // Walls and gaps (widened caps to 2 tiles)
         this._fill(54, 54, 14, 18, TILE_SOLID);
+        this._fill(53, 53, 14, 14, TILE_SOLID); // Cap adjacent tile for min platform width
         this._fill(60, 60, 15, 18, TILE_SOLID);
+        this._fill(59, 59, 15, 15, TILE_SOLID); // Cap adjacent tile for min platform width
         this._fill(48, 49, 19, H - 1, TILE_EMPTY);
 
         // SECTION E: Vertical crystal shaft (cols 63-72)
@@ -1809,6 +1813,7 @@ const Level = {
 
         // Left wall
         this._fill(0, 0, 5, 16, TILE_SOLID);
+        this._fill(1, 1, 5, 5, TILE_SOLID); // Widen wall cap to 2 tiles
 
         // SECTION A: Starting area (cols 1-12) — safe zone before scroll starts
         this._placeIce(5, 12, 17, 17);

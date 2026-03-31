@@ -1,0 +1,250 @@
+{
+  "sprint": 16,
+  "overallResult": "PASS",
+  "passCount": 30,
+  "failCount": 0,
+  "totalCriteria": 30,
+  "timestamp": "2026-03-30T12:15:00Z",
+  "attempt": 1,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "category": "enemy-density",
+      "result": "PASS",
+      "evidence": "World 1 stages all have maxPerScreen <= 2. 1-1: max 2, 1-2: max 2, 1-3: max 2. Verified via window.runPlayabilityCheck() in headless Playwright."
+    },
+    {
+      "id": "C-02",
+      "category": "enemy-density",
+      "result": "PASS",
+      "evidence": "World 2 stages all have maxPerScreen <= 3. 2-1: max 3, 2-2: max 3, 2-3: max 3. Verified via window.runPlayabilityCheck()."
+    },
+    {
+      "id": "C-03",
+      "category": "enemy-density",
+      "result": "PASS",
+      "evidence": "World 3 stages all have maxPerScreen <= 4. 3-1: max 3, 3-2: max 3, 3-3: max 3. Verified via window.runPlayabilityCheck()."
+    },
+    {
+      "id": "C-04",
+      "category": "enemy-density",
+      "result": "PASS",
+      "evidence": "World 4 stages all have maxPerScreen <= 5. 4-1: max 4, 4-2: max 4, 4-3: max 5. Verified via window.runPlayabilityCheck()."
+    },
+    {
+      "id": "C-05",
+      "category": "enemy-density",
+      "result": "PASS",
+      "evidence": "Citadel stage 5-1 has maxPerScreen = 2, well below limit of 5. Verified via window.runPlayabilityCheck()."
+    },
+    {
+      "id": "C-06",
+      "category": "enemy-density",
+      "result": "PASS",
+      "evidence": "All 13 stages report difficultyResult.enemyDensity.result = PASS. 13/13 confirmed."
+    },
+    {
+      "id": "C-07",
+      "category": "hazard-percentage",
+      "result": "PASS",
+      "evidence": "World 1 hazard percentages: 1-1: 0.6%, 1-2: 0.6%, 1-3: 1.4%. All below 5% limit."
+    },
+    {
+      "id": "C-08",
+      "category": "hazard-percentage",
+      "result": "PASS",
+      "evidence": "World 2 hazard percentages: 2-1: 0.2%, 2-2: 0.5%, 2-3: 0.0%. All below 10% limit."
+    },
+    {
+      "id": "C-09",
+      "category": "hazard-percentage",
+      "result": "PASS",
+      "evidence": "World 3 hazard percentages: 3-1: 0.4%, 3-2: 0.2%, 3-3: 0.5%. All below 15% limit."
+    },
+    {
+      "id": "C-10",
+      "category": "hazard-percentage",
+      "result": "PASS",
+      "evidence": "World 4 + Citadel hazard percentages: 4-1: 8.8%, 4-2: 10.4%, 4-3: 11.0%, 5-1: 1.4%. All below 20% limit."
+    },
+    {
+      "id": "C-11",
+      "category": "hazard-percentage",
+      "result": "PASS",
+      "evidence": "All 13 stages report difficultyResult.hazardPercentage.result = PASS. 13/13 confirmed."
+    },
+    {
+      "id": "C-12",
+      "category": "platform-width",
+      "result": "PASS",
+      "evidence": "World 1 minimum platform widths: 1-1: 3 tiles, 1-2: 3 tiles, 1-3: 3 tiles. All meet 3-tile minimum."
+    },
+    {
+      "id": "C-13",
+      "category": "platform-width",
+      "result": "PASS",
+      "evidence": "World 2+3 minimum platform widths: 2-1: 2, 2-2: 2, 2-3: 2, 3-1: 2, 3-2: 2, 3-3: 2. All meet 2-tile minimum."
+    },
+    {
+      "id": "C-14",
+      "category": "platform-width",
+      "result": "PASS",
+      "evidence": "World 4 + Citadel minimum platform widths: 4-1: 1, 4-2: 1, 4-3: 1, 5-1: 1. All meet 1-tile minimum."
+    },
+    {
+      "id": "C-15",
+      "category": "platform-width",
+      "result": "PASS",
+      "evidence": "All 13 stages report difficultyResult.minPlatformWidth.result = PASS. 13/13 confirmed."
+    },
+    {
+      "id": "C-16",
+      "category": "mechanics-gating",
+      "result": "PASS",
+      "evidence": "Code review of level.js confirms: Stage 1-1 (lines 162-283) uses only TILE_SOLID, TILE_ONE_WAY, TILE_BREAKABLE, TILE_BOUNCE, TILE_HAZARD, TILE_LADDER. No TILE_WATER, TILE_ICE, or wall-jump requirements. Wall-jump introduced in 1-2 (lines 288-428) with clear vertical wall structures. No swimming or ice in World 1."
+    },
+    {
+      "id": "C-17",
+      "category": "mechanics-gating",
+      "result": "PASS",
+      "evidence": "Code review confirms: No TILE_WATER or TILE_WATER_SURFACE in stages 1-1 through 2-2 (lines 162-939). First water tiles appear in stage 2-3 (Oasis Mirage, line 960): this._fill(13, 22, 15, 15, TILE_WATER_SURFACE)."
+    },
+    {
+      "id": "C-18",
+      "category": "mechanics-gating",
+      "result": "PASS",
+      "evidence": "Code review confirms: No TILE_ICE or _placeIce calls in stages 1-1 through 2-3 (lines 162-1068). First ice mechanics appear in stage 3-1 (Frozen Lake, line 1493): this._placeIce(13, 25, 17, 17)."
+    },
+    {
+      "id": "C-19",
+      "category": "full-validation-path",
+      "result": "PASS",
+      "evidence": "All 13 stages have pathResult = PASS. Confirmed via window.runPlayabilityCheck(): categoryCounts.path.pass = 13, categoryCounts.path.fail = 0."
+    },
+    {
+      "id": "C-20",
+      "category": "full-validation-arena",
+      "result": "PASS",
+      "evidence": "All 52 arena checks PASS (13 stages x 4 checks: enclosure, minWidth, platforms, entry). categoryCounts.arena.pass = 52, categoryCounts.arena.fail = 0."
+    },
+    {
+      "id": "C-21",
+      "category": "full-validation-difficulty",
+      "result": "PASS",
+      "evidence": "All 65 difficulty checks PASS (13 stages x 5 checks: vulnerabilityWindow, bossHP, enemyDensity, hazardPercentage, minPlatformWidth). categoryCounts.difficulty.pass = 65, categoryCounts.difficulty.fail = 0."
+    },
+    {
+      "id": "C-22",
+      "category": "full-validation-aggregate",
+      "result": "PASS",
+      "evidence": "Top-level report: passCount = 130, failCount = 0, allPass = true. Zero failures across all categories for all 13 stages."
+    },
+    {
+      "id": "C-23",
+      "category": "full-validation-aggregate",
+      "result": "PASS",
+      "evidence": "Total checks = 130 (13 stages x 10 checks each: 1 path + 4 arena + 5 difficulty). totalChecks = 130, passCount = 130. All PASS."
+    },
+    {
+      "id": "C-24",
+      "category": "enemy-density-implementation",
+      "result": "PASS",
+      "evidence": "Git diff confirms enemy spawns removed from level.js: 1-1 lost 2 enemies (shroomba at cols 37,48), 1-2 lost 2 enemies (thornvine at col 50, shroomba at col 87), 1-3 lost 4 enemies (barkbeetle at cols 35,45,100, shroomba at col 65), 2-1 lost 1 enemy (dust_devil at col 73). validator.js has zero diff — thresholds untouched."
+    },
+    {
+      "id": "C-25",
+      "category": "hazard-implementation",
+      "result": "PASS",
+      "evidence": "Git diff shows quicksand pits in stages 2-1 and 2-2 were reshaped to rectangular fills (e.g., _fill(13,17,17,19,TILE_QUICKSAND) replacing tapered shapes). Water pool in 2-3 was made rectangular. validator.js not modified — thresholds untouched."
+    },
+    {
+      "id": "C-26",
+      "category": "platform-implementation",
+      "result": "PASS",
+      "evidence": "Git diff shows: bounce pads widened from 1-tile to 3-tile in stages 1-1 and 1-3 (e.g., _fill(25,27,17,17,TILE_BOUNCE)). Wall caps widened to 2-3 tiles across multiple stages. Stepping stones widened from 1 to 2 tiles in 2-1. ONE_WAY platforms widened in 1-2 pre-boss. Ice walls widened in 3-1. validator.js not modified."
+    },
+    {
+      "id": "C-27",
+      "category": "regression",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.vulnerabilityWindow.result = PASS. Values match per-world expectations: W1=3.0s, W2=2.5s, W3=2.0s, W4=1.5s, Citadel=1.5s."
+    },
+    {
+      "id": "C-28",
+      "category": "regression",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.bossHP.result = PASS. All boss HP values within expected ranges per difficulty table."
+    },
+    {
+      "id": "C-29",
+      "category": "regression",
+      "result": "PASS",
+      "evidence": "FPS measured at 85 during stage 1-1 gameplay via __gameDebug.fps in headless Playwright. Well above 55 threshold."
+    },
+    {
+      "id": "C-30",
+      "category": "regression",
+      "result": "PASS",
+      "evidence": "Debug overlay opens with D key on title screen. HD screenshot confirms: header shows '130 PASS / 0 FAIL / 130 CHECKS', all 3 categories (PATH, ARENA, DIFF) visible per stage, all checks show green PASS badges. Escape closes overlay (verified by screenshot comparison)."
+    }
+  ],
+  "regressionResults": {
+    "sprintsTested": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    "summary": "No regressions detected. Only src/level.js was modified (tile data and enemy spawns). validator.js and enemies.js were untouched. Core systems verified: title screen renders correctly (TITLE state), world map shows 13 nodes, gameplay enters properly (STAGE state), player spawns with 3 HP / 5 lives, camera tracking works, enemy system active (3 enemies in stage 1-1), particle and projectile systems operational, FPS=85. The 130/130 playability validator PASS comprehensively covers sprints 13-15 regression (path validation, arena checks, difficulty parameters).",
+    "regressionPass": true,
+    "details": [
+      "Sprint 1 (core loop): PASS — game boots, renders at 85fps, canvas 960x540, tile size 32px",
+      "Sprint 2 (player/physics): PASS — player exists with 3 HP, 5 lives, proper dimensions",
+      "Sprint 3 (camera/parallax): PASS — camera tracks player, parallax forest background visible in gameplay screenshot",
+      "Sprint 4 (world map): PASS — 13 stage nodes present, transitions to gameplay on Enter",
+      "Sprint 5 (particles/HUD): PASS — particle system active, HUD shows hearts (3/3), coin counter (×000), stage name (Canopy Trail)",
+      "Sprint 6-7 (enemies): PASS — 3 enemies visible in stage 1-1 (shroomba type), enemy count matches reduced density",
+      "Sprint 8 (projectiles): PASS — projectile system operational (getProjectileCount returns 0 at spawn, expected)",
+      "Sprint 9-10 (bosses): PASS — all boss vulnerability windows and HP values pass validator checks (13/13)",
+      "Sprint 11-12 (stages): PASS — all 13 stages have valid paths, enclosed arenas, proper layouts",
+      "Sprint 13 (path validator): PASS — 13/13 path checks PASS via BFS validation",
+      "Sprint 14 (arena+difficulty validator): PASS — 52/52 arena checks PASS, 65/65 difficulty checks PASS",
+      "Sprint 15 (boss tuning): PASS — all vulnerability windows and boss HP within spec"
+    ]
+  },
+  "holistic": {
+    "visualPolish": {
+      "score": 8,
+      "notes": "Polished title screen with animated floating particles, Muted Gold title text against Deep Charcoal background. Forest world uses correct palette (#2D5A27 canopy, #4A8C3F leaves, #8B6B3D bark). HUD follows design spec: Ember Red hearts, gold coin counter, proper typography. Parallax backgrounds add depth."
+    },
+    "designQuality": {
+      "score": 8,
+      "notes": "Faithfully implements design-spec.md. Dark theme with warm-neutral UI chrome. Muted Gold (#C4A35A) accents for selections and highlights. Menu buttons use Warm Slate (#2D2D44) with gold borders. Health hearts use Ember Red (#D94F4F). Coin counter uses monospace format (×000). Player character is blue (#3A7BD5) with cream face — always readable against backgrounds. Text rendered with dark outlines for contrast."
+    },
+    "originality": {
+      "score": 7,
+      "notes": "Complete 13-stage platformer across 5 themed worlds (Forest, Desert, Tundra, Volcano, Citadel) with unique boss encounters per stage. Canvas-rendered art with distinctive character and enemy designs. Built-in playability validator is a creative quality assurance feature. Mechanics properly gated across worlds (walk→wall-jump→swimming→ice)."
+    },
+    "codeQuality": {
+      "score": 9,
+      "notes": "Sprint 16 changes are surgically focused on level data in level.js only. Enemy spawns removed/repositioned, bounce pads widened, quicksand pits made rectangular, wall caps extended. Zero changes to validator.js thresholds or enemies.js — difficulty compliance achieved through level design, not threshold manipulation. Clear comments explain each change."
+    },
+    "completeness": {
+      "score": 10,
+      "notes": "All 30 sprint criteria PASS. The key deliverable — 130/130 validator checks passing with 0 failures — is fully achieved. Every stage passes path validation, arena validation, and all 5 difficulty parameters. This represents a complete difficulty curve rebalancing across all 13 stages."
+    },
+    "performance": {
+      "score": 9,
+      "notes": "85 FPS measured in headless Playwright during stage 1-1 gameplay, well above the 55 FPS threshold. Level data modifications (widened platforms, rectangular quicksand) did not degrade performance."
+    }
+  },
+  "designSpecCompliance": {
+    "verified": true,
+    "notes": "Title screen, HUD, and gameplay visuals match design-spec.md. Dark theme (#1A1A2E background), Muted Gold accents (#C4A35A), Ember Red hearts (#D94F4F), Forest world palette, player character blue (#3A7BD5), proper typography with dark outlines, canvas 960x540 resolution."
+  },
+  "blockingCheck": {
+    "designQuality": 8,
+    "designQualityThreshold": 6,
+    "designQualityBlocking": false,
+    "originality": 7,
+    "originalityThreshold": 5,
+    "originalityBlocking": false,
+    "anyBlockingCriteriaFailed": false,
+    "anyRegressionFailed": false
+  }
+}
