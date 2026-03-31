@@ -1,0 +1,223 @@
+{
+  "sprint": 15,
+  "name": "Level Layout Fixes & Boss Rebalancing",
+  "timestamp": "2026-03-31T02:35:00Z",
+  "overallResult": "PASS",
+  "passCount": 30,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "description": "Elder Shroomba (Stage 1-1) vulnerability window increased to 3.0 seconds",
+      "result": "PASS",
+      "evidence": "runPlayabilityCheck() returns stage 1-1 vulnerabilityWindow: result=PASS, actual=3.0s (180 frames). Elder Shroomba phase 1 vuln window is exactly 3.0 seconds."
+    },
+    {
+      "id": "C-02",
+      "description": "All World 1 bosses have vulnerability windows of 3.0 seconds",
+      "result": "PASS",
+      "evidence": "Stage 1-1 (elder_shroomba): 3.0s PASS. Stage 1-2 (vine_mother): 3.0s PASS. Stage 1-3 (stag_king): 3.0s PASS. All three World 1 stages report PASS with actual=3.0s."
+    },
+    {
+      "id": "C-03",
+      "description": "All World 2 bosses have vulnerability windows of 2.5 seconds",
+      "result": "PASS",
+      "evidence": "Stage 2-1 (sand_wyrm): 2.5s PASS. Stage 2-2 (pharaoh_specter): 2.5s PASS. Stage 2-3 (hydra_cactus): 2.5s PASS. All three World 2 stages report PASS with actual=2.5s."
+    },
+    {
+      "id": "C-04",
+      "description": "All World 3 bosses have vulnerability windows of 2.0 seconds",
+      "result": "PASS",
+      "evidence": "Stage 3-1 (frost_bear): 2.0s PASS. Stage 3-2 (crystal_witch): 2.0s PASS. Stage 3-3 (yeti_monarch): 2.0s PASS. All three World 3 stages report PASS with actual=2.0s."
+    },
+    {
+      "id": "C-05",
+      "description": "All World 4 bosses have vulnerability windows of 1.5 seconds",
+      "result": "PASS",
+      "evidence": "Stage 4-1 (lava_serpent): 1.5s PASS. Stage 4-2 (iron_warden): 1.5s PASS. Stage 4-3 (dragon_caldera): 1.5s PASS. All three World 4 stages report PASS with actual=1.5s."
+    },
+    {
+      "id": "C-06",
+      "description": "The Architect (Stage 5-1) has vulnerability window of 1.5 seconds",
+      "result": "PASS",
+      "evidence": "Stage 5-1 (the_architect): 1.5s (90 frames) PASS. Base vulnerability uses Citadel world index with max(40, 90 - (phase-1)*10) formula, phase 1 = 90 frames."
+    },
+    {
+      "id": "C-07",
+      "description": "All 13 stages pass the vulnerability window check",
+      "result": "PASS",
+      "evidence": "13/13 stages report vulnerabilityWindow.result=PASS. World 1: 3.0s, World 2: 2.5s, World 3: 2.0s, World 4: 1.5s, Citadel: 1.5s."
+    },
+    {
+      "id": "C-08",
+      "description": "All World 1 boss HP values fall within 5-7 range",
+      "result": "PASS",
+      "evidence": "Stage 1-1 (elder_shroomba): HP=5 PASS. Stage 1-2 (vine_mother): HP=6 PASS. Stage 1-3 (stag_king): HP=7 PASS. All in [5,7] range."
+    },
+    {
+      "id": "C-09",
+      "description": "All World 2 boss HP values fall within 6-8 range",
+      "result": "PASS",
+      "evidence": "Stage 2-1 (sand_wyrm): HP=6 PASS. Stage 2-2 (pharaoh_specter): HP=8 PASS. Stage 2-3 (hydra_cactus): HP=8 PASS. Hydra fixed from 12 to 8 (3+3+2 heads). All in [6,8] range."
+    },
+    {
+      "id": "C-10",
+      "description": "All World 3 boss HP values fall within 7-9 range",
+      "result": "PASS",
+      "evidence": "Stage 3-1 (frost_bear): HP=7 PASS. Stage 3-2 (crystal_witch): HP=8 PASS. Stage 3-3 (yeti_monarch): HP=9 PASS. Crystal Witch fixed from 25 to 8 (3 shield + 5 body). All in [7,9] range."
+    },
+    {
+      "id": "C-11",
+      "description": "All World 4 boss HP values fall within 7-11 range",
+      "result": "PASS",
+      "evidence": "Stage 4-1 (lava_serpent): HP=7 PASS. Stage 4-2 (iron_warden): HP=7 PASS. Stage 4-3 (dragon_caldera): HP=11 PASS. All in [7,11] range."
+    },
+    {
+      "id": "C-12",
+      "description": "The Architect (Stage 5-1) HP is exactly 19",
+      "result": "PASS",
+      "evidence": "Stage 5-1 (the_architect): HP=19 PASS. Exactly matches expected value."
+    },
+    {
+      "id": "C-13",
+      "description": "All 13 stages pass the boss HP check",
+      "result": "PASS",
+      "evidence": "13/13 stages report bossHP.result=PASS. HP values follow difficulty curve: World 1 [5-7], World 2 [6-8], World 3 [7-9], World 4 [7-11], Citadel=19."
+    },
+    {
+      "id": "C-14",
+      "description": "Every boss arena has at least 2 platforms",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.platforms.result=PASS. Platform counts: 1-1: 3, 1-2: 3, 1-3: 3, 2-1: 3, 2-2: 3, 2-3: 3, 3-1: 4, 3-2: 5, 3-3: 6, 4-1: 9, 4-2: 8, 4-3: 10, 5-1: 4. All >= 2."
+    },
+    {
+      "id": "C-15",
+      "description": "Every boss arena has an accessible entry point",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.entry.result=PASS. Entry gaps created by shortening left wall fill by 2 rows. Ground-level walkable entries confirmed at varying row positions."
+    },
+    {
+      "id": "C-16",
+      "description": "Every boss arena passes the enclosure check",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.enclosure.result=PASS. Solid walls on all 4 sides (ceiling, floor, left, right) except for the entry gap."
+    },
+    {
+      "id": "C-17",
+      "description": "Every boss arena is at least 15 tiles wide",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.minWidth.result=PASS. Widths: 20 (World 1), 20 (2-1, 2-2), 20 (2-3), 29 (3-1), 30 (3-2, 3-3), 30 (4-1), 24 (4-2), 29 (4-3), 30 (5-1). All >= 15."
+    },
+    {
+      "id": "C-18",
+      "description": "Boss X position is clamped to arena bounds",
+      "result": "PASS",
+      "evidence": "Code review: enemies.js:1364-1370. _updateBoss() applies X clamping after all type-specific updates via switch at line 1324-1340. arenaLeft=bossArenaX+TILE_SIZE, arenaRight=(width-1)*TILE_SIZE-b.width-TILE_SIZE. Applies to all 13 boss types since _updateBoss is the common handler."
+    },
+    {
+      "id": "C-19",
+      "description": "Boss resets to center of arena when player dies and respawns",
+      "result": "PASS",
+      "evidence": "Code review: enemies.js:40-80. resetBossOnPlayerDeath() resets: position to Level.bossData.spawnX/spawnY, health to maxHealth, phase to 1, state to 'intro', all timers cleared, velocity zeroed, HUD reset. Called from player.js:962 during respawn. Hydra heads also reset."
+    },
+    {
+      "id": "C-20",
+      "description": "Stage 1-2 layout is passable - BFS path validation confirms traversable path",
+      "result": "PASS",
+      "evidence": "runPlayabilityCheck() returns stage 1-2 pathResult=PASS. Path found from spawn (2,20) to boss arena (col 105). 264 positions reachable."
+    },
+    {
+      "id": "C-21",
+      "description": "Stage 1-2 wall-jump sections have widened gaps and safe landing platforms",
+      "result": "PASS",
+      "evidence": "Code review: level.js lines 304-340. Section B wall-jump shaft: cols 11-19 (gap=5 tiles from col 13-17, exceeds 4-tile minimum). Three intermediate ONE_WAY platforms at rows 18, 14, 11. Section E wall-jump shaft: cols 39-47 (gap=5 tiles from col 41-45). Three intermediate platforms at rows 18, 14, 10. Both wall heights shortened (gap at bottom rows 20-21 for walk-through access)."
+    },
+    {
+      "id": "C-22",
+      "description": "All 13 stages pass path validation after fixes",
+      "result": "PASS",
+      "evidence": "13/13 stages have pathResult=PASS. Path category: 13 pass, 0 fail. All stages have traversable path from spawn to boss arena."
+    },
+    {
+      "id": "C-23",
+      "description": "Boss vulnerability windows are set via a per-world configuration",
+      "result": "PASS",
+      "evidence": "Code review: enemies.js:16-37. VULN_WINDOWS_BY_WORLD lookup table: world 0=180f, world 1=150f, world 2=120f, world 3=90f, world 4=90f. BOSS_WORLD_MAP maps all 13 boss types to world indices. getVulnDuration(bossType, phase) derives duration from world lookup. All 13 boss update functions use Enemies.getVulnDuration(b.type, b.phase) instead of hardcoded values."
+    },
+    {
+      "id": "C-24",
+      "description": "All arena checks pass across all 13 stages (0 FAIL results)",
+      "result": "PASS",
+      "evidence": "Arena category: 52 pass, 0 fail (13 stages x 4 checks = 52). Enclosure, minWidth, platforms, entry all PASS for every stage."
+    },
+    {
+      "id": "C-25",
+      "description": "Boss vulnerability and HP checks all pass (0 FAIL across 26 checks)",
+      "result": "PASS",
+      "evidence": "vulnerabilityWindow: 13/13 PASS. bossHP: 13/13 PASS. Total: 0 FAIL across 26 boss-related difficulty checks."
+    },
+    {
+      "id": "C-26",
+      "description": "Game still runs at 60fps after modifications",
+      "result": "PASS",
+      "evidence": "window.__gameDebug.fps reports 72-74 FPS. Well above the 55 FPS threshold. No performance regression from boss/level changes."
+    },
+    {
+      "id": "C-27",
+      "description": "Validator still produces results for all 13 stages",
+      "result": "PASS",
+      "evidence": "runPlayabilityCheck() returns stages.length=13. Each stage has pathResult (string), arenaResult (4 sub-checks), and difficultyResult (5 sub-checks). Total: 130 checks across 13 stages."
+    },
+    {
+      "id": "C-28",
+      "description": "World map still shows all 13 stages across 5 worlds",
+      "result": "PASS",
+      "evidence": "WorldMap.init() produces 13 nodes. World distribution: World 0 [1-1,1-2,1-3], World 1 [2-1,2-2,2-3], World 2 [3-1,3-2,3-3], World 3 [4-1,4-2,4-3], World 4 [5-1]. Correct 5-world progression."
+    },
+    {
+      "id": "C-29",
+      "description": "Debug overlay still opens with D key and shows validation categories",
+      "result": "PASS",
+      "evidence": "Code review: Sprint 15 did not modify the debug overlay rendering code. validator.js changes were limited to validation logic (BOSS_VULN_FRAMES values and tolerance removal). The overlay display code remains intact. Validator produces all 3 categories (PATH/ARENA/DIFF) per stage as confirmed by C-27."
+    },
+    {
+      "id": "C-30",
+      "description": "Player movement, combat, and core gameplay systems unaffected",
+      "result": "PASS",
+      "evidence": "All core systems present and functional: Player (update method), Physics, Input, Camera, Renderer, Enemies, HUD, WorldMap, Particles, AudioManager. All 13 levels load successfully with correct dimensions and boss data. Zero console errors. Player.js only change was adding Enemies.resetBossOnPlayerDeath() call in respawn - no movement/combat code modified."
+    }
+  ],
+  "regressionResults": {
+    "tested": true,
+    "sprints": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "summary": "All core systems functional. All 13 levels load with correct dimensions, boss data, and arena data. WorldMap produces 13 nodes across 5 worlds. Validator (Sprint 14) runs correctly with 130 total checks. FPS stable at 72-74. Zero console errors. No regressions detected.",
+    "failures": []
+  },
+  "holisticScores": {
+    "designQuality": {
+      "score": 7,
+      "rationale": "Sprint focused on gameplay data changes (boss HP, vulnerability windows, level layouts) rather than visual design. Existing design system from prior sprints maintained. Arena platform additions use consistent ONE_WAY tile types. No visual regressions. Design spec colors, typography, and spacing not modified."
+    },
+    "codeQuality": {
+      "score": 8,
+      "rationale": "Clean architectural pattern: VULN_WINDOWS_BY_WORLD lookup table with BOSS_WORLD_MAP for indirection, eliminating hardcoded per-boss values. getVulnDuration() provides a single point of truth. Boss reset logic is comprehensive (position, health, phase, timers, HUD, hydra heads, projectiles). X-clamping is in the common _updateBoss method rather than duplicated per boss type. Crystal Witch HP decomposition (shield + body) is explicit and clear."
+    },
+    "functionalCompleteness": {
+      "score": 9,
+      "rationale": "30/30 contract criteria PASS. All boss vulnerability windows match the difficulty curve exactly. All HP values within specified ranges. All 13 arenas pass structural validation (enclosure, entry, platforms, width). All paths traversable. Stage 1-2 wall-jump sections properly widened with intermediate platforms. Only remaining difficulty failures are enemyDensity and minPlatformWidth, explicitly out of scope for Sprint 16."
+    },
+    "performance": {
+      "score": 8,
+      "rationale": "72-74 FPS, well above 55 FPS threshold. Boss data changes are configuration-level and don't affect frame budget. Level layout changes add a few ONE_WAY platform tiles per arena but impact is negligible. No new per-frame allocations or computation added."
+    },
+    "accessibility": {
+      "score": 7,
+      "rationale": "Stage 1-2 wall-jump sections widened from 4 to 5+ tiles with intermediate safe landing platforms, improving accessibility for less skilled players. Boss vulnerability windows in World 1 tripled from ~1.5s to 3.0s, making early bosses much more forgiving. Difficulty curve is now properly progressive across worlds."
+    },
+    "originality": {
+      "score": 6,
+      "rationale": "Per-world vulnerability window system is a clean abstraction over individual boss tuning. The difficulty curve implementation follows industry-standard patterns but is well-executed. Crystal Witch HP decomposition into shield + body components shows thoughtful boss design. This is primarily a tuning/balancing sprint rather than a creative feature sprint."
+    }
+  },
+  "notes": "Sprint 15 delivers comprehensive boss rebalancing and level fixes. All 13 boss vulnerability windows now follow the specified difficulty curve (3.0s -> 2.5s -> 2.0s -> 1.5s -> 1.5s). Boss HP values all within expected ranges after critical fixes to Hydra Cactus (12 -> 8) and Crystal Witch (25 -> 8). All boss arenas now have proper entry gaps, enclosures, and platforms. Stage 1-2 wall-jump sections widened with intermediate safe platforms. The 13 remaining validation failures are all in enemyDensity and minPlatformWidth categories, which are explicitly Sprint 16 scope per the contract's outOfScope section. The per-world vulnerability lookup pattern in VULN_WINDOWS_BY_WORLD is a clean architectural choice that makes future tuning trivial."
+}
