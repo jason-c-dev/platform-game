@@ -868,20 +868,29 @@ const PlayabilityValidator = {
             return { result: 'FAIL', details: 'No boss data', actual: 0, min: table.bossHPMin, max: table.bossHPMax };
         }
 
-        // Read actual boss health from game data (Enemies.spawnBoss configs)
+        // Read actual boss health from game data via Enemies.spawnBoss()
+        // Temporarily spawn the boss to read its maxHealth from the actual config,
+        // then remove it — this reads the real game data, not hardcoded values.
         let actualHP = 0;
         if (typeof Enemies !== 'undefined' && Enemies.spawnBoss) {
-            // Try to read from the Enemies configs directly
-            const configs = {
-                'elder_shroomba': 5, 'vine_mother': 6, 'stag_king': 7,
-                'sand_wyrm': 6, 'pharaoh_specter': 8, 'hydra_cactus': 12,
-                'frost_bear': 7, 'crystal_witch': 25, 'yeti_monarch': 9,
-                'lava_serpent': 7, 'iron_warden': 7, 'dragon_caldera': 11,
-                'the_architect': 19
-            };
-            actualHP = configs[bossType] || 0;
+            const savedEnemies = Enemies.enemies.slice(); // snapshot
+            const savedBossHP = typeof HUD !== 'undefined' ? HUD.bossMaxHP : 0;
+            try {
+                Enemies.spawnBoss(bossType, 0, 0);
+                const tempBoss = Enemies.enemies[Enemies.enemies.length - 1];
+                if (tempBoss && tempBoss.isBoss) {
+                    actualHP = tempBoss.maxHealth;
+                }
+            } catch (e) {
+                // If spawn fails, fall back to local config
+                const cfg = this.BOSS_CONFIGS[bossType];
+                actualHP = cfg ? cfg.maxHealth : 0;
+            }
+            // Restore enemies list and HUD state
+            Enemies.enemies = savedEnemies;
+            if (typeof HUD !== 'undefined') HUD.bossMaxHP = savedBossHP;
         } else {
-            // Fallback to our local config
+            // Fallback to our local config mirror of enemies.js data
             const cfg = this.BOSS_CONFIGS[bossType];
             actualHP = cfg ? cfg.maxHealth : 0;
         }
