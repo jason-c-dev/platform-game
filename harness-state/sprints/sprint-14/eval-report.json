@@ -1,0 +1,177 @@
+{
+  "sprint": 14,
+  "name": "Arena Validation & Difficulty Parameter Checks",
+  "overallResult": "PASS",
+  "passCount": 30,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "result": "PASS",
+      "evidence": "Called window.runPlayabilityCheck(). All 13 stage results include arenaResult.enclosure with PASS or FAIL. Example: Stage 1-1 enclosure: PASS — 'All 4 walls solid (65-84 cols, 5-19 rows)'. Stage 5-1 enclosure: FAIL — 'Wall gaps: left: 4/20 solid (excl. entry)'. Both PASS and FAIL are valid report outputs per contract notes."
+    },
+    {
+      "id": "C-02",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:617-677 _checkArenaEnclosure() explicitly checks all 4 walls: top row (lines 624-631), bottom row (lines 633-641), right wall (lines 643-652), left wall (lines 654-669). Left wall check excludes entry point — allows up to 4 tiles gap (line 667: 'leftTotal - Math.min(entryGapCount, 4)')."
+    },
+    {
+      "id": "C-03",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.minWidth with measured value and PASS/FAIL. All PASS with widths >= 15 (e.g., 1-1: measured=20, 3-1: measured=29, 5-1: measured=30). Width calculated as bounds.right - bounds.left + 1 at line 686."
+    },
+    {
+      "id": "C-04",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.platforms with count and PASS/FAIL. Examples: 1-1: FAIL count=1, 2-2: PASS count=3, 4-3: PASS count=10. Both PASS and FAIL are valid outputs — validator correctly detects insufficient platforms."
+    },
+    {
+      "id": "C-05",
+      "result": "PASS",
+      "evidence": "All 13 stages have arenaResult.entry with PASS/FAIL. Stage 5-1: PASS — 'Entry at row 17, ground-level, walkable'. Stages 1-1 through 4-3: FAIL — 'No entry gap found in left wall'. This is correct detection behavior per contract notes."
+    },
+    {
+      "id": "C-06",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:742-799 _checkArenaEntry(). Scans left wall for non-solid gaps (lines 749-754). Checks lowest gap has solid floor beneath (lines 766-778 — checks tile below gap and also gap at bottom-1 row). Checks approach ground outside arena (lines 782-790 — verifies solid/ice/support tile at left-1 column). Confirms walkable ground-level entry without wall-jump requirement."
+    },
+    {
+      "id": "C-07",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.vulnerabilityWindow with expected and actual values. E.g., 1-1: expected=3s actual=1.5s (FAIL — correctly detects too-short window). 4-1: expected=1.5s actual=1.5s (PASS). Expected values match difficulty table per world."
+    },
+    {
+      "id": "C-08",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:20-71 DIFFICULTY_TABLE constant. World 0 (W1): vulnerabilityWindow=3.0, vulnerabilityFrames=180. World 1 (W2): 2.5/150. World 2 (W3): 2.0/120. World 3 (W4): 1.5/90. World 4 (Citadel): 1.5/90. All exact per-world values match contract specification."
+    },
+    {
+      "id": "C-09",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.bossHP with actual value, expected range (min/max), and PASS/FAIL. E.g., 1-1: actual=5 range=[5,7] PASS. 2-3: actual=12 range=[6,8] FAIL (hydra_cactus over-tuned). 5-1: actual=19 range=[19,19] PASS."
+    },
+    {
+      "id": "C-10",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:862-920 _checkBossHP(). When Enemies.spawnBoss is available (line 875), it saves state (enemies, boss, HUD, audio — lines 877-884), temporarily spawns the boss via Enemies.spawnBoss(bossType, 0, 0) at line 886, reads tempBoss.maxHealth at line 889, then restores all saved state (lines 897-904). Reads actual game data, not hardcoded values."
+    },
+    {
+      "id": "C-11",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.enemyDensity with maxPerScreen, worldLimit, and PASS/FAIL. E.g., 1-1: FAIL maxPerScreen=3 limit=2. 4-3: PASS maxPerScreen=5 limit=5. 5-1: PASS maxPerScreen=2 limit=5."
+    },
+    {
+      "id": "C-12",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:926-966. screenWidthTiles=30 (line 930, 960px/32px). Sliding window iterates from minCol to maxCol (line 949), counts enemies with col >= startCol && col < startCol + 30 (lines 951-953), tracks maximum (line 955). Correct 30-tile sliding window implementation."
+    },
+    {
+      "id": "C-13",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.hazardPercentage with actual, limit, and PASS/FAIL. E.g., 1-1: actual=0.6% limit=5% PASS. 4-3: actual=11.0% limit=20% PASS. All hazard percentages correctly calculated and within world limits."
+    },
+    {
+      "id": "C-14",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:968-1003. Iterates all tiles (lines 982-991), counts TILE_HAZARD and TILE_LAVA as hazardCount (line 987), counts all non-TILE_EMPTY as nonEmptyCount (line 986). Percentage = (hazardCount / nonEmptyCount) * 100 at line 994. Correct formula."
+    },
+    {
+      "id": "C-15",
+      "result": "PASS",
+      "evidence": "All 13 stages have difficultyResult.minPlatformWidth with narrowest, worldMin, and PASS/FAIL. E.g., 1-1: FAIL narrowest=1 min=3. 4-1: PASS narrowest=1 min=1. Correctly reports narrowest platform width and compares to per-world minimum."
+    },
+    {
+      "id": "C-16",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:1010-1068. Scans all rows (line 1021). For each row, counts contiguous runs of standable tiles (TILE_SOLID, TILE_ONE_WAY, TILE_ICE — line 1026) where the space above is passable (line 1028). Tracks runLength and records minimum across all platforms (lines 1033-1036, 1043-1046). Reports narrowest platform width."
+    },
+    {
+      "id": "C-17",
+      "result": "PASS",
+      "evidence": "All 13 stages have pathResult (string), arenaResult (object with 4 sub-checks), and difficultyResult (object with 5 sub-checks) as distinct top-level keys. Verified via automated iteration."
+    },
+    {
+      "id": "C-18",
+      "result": "PASS",
+      "evidence": "arenaResult contains 4 named sub-checks: enclosure, minWidth, platforms, entry. Each has 'result' (PASS/FAIL) and 'details' (string). Verified on stage 1-1: enclosure.result='PASS', enclosure.details='All 4 walls solid...'; minWidth.result='PASS', minWidth.details='Arena width: 20 tiles (min 15)'; etc."
+    },
+    {
+      "id": "C-19",
+      "result": "PASS",
+      "evidence": "difficultyResult contains 5 named sub-checks: vulnerabilityWindow, bossHP, enemyDensity, hazardPercentage, minPlatformWidth. Each has 'result' (PASS/FAIL) and 'details' (string). Verified on stage 1-1: all 5 present with correct structure."
+    },
+    {
+      "id": "C-20",
+      "result": "PASS",
+      "evidence": "Top-level report has passCount=89, failCount=41, totalChecks=130 (= 13 stages × 10 checks each). Also has categoryCounts: path {pass:13, fail:0}, arena {pass:34, fail:18}, difficulty {pass:42, fail:23}. Reflects all check categories, not just path."
+    },
+    {
+      "id": "C-21",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:1452-1489. Arena line renders 'ARENA:' label followed by 4 mini badges: ENC (enclosure), WID (minWidth), PLT (platforms), ENT (entry). Each badge colored with COLORS.mossGreen/emberRed based on PASS/FAIL. Arena details text also displayed."
+    },
+    {
+      "id": "C-22",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:1490-1526. Difficulty line renders 'DIFF:' label followed by 5 mini badges: VUL (vulnerabilityWindow), HP (bossHP), DEN (enemyDensity), HAZ (hazardPercentage), PLW (minPlatformWidth). Each badge colored with COLORS.mossGreen/emberRed. Boss HP details also displayed."
+    },
+    {
+      "id": "C-23",
+      "result": "PASS",
+      "evidence": "Code review: All PASS/FAIL coloring uses COLORS.mossGreen (#5A9E6F) for PASS and COLORS.emberRed (#D94F4F) for FAIL. Verified at 7 locations: _drawBadge (lines 1304, 1309), summary line (1361), arena badges (1472, 1478), difficulty badges (1510, 1515). Colors confirmed matching design spec via regression test: mossGreen='#5A9E6F', emberRed='#D94F4F'."
+    },
+    {
+      "id": "C-24",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:1353-1362. Summary line displays 'N PASS / N FAIL / N CHECKS' using results.passCount, results.failCount, results.totalChecks which aggregate ALL categories (path+arena+difficulty). Category breakdown on line 1369 also shows Path/Arena/Difficulty sub-totals."
+    },
+    {
+      "id": "C-25",
+      "result": "PASS",
+      "evidence": "runPlayabilityCheck() returns all 13 stages with pathResult field. All 13 show pathResult='PASS'. BFS pathfinding from sprint 13 is fully operational. Path pass count: 13/13."
+    },
+    {
+      "id": "C-26",
+      "result": "PASS",
+      "evidence": "stages array length = 13. Stage IDs: 1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3, 4-1, 4-2, 4-3, 5-1. All correct and matching expected order."
+    },
+    {
+      "id": "C-27",
+      "result": "PASS",
+      "evidence": "window.__gameDebug.fps = 75, which is >= 55 threshold. Game runs smoothly after adding arena and difficulty validation code."
+    },
+    {
+      "id": "C-28",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:1273 — update() checks Input.isJustPressed('Escape') and Input.isJustPressed('d'/'D') to close overlay. open() at line 1246 sets active=true and runs validation. D key opens overlay on title screen (handler in states.js), Escape closes it."
+    },
+    {
+      "id": "C-29",
+      "result": "PASS",
+      "evidence": "Game loads to title screen. GameState exists with valid state machine. WorldMap has 13 stages. All core game objects (Player, Level, Physics, Input, Camera, Renderer, Enemies, HUD) are present and functional. Canvas renders at 960x540."
+    },
+    {
+      "id": "C-30",
+      "result": "PASS",
+      "evidence": "git diff shows changes ONLY in: src/validator.js (968 insertions, 100 deletions) and harness-state files. Zero modifications to player.js, physics.js, enemies.js, or level.js. All new validation logic is self-contained in validator.js."
+    }
+  ],
+  "regressionResults": {
+    "sprintsTested": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    "regressionPass": true,
+    "notes": "Sprint 14 only modifies src/validator.js — no changes to core gameplay files. Verified: all core game objects present (Player, Level, Physics, Input, Camera, Renderer, Enemies, HUD, WorldMap, GameState, AudioManager, Particles). Canvas 960x540. TILE_SIZE=32. All design spec colors match (deepCharcoal=#1A1A2E, warmSlate=#2D2D44, mutedGold=#C4A35A, softCream=#E8DCC8, emberRed=#D94F4F, mossGreen=#5A9E6F, steelBlue=#6B8CAE). WorldMap has 13 stages with correct IDs across 5 worlds. Level loading works (1-1: 85x20, spawn/boss/enemy data present). Sprint 13 BFS path validation still operational — all 13 paths PASS. FPS=75. Game debug API fully present with all expected keys."
+  },
+  "holisticScores": {
+    "designQuality": 8,
+    "designQualityNotes": "Debug overlay follows design spec faithfully: Deep Charcoal background at 92% opacity, Muted Gold title and borders, Soft Cream text, Steel Blue secondary text, Moss Green for PASS, Ember Red for FAIL. Uses correct font stack (Courier New monospace for data, sans-serif for labels). Proper text outlines for readability. Scrollbar with Muted Gold thumb on Warm Slate track. Alternating row backgrounds for readability. Well-organized 3-line-per-stage layout with category labels (PATH/ARENA/DIFF). Mini badges with colored indicator dots create a clean visual hierarchy.",
+    "originality": 7,
+    "originalityNotes": "The playability validator is a sophisticated developer tool — not just a pass/fail table. The arena boundary detection algorithm (scanning for solid column density to find walls, 60-80% thresholds) shows thoughtful engineering. The boss HP check temporarily spawns bosses with full state save/restore to read actual game data rather than using hardcoded values. The difficulty table is well-structured as a constant map with both seconds and frame counts. The debug overlay uses a compact badge system with colored dots rather than verbose text, fitting significant data into a scrollable overlay. Category breakdown (Path/Arena/Difficulty) with sub-counts adds analytical depth.",
+    "codeQuality": 8,
+    "codeQualityNotes": "Code is well-organized in a single file (validator.js) with clear sections: constants, tile helpers, BFS engine, arena validation, difficulty validation, stage validation, debug UI. Each check function follows consistent return pattern ({result, details, ...specificFields}). The DIFFICULTY_TABLE constant is clean and well-commented. State save/restore in _checkBossHP is thorough (enemies, boss, HUD state, audio muting). Sliding window for enemy density is algorithmically correct. Code is self-documenting with JSDoc-style comments.",
+    "completeness": 10,
+    "completenessNotes": "All 30 contract criteria are fully implemented. Arena validation covers all 4 checks (enclosure, minWidth, platforms, entry). Difficulty validation covers all 5 checks (vulnerability window, boss HP, enemy density, hazard percentage, platform width). Report structure has all required sections (pathResult, arenaResult, difficultyResult). Top-level aggregation includes both total counts and per-category breakdowns. Debug overlay displays all results with proper PASS/FAIL coloring. Regression criteria all satisfied. No missing functionality.",
+    "uxPolish": 7,
+    "uxPolishNotes": "Debug overlay is well-polished for a developer tool: scrollable with visual scrollbar, category breakdown header, timestamp, clear PASS/FAIL badges. The compact 3-line layout (header+arena+difficulty) fits all data while remaining readable. Arrow key scrolling with clear footer instructions. The mini-badge system with colored dots is efficient. However, the overlay is text-dense and could benefit from expandable detail views for individual checks."
+  },
+  "notes": "Sprint 14 delivers a comprehensive arena and difficulty validation system. All 30 criteria PASS. The validator correctly detects issues in the game data — many stages report FAIL for arena entry (no gap in left wall), vulnerability windows (too short for early worlds), platform width (1-tile platforms in worlds requiring ≥2), and enemy density (too many per screen in World 1). These are EXPECTED failures that Sprint 15 and 16 will address. The key deliverable — accurate detection and reporting — is fully functional. Code is self-contained in validator.js with zero changes to core gameplay files. All regression checks pass."
+}
