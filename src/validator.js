@@ -79,9 +79,9 @@ const PlayabilityValidator = {
         'stag_king':       { maxHealth: 7 },
         'sand_wyrm':       { maxHealth: 6 },
         'pharaoh_specter': { maxHealth: 8 },
-        'hydra_cactus':    { maxHealth: 12 },
+        'hydra_cactus':    { maxHealth: 8 },
         'frost_bear':      { maxHealth: 7 },
-        'crystal_witch':   { maxHealth: 25 },
+        'crystal_witch':   { maxHealth: 8 },
         'yeti_monarch':    { maxHealth: 9 },
         'lava_serpent':    { maxHealth: 7 },
         'iron_warden':     { maxHealth: 7 },
@@ -89,21 +89,22 @@ const PlayabilityValidator = {
         'the_architect':   { maxHealth: 19 }
     },
 
-    // Boss vulnerability durations (phase 1, in frames) — from enemies.js
+    // Boss vulnerability durations (phase 1, in frames) — now driven by per-world lookup in enemies.js
+    // World 1 = 180f, World 2 = 150f, World 3 = 120f, World 4 = 90f, Citadel = 90f
     BOSS_VULN_FRAMES: {
-        'elder_shroomba':  90,
-        'vine_mother':     100,
-        'stag_king':       90,
-        'sand_wyrm':       80,
-        'pharaoh_specter': 90,
-        'hydra_cactus':    90,
-        'frost_bear':      80,
-        'crystal_witch':   90,
-        'yeti_monarch':    80,
-        'lava_serpent':    90,
-        'iron_warden':     80,
-        'dragon_caldera':  80,
-        'the_architect':   80  // max(40, 90 - phase*10) → phase 1 = 80
+        'elder_shroomba':  180,  // World 1
+        'vine_mother':     180,  // World 1
+        'stag_king':       180,  // World 1
+        'sand_wyrm':       150,  // World 2
+        'pharaoh_specter': 150,  // World 2
+        'hydra_cactus':    150,  // World 2
+        'frost_bear':      120,  // World 3
+        'crystal_witch':   120,  // World 3
+        'yeti_monarch':    120,  // World 3
+        'lava_serpent':    90,   // World 4
+        'iron_warden':     90,   // World 4
+        'dragon_caldera':  90,   // World 4
+        'the_architect':   90    // Citadel — max(40, 90 - (phase-1)*10) → phase 1 = 90
     },
 
     // =============================================
@@ -837,14 +838,20 @@ const PlayabilityValidator = {
             return { result: 'FAIL', details: 'No boss data', expected: table.vulnerabilityWindow, actual: 0 };
         }
 
-        const vulnFrames = this.BOSS_VULN_FRAMES[bossType] || 0;
+        // Read actual vulnerability from Enemies system (per-world lookup) if available,
+        // fall back to our static BOSS_VULN_FRAMES mirror
+        let vulnFrames = 0;
+        if (typeof Enemies !== 'undefined' && Enemies.getVulnDuration) {
+            vulnFrames = Enemies.getVulnDuration(bossType, 1); // Phase 1
+        } else {
+            vulnFrames = this.BOSS_VULN_FRAMES[bossType] || 0;
+        }
         const vulnSeconds = vulnFrames / 60;
         const expectedSeconds = table.vulnerabilityWindow;
         const expectedFrames = table.vulnerabilityFrames;
 
         // Check if actual vulnerability window meets the expected value
-        // Allow a tolerance of ±0.5s (±30 frames) since exact match isn't realistic
-        const pass = vulnFrames >= expectedFrames - 30;
+        const pass = vulnFrames >= expectedFrames;
 
         return {
             result: pass ? 'PASS' : 'FAIL',

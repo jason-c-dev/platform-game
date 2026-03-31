@@ -216,13 +216,16 @@ const Level = {
         // BOSS ARENA (cols 65-84)
         // =====================
         this.bossArenaX = 65 * TILE_SIZE;
-        // Arena walls
-        this._fill(65, 65, 5, 16, TILE_SOLID);
+        // Arena walls (left wall has entry gap at rows 15-16)
+        this._fill(65, 65, 5, 14, TILE_SOLID);
         this._fill(84, 84, 5, 16, TILE_SOLID);
         // Arena ceiling
         this._fill(65, 84, 5, 5, TILE_SOLID);
         // Arena floor
         this._fill(65, 84, 17, H - 1, TILE_SOLID);
+        // Arena platforms
+        this._fill(70, 73, 13, 13, TILE_ONE_WAY);
+        this._fill(77, 80, 13, 13, TILE_ONE_WAY);
 
         // Boss data
         this.bossData = {
@@ -298,12 +301,16 @@ const Level = {
         // SECTION A: Entry area (cols 1-10)
         // Normal ground
 
-        // SECTION B: First wall jump shaft (cols 12-16)
-        this._fill(12, 13, 8, 21, TILE_SOLID);   // Left wall
-        this._fill(16, 17, 8, 21, TILE_SOLID);    // Right wall
-        this._fill(12, 17, 8, 8, TILE_SOLID);     // Top platform
+        // SECTION B: First wall jump shaft (cols 11-19, widened for accessibility)
+        this._fill(11, 12, 8, 19, TILE_SOLID);   // Left wall (gap at bottom for walk-through)
+        this._fill(18, 19, 8, 19, TILE_SOLID);   // Right wall (gap at bottom for walk-through)
+        this._fill(11, 19, 8, 8, TILE_SOLID);    // Top platform
+        // Intermediate landing platforms (safe landings every few rows)
+        this._fill(13, 15, 18, 18, TILE_ONE_WAY);
+        this._fill(15, 17, 14, 14, TILE_ONE_WAY);
+        this._fill(13, 15, 11, 11, TILE_ONE_WAY);
         // Reward platform above
-        this._fill(12, 17, 6, 6, TILE_ONE_WAY);
+        this._fill(11, 19, 6, 6, TILE_ONE_WAY);
 
         // SECTION C: Ladder section (cols 20-28)
         // Vertical ladder climb
@@ -323,17 +330,21 @@ const Level = {
         // Safe platform
         this._fill(36, 39, 14, 14, TILE_SOLID);
 
-        // SECTION E: Second wall jump shaft (cols 40-44)
-        this._fill(40, 41, 6, 21, TILE_SOLID);
-        this._fill(44, 45, 6, 21, TILE_SOLID);
-        this._fill(40, 45, 6, 6, TILE_SOLID);
+        // SECTION E: Second wall jump shaft (cols 39-47, widened for accessibility)
+        this._fill(39, 40, 6, 19, TILE_SOLID);   // Left wall (gap at bottom for walk-through)
+        this._fill(46, 47, 6, 19, TILE_SOLID);   // Right wall (gap at bottom for walk-through)
+        this._fill(39, 47, 6, 6, TILE_SOLID);    // Top platform
+        // Intermediate landing platforms
+        this._fill(41, 43, 18, 18, TILE_ONE_WAY);
+        this._fill(43, 45, 14, 14, TILE_ONE_WAY);
+        this._fill(41, 43, 10, 10, TILE_ONE_WAY);
 
-        // SECTION F: Extended platforming (cols 48-60)
+        // SECTION F: Extended platforming (cols 48-62)
         this._fill(48, 52, 18, 18, TILE_SOLID);
         this._fill(54, 57, 15, 15, TILE_SOLID);
         this._fill(59, 62, 12, 12, TILE_SOLID);
-        // Wall for wall slide
-        this._fill(63, 63, 6, 21, TILE_SOLID);
+        // Wall for wall slide (lowered top to allow jumping over)
+        this._fill(63, 63, 9, 21, TILE_SOLID);
 
         // SECTION G: Large chamber (cols 64-80)
         this._fill(64, 80, 18, 18, TILE_ONE_WAY);
@@ -361,10 +372,14 @@ const Level = {
         // BOSS ARENA (cols 105-124)
         // =====================
         this.bossArenaX = 105 * TILE_SIZE;
-        this._fill(105, 105, 5, 21, TILE_SOLID);
+        // Left wall with entry gap at rows 20-21
+        this._fill(105, 105, 5, 19, TILE_SOLID);
         this._fill(124, 124, 5, 21, TILE_SOLID);
         this._fill(105, 124, 5, 5, TILE_SOLID);
         this._fill(105, 124, 22, H - 1, TILE_SOLID);
+        // Arena platforms
+        this._fill(110, 113, 16, 16, TILE_ONE_WAY);
+        this._fill(117, 120, 12, 12, TILE_ONE_WAY);
 
         this.bossData = {
             type: 'vine_mother',
@@ -494,10 +509,14 @@ const Level = {
         // BOSS ARENA (cols 135-154)
         // =====================
         this.bossArenaX = 135 * TILE_SIZE;
-        this._fill(135, 135, 5, 17, TILE_SOLID);
+        // Left wall with entry gap at rows 16-17
+        this._fill(135, 135, 5, 15, TILE_SOLID);
         this._fill(154, 154, 5, 17, TILE_SOLID);
         this._fill(135, 154, 5, 5, TILE_SOLID);
         this._fill(135, 154, 18, H - 1, TILE_SOLID);
+        // Arena platforms
+        this._fill(140, 143, 14, 14, TILE_ONE_WAY);
+        this._fill(147, 150, 14, 14, TILE_ONE_WAY);
 
         this.bossData = {
             type: 'stag_king',
@@ -699,10 +718,14 @@ const Level = {
         // BOSS ARENA (cols 90-109)
         // =====================
         this.bossArenaX = 90 * TILE_SIZE;
-        this._fill(90, 90, 5, 16, TILE_SOLID);
+        // Left wall with entry gap at rows 15-16
+        this._fill(90, 90, 5, 14, TILE_SOLID);
         this._fill(109, 109, 5, 16, TILE_SOLID);
         this._fill(90, 109, 5, 5, TILE_SOLID);
         this._fill(90, 109, 17, H - 1, TILE_SOLID);
+        // Arena platforms
+        this._fill(95, 98, 13, 13, TILE_ONE_WAY);
+        this._fill(102, 105, 13, 13, TILE_ONE_WAY);
 
         this.bossData = {
             type: 'sand_wyrm',
@@ -850,7 +873,8 @@ const Level = {
         // BOSS ARENA (cols 115-134)
         // =====================
         this.bossArenaX = 115 * TILE_SIZE;
-        this._fill(115, 115, 4, 18, TILE_SOLID);
+        // Left wall with entry gap at rows 17-18
+        this._fill(115, 115, 4, 16, TILE_SOLID);
         this._fill(134, 134, 4, 18, TILE_SOLID);
         this._fill(115, 134, 4, 4, TILE_SOLID);
         this._fill(115, 134, 19, H - 1, TILE_SOLID);
@@ -1020,10 +1044,14 @@ const Level = {
         // BOSS ARENA (cols 125-144)
         // =====================
         this.bossArenaX = 125 * TILE_SIZE;
-        this._fill(125, 125, 4, 17, TILE_SOLID);
+        // Left wall with entry gap at rows 16-17
+        this._fill(125, 125, 4, 15, TILE_SOLID);
         this._fill(144, 144, 4, 17, TILE_SOLID);
         this._fill(125, 144, 4, 4, TILE_SOLID);
         this._fill(125, 144, 18, H - 1, TILE_SOLID);
+        // Arena platforms
+        this._fill(130, 133, 13, 13, TILE_ONE_WAY);
+        this._fill(137, 140, 13, 13, TILE_ONE_WAY);
 
         // Boss arena water pool
         this._fill(130, 139, 17, 17, TILE_WATER);
@@ -1543,8 +1571,8 @@ const Level = {
         // BOSS ARENA (cols 91-119)
         // =====================
         this.bossArenaX = 91 * TILE_SIZE;
-        // Arena walls
-        this._fill(91, 91, 5, 16, TILE_SOLID);
+        // Arena walls (left wall with entry gap at rows 15-16)
+        this._fill(91, 91, 5, 14, TILE_SOLID);
         this._fill(119, 119, 5, 16, TILE_SOLID);
         // Arena ceiling
         this._fill(91, 119, 5, 5, TILE_SOLID);
@@ -1701,8 +1729,8 @@ const Level = {
         // BOSS ARENA (cols 105-134)
         // =====================
         this.bossArenaX = 105 * TILE_SIZE;
-        // Arena walls
-        this._fill(105, 105, 3, 18, TILE_SOLID);
+        // Arena walls (left wall with entry gap at rows 17-18)
+        this._fill(105, 105, 3, 16, TILE_SOLID);
         this._fill(134, 134, 3, 18, TILE_SOLID);
         // Arena ceiling
         this._fill(105, 134, 2, 3, TILE_SOLID);
@@ -1884,8 +1912,8 @@ const Level = {
         // BOSS ARENA (cols 135-164)
         // =====================
         this.bossArenaX = 135 * TILE_SIZE;
-        // Arena walls
-        this._fill(135, 135, 3, 16, TILE_SOLID);
+        // Arena walls (left wall with entry gap at rows 15-16)
+        this._fill(135, 135, 3, 14, TILE_SOLID);
         this._fill(164, 164, 3, 16, TILE_SOLID);
         // Arena ceiling
         this._fill(135, 164, 3, 3, TILE_SOLID);
@@ -2068,8 +2096,8 @@ const Level = {
         // BOSS ARENA (cols 95-124)
         // =====================
         this.bossArenaX = 95 * TILE_SIZE;
-        // Arena walls
-        this._fill(95, 95, 3, 16, TILE_SOLID);
+        // Arena walls (left wall with entry gap at rows 15-16)
+        this._fill(95, 95, 3, 14, TILE_SOLID);
         this._fill(124, 124, 3, 16, TILE_SOLID);
         // Arena ceiling
         this._fill(95, 124, 3, 3, TILE_SOLID);
@@ -2210,7 +2238,8 @@ const Level = {
         // BOSS ARENA (cols 121-144)
         // =====================
         this.bossArenaX = 121 * TILE_SIZE;
-        this._fill(121, 121, 3, 16, TILE_SOLID);
+        // Left wall with entry gap at rows 15-16
+        this._fill(121, 121, 3, 14, TILE_SOLID);
         this._fill(144, 144, 3, 16, TILE_SOLID);
         this._fill(121, 144, 3, 3, TILE_SOLID);
         this._fill(121, 144, 17, H - 1, TILE_SOLID);
@@ -2377,7 +2406,8 @@ const Level = {
         // BOSS ARENA (cols 126-154)
         // =====================
         this.bossArenaX = 126 * TILE_SIZE;
-        this._fill(126, 126, 2, 16, TILE_SOLID);
+        // Left wall with entry gap at rows 15-16
+        this._fill(126, 126, 2, 14, TILE_SOLID);
         this._fill(154, 154, 2, 16, TILE_SOLID);
         this._fill(126, 154, 2, 2, TILE_SOLID);
         this._fill(126, 154, 17, H - 1, TILE_SOLID);
@@ -2643,9 +2673,10 @@ const Level = {
         this._fill(190, 219, 18, H - 1, TILE_SOLID);
 
         // Arena walls
+        this._fill(190, 190, 2, 15, TILE_SOLID);    // Left wall (entry gap at rows 16-17)
         this._fill(219, 219, 0, 17, TILE_SOLID);    // Right wall
 
-        // Arena ceiling (partial)
+        // Arena ceiling
         this._fill(190, 219, 0, 1, TILE_SOLID);
 
         // Arena platforms for boss fight

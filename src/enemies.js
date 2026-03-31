@@ -10,6 +10,75 @@ const Enemies = {
     boss: null,
     _hitCooldowns: {},
 
+    // Per-world vulnerability window durations (phase 1, in frames at 60fps)
+    // World 1 = 180f (3.0s), World 2 = 150f (2.5s), World 3 = 120f (2.0s),
+    // World 4 = 90f (1.5s), Citadel = 90f (1.5s)
+    VULN_WINDOWS_BY_WORLD: {
+        0: { phase1: 180, phase2: 120 },  // World 1 (Forest)
+        1: { phase1: 150, phase2: 100 },  // World 2 (Desert)
+        2: { phase1: 120, phase2: 80 },   // World 3 (Tundra)
+        3: { phase1: 90, phase2: 60 },    // World 4 (Volcano)
+        4: { phase1: 90, phase2: 60 }     // Citadel
+    },
+
+    // Map boss types to their world index
+    BOSS_WORLD_MAP: {
+        'elder_shroomba': 0, 'vine_mother': 0, 'stag_king': 0,
+        'sand_wyrm': 1, 'pharaoh_specter': 1, 'hydra_cactus': 1,
+        'frost_bear': 2, 'crystal_witch': 2, 'yeti_monarch': 2,
+        'lava_serpent': 3, 'iron_warden': 3, 'dragon_caldera': 3,
+        'the_architect': 4
+    },
+
+    /** Get vulnerability duration for a boss based on its world and current phase */
+    getVulnDuration(bossType, phase) {
+        const worldIndex = this.BOSS_WORLD_MAP[bossType] || 0;
+        const worldVuln = this.VULN_WINDOWS_BY_WORLD[worldIndex];
+        return phase === 1 ? worldVuln.phase1 : worldVuln.phase2;
+    },
+
+    /** Reset boss to center of arena on player death/respawn */
+    resetBossOnPlayerDeath() {
+        const b = this.boss;
+        if (!b || b.state === 'dead') return;
+
+        // Calculate arena center
+        if (Level.bossData && Level.bossArenaX) {
+            // Reset position to boss spawn point (center of arena)
+            b.x = Level.bossData.spawnX;
+            b.y = Level.bossData.spawnY;
+        }
+
+        // Reset boss health, phase, and state
+        b.health = b.maxHealth;
+        b.phase = 1;
+        b.state = 'intro';
+        b.introTimer = 60;
+        b.vulnerable = false;
+        b.vulnerableTimer = 0;
+        b.attackTimer = 0;
+        b.stateTimer = 0;
+        b.vx = 0;
+        b.vy = 0;
+        b.hitFlash = 0;
+
+        // Reset HUD
+        HUD.bossHP = b.maxHealth;
+        HUD.bossMaxHP = b.maxHealth;
+        HUD.bossActive = true;
+
+        // Reset hydra heads if applicable
+        if (b.heads) {
+            for (const head of b.heads) {
+                head.health = head.maxHealth;
+                head.active = true;
+            }
+        }
+
+        // Clear boss projectiles
+        this.projectiles = [];
+    },
+
     init() {
         this.enemies = [];
         this.projectiles = [];
@@ -121,7 +190,7 @@ const Enemies = {
                 patterns: ['teleport', 'summon']
             },
             'hydra_cactus': {
-                health: 12, maxHealth: 12, width: 52, height: 56, speed: 0,
+                health: 8, maxHealth: 8, width: 52, height: 56, speed: 0,
                 attackPattern: 'multi_head', attackType: 'multi_head',
                 patterns: ['multi_head']
             },
@@ -132,7 +201,7 @@ const Enemies = {
                 patterns: ['frost_beam']
             },
             'crystal_witch': {
-                health: 25, maxHealth: 25, width: 36, height: 44, speed: 0,
+                health: 8, maxHealth: 8, width: 36, height: 44, speed: 0,
                 attackPattern: 'crystal_shield', attackType: 'crystal_shield',
                 patterns: ['crystal_shield']
             },
@@ -225,9 +294,9 @@ const Enemies = {
         }
         if (type === 'hydra_cactus') {
             boss.heads = [
-                { health: 4, maxHealth: 4, active: true, y: 0 },
-                { health: 4, maxHealth: 4, active: true, y: -16 },
-                { health: 4, maxHealth: 4, active: true, y: -32 }
+                { health: 3, maxHealth: 3, active: true, y: 0 },
+                { health: 3, maxHealth: 3, active: true, y: -16 },
+                { health: 2, maxHealth: 2, active: true, y: -32 }
             ];
             boss.headCount = 3;
         }
@@ -258,10 +327,12 @@ const Enemies = {
             boss.boulderTimer = 0;
         }
         if (type === 'crystal_witch') {
-            boss.shieldHP = 20;
-            boss.shieldHealth = 20;
-            boss.shieldMaxHP = 20;
-            boss.shield = { active: true, hp: 20, maxHp: 20 };
+            // 8 HP total = 3 shield + 5 witch body
+            boss.witchBodyHP = 5;
+            boss.shieldHP = 3;
+            boss.shieldHealth = 3;
+            boss.shieldMaxHP = 3;
+            boss.shield = { active: true, hp: 3, maxHp: 3 };
             boss.teleportTimer = 0;
             boss.crystalTimer = 0;
         }
@@ -1289,11 +1360,19 @@ const Enemies = {
                 }
             }
         }
+
+        // Clamp boss X position to arena bounds (prevents boss from escaping arena)
+        if (Level.bossArenaX) {
+            const arenaLeft = Level.bossArenaX + TILE_SIZE; // Inside the left wall
+            const arenaRight = (Level.width - 1) * TILE_SIZE - b.width - TILE_SIZE; // Inside the right wall
+            if (b.x < arenaLeft) b.x = arenaLeft;
+            if (b.x > arenaRight) b.x = arenaRight;
+        }
     },
 
     _updateElderShroomba(b) {
         // Elder Shroomba: jumps, lands → shockwave, then vulnerable
-        const vulnDuration = b.phase === 1 ? 90 : 60;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1371,7 +1450,7 @@ const Enemies = {
 
     _updateVineMother(b) {
         // Vine Mother: stationary, vine sweeps across arena
-        const vulnDuration = b.phase === 1 ? 100 : 70;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1441,7 +1520,7 @@ const Enemies = {
 
     _updateStagKing(b) {
         // Stag King: charges across arena, drops ceiling rocks in phase 2
-        const vulnDuration = b.phase === 1 ? 90 : 65;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1520,7 +1599,7 @@ const Enemies = {
 
     _updateSandWyrm(b) {
         // Sand Wyrm: emerges from below, attacks, then submerges
-        const vulnDuration = b.phase === 1 ? 80 : 55;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1601,7 +1680,7 @@ const Enemies = {
 
     _updatePharaohSpecter(b) {
         // Pharaoh Specter: teleports and summons minions/projectiles
-        const vulnDuration = b.phase === 1 ? 90 : 60;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1703,7 +1782,7 @@ const Enemies = {
 
     _updateHydraCactus(b) {
         // Hydra Cactus: 3 heads, each with 4 HP, total 12
-        const vulnDuration = b.phase === 1 ? 90 : 65;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1801,7 +1880,7 @@ const Enemies = {
 
     _updateFrostBear(b) {
         // Frost Bear: 7 HP, frost beam attack, charges
-        const vulnDuration = b.phase === 1 ? 80 : 55;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -1883,17 +1962,17 @@ const Enemies = {
     },
 
     _updateCrystalWitch(b) {
-        // Crystal Witch: 25 HP total = 20 shield + 5 witch
+        // Crystal Witch: 8 HP total = 3 shield + 5 witch body
         // Shield must be destroyed before witch can be damaged
-        const vulnDuration = b.phase === 1 ? 90 : 60;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
+        const witchBodyHP = b.witchBodyHP || 5;
 
         // Update shield state
         if (b.shield && b.shield.active) {
-            b.shieldHP = Math.max(0, b.maxHealth - 5 - (b.maxHealth - b.health - 5));
-            if (b.shieldHP < 0) b.shieldHP = 0;
-            b.shield.hp = b.health > 5 ? b.health - 5 : 0;
+            b.shield.hp = b.health > witchBodyHP ? b.health - witchBodyHP : 0;
+            b.shieldHP = b.shield.hp;
             b.shieldHealth = b.shield.hp;
-            if (b.health <= 5) {
+            if (b.health <= witchBodyHP) {
                 b.shield.active = false;
                 b.shieldHP = 0;
                 b.shieldHealth = 0;
@@ -1985,7 +2064,7 @@ const Enemies = {
 
     _updateYetiMonarch(b) {
         // Yeti Monarch: 9 HP, boulder throw, ground slam, tiered arena
-        const vulnDuration = b.phase === 1 ? 80 : 55;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -2077,7 +2156,7 @@ const Enemies = {
 
     _updateLavaSerpent(b) {
         // Lava Serpent: 7 HP, emerges from lava, destroys platforms
-        const vulnDuration = b.phase === 1 ? 90 : 60;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -2149,7 +2228,7 @@ const Enemies = {
 
     _updateIronWarden(b) {
         // Iron Warden: 7 HP, chain anchor attacks, slam
-        const vulnDuration = b.phase === 1 ? 80 : 55;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -2236,7 +2315,7 @@ const Enemies = {
 
     _updateDragonCaldera(b) {
         // Dragon of the Caldera: 11 HP, 2-phase, fire breath + dive bomb
-        const vulnDuration = b.phase === 1 ? 80 : 55;
+        const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
 
         if (b.state === 'attacking') {
             b.vulnerable = false;
@@ -2401,7 +2480,9 @@ const Enemies = {
     // Phase 5: All Combined
     // =============================================
     _updateArchitect(b) {
-        const vulnDuration = Math.max(40, 90 - b.phase * 10); // Less vuln time as phases progress
+        // Architect uses world-based base vulnerability, reduced per phase
+        const baseVuln = Enemies.getVulnDuration(b.type, 1); // 90 frames base (Citadel)
+        const vulnDuration = Math.max(40, baseVuln - (b.phase - 1) * 10); // Less vuln time as phases progress
 
         // Handle gravity manually for the Architect
         if (!b.flying) {
