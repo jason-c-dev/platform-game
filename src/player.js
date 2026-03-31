@@ -957,6 +957,11 @@ const Player = {
         this.animFrame = 0;
         this.animTimer = 0;
         this.stateTimer = 0;
+
+        // Reset boss to center of arena on player respawn
+        if (typeof Enemies !== 'undefined' && Enemies.resetBossOnPlayerDeath) {
+            Enemies.resetBossOnPlayerDeath();
+        }
     },
 
     // =============================================
