@@ -870,11 +870,18 @@ const PlayabilityValidator = {
 
         // Read actual boss health from game data via Enemies.spawnBoss()
         // Temporarily spawn the boss to read its maxHealth from the actual config,
-        // then remove it — this reads the real game data, not hardcoded values.
+        // then restore all state — this reads the real game data, not hardcoded values.
         let actualHP = 0;
         if (typeof Enemies !== 'undefined' && Enemies.spawnBoss) {
-            const savedEnemies = Enemies.enemies.slice(); // snapshot
-            const savedBossHP = typeof HUD !== 'undefined' ? HUD.bossMaxHP : 0;
+            // Save state before temp spawn
+            const savedEnemies = Enemies.enemies.slice();
+            const savedBoss = Enemies.boss;
+            const savedHUDBossActive = typeof HUD !== 'undefined' ? HUD.bossActive : false;
+            const savedHUDBossHP = typeof HUD !== 'undefined' ? HUD.bossHP : 0;
+            const savedHUDBossMaxHP = typeof HUD !== 'undefined' ? HUD.bossMaxHP : 0;
+            // Mute audio during temp spawn
+            const savedAudioMuted = typeof AudioManager !== 'undefined' ? AudioManager.muted : true;
+            if (typeof AudioManager !== 'undefined') AudioManager.muted = true;
             try {
                 Enemies.spawnBoss(bossType, 0, 0);
                 const tempBoss = Enemies.enemies[Enemies.enemies.length - 1];
@@ -886,9 +893,15 @@ const PlayabilityValidator = {
                 const cfg = this.BOSS_CONFIGS[bossType];
                 actualHP = cfg ? cfg.maxHealth : 0;
             }
-            // Restore enemies list and HUD state
+            // Restore all state
             Enemies.enemies = savedEnemies;
-            if (typeof HUD !== 'undefined') HUD.bossMaxHP = savedBossHP;
+            Enemies.boss = savedBoss;
+            if (typeof HUD !== 'undefined') {
+                HUD.bossActive = savedHUDBossActive;
+                HUD.bossHP = savedHUDBossHP;
+                HUD.bossMaxHP = savedHUDBossMaxHP;
+            }
+            if (typeof AudioManager !== 'undefined') AudioManager.muted = savedAudioMuted;
         } else {
             // Fallback to our local config mirror of enemies.js data
             const cfg = this.BOSS_CONFIGS[bossType];
