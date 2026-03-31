@@ -294,9 +294,9 @@ const Enemies = {
         }
         if (type === 'hydra_cactus') {
             boss.heads = [
-                { health: 4, maxHealth: 4, active: true, y: 0 },
-                { health: 4, maxHealth: 4, active: true, y: -16 },
-                { health: 4, maxHealth: 4, active: true, y: -32 }
+                { health: 3, maxHealth: 3, active: true, y: 0 },
+                { health: 3, maxHealth: 3, active: true, y: -16 },
+                { health: 2, maxHealth: 2, active: true, y: -32 }
             ];
             boss.headCount = 3;
         }
@@ -327,10 +327,12 @@ const Enemies = {
             boss.boulderTimer = 0;
         }
         if (type === 'crystal_witch') {
-            boss.shieldHP = 20;
-            boss.shieldHealth = 20;
-            boss.shieldMaxHP = 20;
-            boss.shield = { active: true, hp: 20, maxHp: 20 };
+            // 8 HP total = 3 shield + 5 witch body
+            boss.witchBodyHP = 5;
+            boss.shieldHP = 3;
+            boss.shieldHealth = 3;
+            boss.shieldMaxHP = 3;
+            boss.shield = { active: true, hp: 3, maxHp: 3 };
             boss.teleportTimer = 0;
             boss.crystalTimer = 0;
         }
@@ -1960,17 +1962,17 @@ const Enemies = {
     },
 
     _updateCrystalWitch(b) {
-        // Crystal Witch: 25 HP total = 20 shield + 5 witch
+        // Crystal Witch: 8 HP total = 3 shield + 5 witch body
         // Shield must be destroyed before witch can be damaged
         const vulnDuration = Enemies.getVulnDuration(b.type, b.phase);
+        const witchBodyHP = b.witchBodyHP || 5;
 
         // Update shield state
         if (b.shield && b.shield.active) {
-            b.shieldHP = Math.max(0, b.maxHealth - 5 - (b.maxHealth - b.health - 5));
-            if (b.shieldHP < 0) b.shieldHP = 0;
-            b.shield.hp = b.health > 5 ? b.health - 5 : 0;
+            b.shield.hp = b.health > witchBodyHP ? b.health - witchBodyHP : 0;
+            b.shieldHP = b.shield.hp;
             b.shieldHealth = b.shield.hp;
-            if (b.health <= 5) {
+            if (b.health <= witchBodyHP) {
                 b.shield.active = false;
                 b.shieldHP = 0;
                 b.shieldHealth = 0;
