@@ -1,0 +1,371 @@
+{
+  "sprint": 14,
+  "name": "Arena Validation & Difficulty Parameter Checks",
+  "theme": "Boss arena enclosure validation, difficulty table compliance checks, complete validation report",
+  "features": [
+    "F24: Playability Validator System (arena validation + difficulty parameters)"
+  ],
+  "dependsOn": [13],
+  "criteria": [
+    {
+      "id": "C-01",
+      "category": "arena-enclosure",
+      "description": "Validator checks that every boss arena has solid walls on all 4 sides (top, bottom, left, right) except the entry point",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage result for an arenaResult section",
+        "Verify arenaResult includes an 'enclosure' check with PASS/FAIL"
+      ],
+      "threshold": "Each of the 13 stage results includes an arenaResult.enclosure field with PASS or FAIL status"
+    },
+    {
+      "id": "C-02",
+      "category": "arena-enclosure",
+      "description": "Arena enclosure check verifies all 4 walls: top row is solid, bottom row is solid, left column is solid, right column is solid (entry point excluded)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the arena enclosure validation function",
+        "Verify it checks top, bottom, left, and right boundaries of the boss arena for solid tiles",
+        "Verify the entry point (left side gap) is excluded from wall completeness checks"
+      ],
+      "threshold": "Code explicitly checks all 4 walls and excludes the entry point from the left wall check"
+    },
+    {
+      "id": "C-03",
+      "category": "arena-width",
+      "description": "Validator checks that every boss arena is at least 15 tiles wide",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's arenaResult for a 'minWidth' check",
+        "Verify arenaResult.minWidth includes the measured width and PASS/FAIL"
+      ],
+      "threshold": "Each stage result has arenaResult.minWidth with measured value and PASS/FAIL (PASS when >= 15 tiles)"
+    },
+    {
+      "id": "C-04",
+      "category": "arena-platforms",
+      "description": "Validator checks that every boss arena contains at least 2 platforms for player positioning",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's arenaResult for a 'platforms' check",
+        "Verify arenaResult.platforms includes the count and PASS/FAIL"
+      ],
+      "threshold": "Each stage result has arenaResult.platforms with count >= 2 for PASS"
+    },
+    {
+      "id": "C-05",
+      "category": "arena-entry",
+      "description": "Validator checks that the arena entry point is accessible from the left side without requiring wall-jumps",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's arenaResult for an 'entry' check",
+        "Verify arenaResult.entry includes accessibility status and PASS/FAIL"
+      ],
+      "threshold": "Each stage result has arenaResult.entry with PASS/FAIL indicating left-side ground-level accessibility"
+    },
+    {
+      "id": "C-06",
+      "category": "arena-entry",
+      "description": "Arena entry accessibility check verifies that the player can walk into the arena from the left at ground level (solid ground beneath entry gap, no wall-jump required)",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the entry accessibility validation function",
+        "Verify it checks for a gap in the left wall with solid floor beneath it",
+        "Verify it confirms walkable entry (not requiring wall-jump to enter)"
+      ],
+      "threshold": "Code checks for ground-level entry gap with solid floor support"
+    },
+    {
+      "id": "C-07",
+      "category": "difficulty-vulnerability",
+      "description": "Validator checks boss vulnerability windows against the difficulty table: World 1 = 3.0s, World 2 = 2.5s, World 3 = 2.0s, World 4 = 1.5s, Citadel = 1.5s",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's difficultyResult for 'vulnerabilityWindow' check",
+        "Verify the expected and actual values are reported per world"
+      ],
+      "threshold": "Each stage result has difficultyResult.vulnerabilityWindow with expected value matching the difficulty table for its world"
+    },
+    {
+      "id": "C-08",
+      "category": "difficulty-vulnerability",
+      "description": "The difficulty table for vulnerability windows is defined as a constant in the validator code with exact per-world values",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the validator code for a difficulty table constant",
+        "Verify World 1 = 3.0 (or 180 frames), World 2 = 2.5 (or 150 frames), World 3 = 2.0 (or 120 frames), World 4 = 1.5 (or 90 frames), Citadel = 1.5 (or 90 frames)"
+      ],
+      "threshold": "Difficulty table constant exists with exact per-world vulnerability window values"
+    },
+    {
+      "id": "C-09",
+      "category": "difficulty-hp",
+      "description": "Validator checks boss HP against the difficulty table ranges: World 1 = 5-7, World 2 = 6-8, World 3 = 7-9, World 4 = 7-11, Citadel = 19",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's difficultyResult for 'bossHP' check",
+        "Verify actual HP and expected range are reported per world"
+      ],
+      "threshold": "Each stage result has difficultyResult.bossHP with actual value, expected range, and PASS/FAIL"
+    },
+    {
+      "id": "C-10",
+      "category": "difficulty-hp",
+      "description": "Boss HP validation reads the actual boss maxHealth from spawnBoss() configuration for each stage",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Verify validator accesses boss health data from the boss configuration (enemies.js spawnBoss data or Level.bossData)",
+        "Verify it compares against the correct per-world HP ranges"
+      ],
+      "threshold": "Validator reads actual boss health from game data (not hardcoded values) and compares to difficulty table ranges"
+    },
+    {
+      "id": "C-11",
+      "category": "difficulty-density",
+      "description": "Validator checks enemy density per visible screen against per-world limits: World 1 max 2, World 2 max 3, World 3 max 4, World 4 max 5, Citadel max 5",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's difficultyResult for 'enemyDensity' check",
+        "Verify max enemies per screen, the world limit, and PASS/FAIL are reported"
+      ],
+      "threshold": "Each stage result has difficultyResult.enemyDensity with maxPerScreen, worldLimit, and PASS/FAIL"
+    },
+    {
+      "id": "C-12",
+      "category": "difficulty-density",
+      "description": "Enemy density check calculates max enemies visible in any single screen-width (30 tiles = 960px) window across the stage",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the enemy density calculation",
+        "Verify it uses a sliding window of 30 tiles (960px / 32px per tile) width",
+        "Verify it counts enemy spawns within each window and reports the maximum"
+      ],
+      "threshold": "Sliding window of ~30 tiles used to compute max enemies per screen"
+    },
+    {
+      "id": "C-13",
+      "category": "difficulty-hazards",
+      "description": "Validator checks hazard tile percentage against per-world limits: World 1 max 5%, World 2 max 10%, World 3 max 15%, World 4 max 20%, Citadel max 20%",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's difficultyResult for 'hazardPercentage' check",
+        "Verify actual percentage, world limit, and PASS/FAIL are reported"
+      ],
+      "threshold": "Each stage result has difficultyResult.hazardPercentage with actual, limit, and PASS/FAIL"
+    },
+    {
+      "id": "C-14",
+      "category": "difficulty-hazards",
+      "description": "Hazard tile percentage counts all hazard tiles (spikes, lava) relative to total non-empty tiles in the stage",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the hazard percentage calculation",
+        "Verify it counts TILE_HAZARD (and/or TILE_LAVA) tiles",
+        "Verify it divides by total non-empty (non-zero) tiles to produce a percentage"
+      ],
+      "threshold": "Hazard percentage = hazard tile count / total non-empty tile count * 100"
+    },
+    {
+      "id": "C-15",
+      "category": "difficulty-platforms",
+      "description": "Validator checks minimum safe platform width per world: World 1 min 3 tiles, World 2 min 2, World 3 min 2, World 4 min 1, Citadel min 1",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect each stage's difficultyResult for 'minPlatformWidth' check",
+        "Verify the narrowest platform found, the world minimum, and PASS/FAIL"
+      ],
+      "threshold": "Each stage result has difficultyResult.minPlatformWidth with narrowest, worldMin, and PASS/FAIL"
+    },
+    {
+      "id": "C-16",
+      "category": "difficulty-platforms",
+      "description": "Platform width check scans all contiguous horizontal runs of solid/one-way tiles that a player can stand on and reports the narrowest",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the platform width scanning logic",
+        "Verify it identifies contiguous horizontal runs of standable tiles (solid, one-way)",
+        "Verify it reports the minimum width found across all platforms in the stage"
+      ],
+      "threshold": "Code scans all rows for contiguous standable tile runs and tracks the minimum width"
+    },
+    {
+      "id": "C-17",
+      "category": "report-structure",
+      "description": "Each stage in the JSON report has clearly labeled check categories: pathResult, arenaResult, difficultyResult",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect the first stage result object",
+        "Verify it contains pathResult (from sprint 13), arenaResult (new), and difficultyResult (new) as top-level keys"
+      ],
+      "threshold": "Each stage result has pathResult, arenaResult, and difficultyResult as distinct labeled sections"
+    },
+    {
+      "id": "C-18",
+      "category": "report-structure",
+      "description": "arenaResult contains sub-checks: enclosure, minWidth, platforms, entry — each with result (PASS/FAIL) and details",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect arenaResult of any stage",
+        "Verify enclosure, minWidth, platforms, entry sub-objects each have result and details fields"
+      ],
+      "threshold": "arenaResult has 4 named sub-checks, each with result and details"
+    },
+    {
+      "id": "C-19",
+      "category": "report-structure",
+      "description": "difficultyResult contains sub-checks: vulnerabilityWindow, bossHP, enemyDensity, hazardPercentage, minPlatformWidth — each with result (PASS/FAIL) and details",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect difficultyResult of any stage",
+        "Verify all 5 sub-checks exist with result and details fields"
+      ],
+      "threshold": "difficultyResult has 5 named sub-checks, each with result and details"
+    },
+    {
+      "id": "C-20",
+      "category": "report-structure",
+      "description": "The top-level report includes aggregate counts for all check categories (path, arena, difficulty) — not just path pass/fail",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Inspect the top-level report object",
+        "Verify it includes aggregate counts that reflect all check types"
+      ],
+      "threshold": "Top-level report has passCount/failCount reflecting all checks (path + arena + difficulty), or separate category counts"
+    },
+    {
+      "id": "C-21",
+      "category": "debug-ui",
+      "description": "Debug overlay displays arena validation results alongside path results for each stage",
+      "testMethod": "manual",
+      "testSteps": [
+        "Press D on title screen to open debug overlay",
+        "Verify arena check results (enclosure, width, platforms, entry) are visible in the overlay"
+      ],
+      "threshold": "Arena validation results displayed in the debug overlay for each stage"
+    },
+    {
+      "id": "C-22",
+      "category": "debug-ui",
+      "description": "Debug overlay displays difficulty parameter check results for each stage",
+      "testMethod": "manual",
+      "testSteps": [
+        "Open debug overlay",
+        "Verify difficulty checks (vulnerability window, boss HP, enemy density, hazard %, platform width) are visible"
+      ],
+      "threshold": "Difficulty parameter results displayed in the debug overlay"
+    },
+    {
+      "id": "C-23",
+      "category": "debug-ui",
+      "description": "Debug overlay uses design spec colors: Moss Green (#5A9E6F) for PASS, Ember Red (#D94F4F) for FAIL across all check categories",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review the debug overlay rendering code for arena and difficulty result display",
+        "Verify PASS uses Moss Green and FAIL uses Ember Red"
+      ],
+      "threshold": "All new check categories use the same PASS/FAIL color scheme as sprint 13"
+    },
+    {
+      "id": "C-24",
+      "category": "debug-ui",
+      "description": "Debug overlay summary line at the top shows total pass/fail counts across all check categories",
+      "testMethod": "manual",
+      "testSteps": [
+        "Open debug overlay",
+        "Verify the summary line reflects totals from path + arena + difficulty checks"
+      ],
+      "threshold": "Summary line counts include all check categories, not just path validation"
+    },
+    {
+      "id": "C-25",
+      "category": "regression",
+      "description": "Path validation from sprint 13 still works — all 13 stages have pathResult in the report",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Verify each of the 13 stages still has a pathResult field with PASS or FAIL"
+      ],
+      "threshold": "All 13 stages have pathResult field, BFS pathfinding still operational"
+    },
+    {
+      "id": "C-26",
+      "category": "regression",
+      "description": "window.runPlayabilityCheck() still returns results for all 13 stages (1-1 through 5-1)",
+      "testMethod": "console",
+      "testSteps": [
+        "Call window.runPlayabilityCheck()",
+        "Verify stages array length is 13",
+        "Verify stage IDs cover 1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3, 4-1, 4-2, 4-3, 5-1"
+      ],
+      "threshold": "13 stage results with correct stage IDs"
+    },
+    {
+      "id": "C-27",
+      "category": "regression",
+      "description": "Game still runs at 60fps after adding arena and difficulty validation code",
+      "testMethod": "console",
+      "testSteps": [
+        "Play a stage and check fps via window.__gameDebug.fps"
+      ],
+      "threshold": "FPS >= 55 during normal gameplay"
+    },
+    {
+      "id": "C-28",
+      "category": "regression",
+      "description": "Debug overlay still opens with D key on title screen and closes with Escape",
+      "testMethod": "manual",
+      "testSteps": [
+        "On title screen press D to open overlay",
+        "Press Escape to close",
+        "Verify title screen resumes normally"
+      ],
+      "threshold": "D opens overlay, Escape closes it, title screen works after"
+    },
+    {
+      "id": "C-29",
+      "category": "regression",
+      "description": "Title screen menu navigation and game start still work normally",
+      "testMethod": "manual",
+      "testSteps": [
+        "On title screen use arrow keys to navigate menu",
+        "Press Enter to start game",
+        "Verify world map loads"
+      ],
+      "threshold": "Title screen navigation and game start unaffected"
+    },
+    {
+      "id": "C-30",
+      "category": "integration",
+      "description": "All new validation code is contained within src/validator.js — no modifications to core gameplay files (player.js, physics.js, enemies.js, level.js) except read-only data access",
+      "testMethod": "code-review",
+      "testSteps": [
+        "Review git diff for sprint 14",
+        "Verify changes are primarily in src/validator.js",
+        "Verify no behavioral changes to gameplay files"
+      ],
+      "threshold": "New validation logic is self-contained in validator.js; any other file changes are minimal and non-behavioral"
+    }
+  ],
+  "outOfScope": [
+    "Fixing stages/arenas that fail validation checks (Sprint 15)",
+    "Adjusting boss vulnerability windows or HP (Sprint 15)",
+    "Reducing enemy density or hazard percentages (Sprint 16)",
+    "Widening platforms that fail minimum width checks (Sprint 16)",
+    "Modifying boss arena layouts (Sprint 15)"
+  ],
+  "regressionSprints": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+  "notes": "This sprint ONLY adds validation/reporting capabilities to the existing PlayabilityValidator. It does NOT fix any issues the validator discovers. The validator is expected to report FAIL for some checks — that is correct behavior indicating issues that Sprint 15 and 16 will address. The key deliverable is that the validator accurately detects and reports all arena and difficulty compliance issues."
+}
