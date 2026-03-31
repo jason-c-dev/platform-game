@@ -1,0 +1,147 @@
+{
+  "sprint": 13,
+  "name": "Playability Validator — Path Validation Engine",
+  "overallResult": "PASS",
+  "passCount": 20,
+  "failCount": 0,
+  "criteriaResults": [
+    {
+      "id": "C-01",
+      "result": "PASS",
+      "evidence": "window.runPlayabilityCheck is typeof 'function'. Called it — returned a report object with timestamp, stageCount, stages array, passCount, failCount fields. Not undefined."
+    },
+    {
+      "id": "C-02",
+      "result": "PASS",
+      "evidence": "runPlayabilityCheck() returns object with stages array of length 13. Stage IDs: 1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3, 4-1, 4-2, 4-3, 5-1 — covers all 13 stages across 5 worlds."
+    },
+    {
+      "id": "C-03",
+      "result": "PASS",
+      "evidence": "Verified all 13 stage entries contain: stageId (string), name (string), pathResult ('PASS'/'FAIL'), details (string). Checked via automated iteration — all fields present in every entry."
+    },
+    {
+      "id": "C-04",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:11 — JUMP_HEIGHT: 4 (comment: '4 tiles (128px) max vertical jump'). Used in getReachable() at line 211 as the default jumpHeight when not on a bounce pad. Matches contract requirement of 4 tiles / 128px."
+    },
+    {
+      "id": "C-05",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:12 — WALL_JUMP_REACH_H: 3 (comment: '3 tiles (96px) horizontal wall-jump'). Used in getReachable() wall-jump section at lines 287-309, wjH variable. Matches contract requirement of 3 tiles / 96px."
+    },
+    {
+      "id": "C-06",
+      "result": "PASS",
+      "evidence": "Live test: runPlayabilityCheck() reports all 13 stages as PASS with paths from spawn to boss arena. Example: Stage 1-1 'Path found from spawn (2,15) to boss arena (col 65). 121 positions reachable.' The BFS runs from Level.spawnX/Y to Level.bossArenaX (line 479)."
+    },
+    {
+      "id": "C-07",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:32 — isSupport() includes TILE_ONE_WAY (value 2). Also at line 43, isPassable() includes TILE_ONE_WAY, allowing player body to occupy the tile. This means one-way platforms are standable from above and passable for jump-through — correct behavior."
+    },
+    {
+      "id": "C-08",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:354-393 — Dedicated ladder climbing section in getReachable(). Checks TILE_LADDER at current position (line 354), climbs up (lines 356-381) and down (lines 374-381). Also checks adjacent ladders at lines 385-393. isLadder() helper at line 83-86 identifies TILE_LADDER tiles."
+    },
+    {
+      "id": "C-09",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:14 — BOUNCE_HEIGHT: 7. At line 210-211: 'const onBounce = this.hasBounceBelow(tiles, w, h, col, row); const jumpHeight = onBounce ? this.BOUNCE_HEIGHT : this.JUMP_HEIGHT;'. Bounce pads grant 7-tile vertical reach vs normal 4-tile jump. hasBounceBelow() at line 89-92 checks for TILE_BOUNCE below current position."
+    },
+    {
+      "id": "C-10",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:33 — isSupport() includes TILE_CRUMBLE (value 7), making crumbling platforms standable. Also at line 44, isPassable() includes TILE_CRUMBLE, allowing player body to occupy the tile. BFS treats crumbling platforms as valid walkable surfaces."
+    },
+    {
+      "id": "C-11",
+      "result": "PASS",
+      "evidence": "Playwright test: On title screen (state=TITLE), pressed 'd' key. State changed to 'DEBUG', PlayabilityValidator.active became true. Handler in states.js:284-288 checks Input.isJustPressed('d'/'D'), calls changeTo(DEBUG) and PlayabilityValidator.open()."
+    },
+    {
+      "id": "C-12",
+      "result": "PASS",
+      "evidence": "Playwright test: After opening debug overlay and waiting for validation to complete, PlayabilityValidator.results.stages.length === 13. The render() method at lines 699-763 iterates through stages and displays them in a table with stageId, name, result badge, and details columns."
+    },
+    {
+      "id": "C-13",
+      "result": "PASS",
+      "evidence": "Playwright test: scrollOffset started at 0, pressing ArrowDown changed it to 1, pressing ArrowUp returned it to 0. Handler at lines 608-614: ArrowDown increments scrollOffset (max = stages.length - 10 = 3), ArrowUp decrements. Render loop at line 699 uses scrollOffset to determine visible window."
+    },
+    {
+      "id": "C-14",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:624 — overlay background 'rgba(26, 26, 46, 0.92)' which is Deep Charcoal #1A1A2E at 92% opacity. Line 640: title uses COLORS.mutedGold (#C4A35A). Line 651: body text uses COLORS.softCream (#E8DCC8). Line 673: timestamp uses COLORS.steelBlue (#6B8CAE). All match design-spec.md UI Chrome Colors."
+    },
+    {
+      "id": "C-15",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:729 — stroke for result badge: 'isPass ? COLORS.mossGreen : COLORS.emberRed'. Line 736: fill for badge text same pattern. COLORS.mossGreen = '#5A9E6F', COLORS.emberRed = '#D94F4F' as defined in constants.js:124-123. Verified against design-spec.md."
+    },
+    {
+      "id": "C-16",
+      "result": "PASS",
+      "evidence": "Playwright DOM check: validator.js script tag found in index.html at position before game.js. Code review confirms: index.html lines 61-62 add '<script src=\"src/validator.js\"></script>' after states.js (line 59) and before game.js (line 64)."
+    },
+    {
+      "id": "C-17",
+      "result": "PASS",
+      "evidence": "Code review: validator.js:515-527 — FAIL branch returns object with failCoords: { lastReachableCol, lastReachableRow, targetCol, gapTiles }. In live test all 13 stages PASS so no FAIL results to inspect, but code path is verified and exercised in validateStagePath(). The failCoords include col/row coordinates of the unreachable section."
+    },
+    {
+      "id": "C-18",
+      "result": "PASS",
+      "evidence": "Playwright test: After opening debug overlay, pressed Escape. GameState.current returned to 'TITLE', PlayabilityValidator.active became false. Handler at validator.js:601 checks isJustPressed('Escape') and isJustPressed('d'/'D') — both close the overlay. states.js:488-490 detects !PlayabilityValidator.active and transitions back to TITLE."
+    },
+    {
+      "id": "C-19",
+      "result": "PASS",
+      "evidence": "Playwright test: After closing debug overlay, title screen state = 'TITLE'. ArrowDown/ArrowUp menu navigation worked. Enter transitioned to WORLD_MAP. Full game flow test (test-c18-c28.mjs) also confirms: TITLE → Enter → WORLD_MAP → Enter → STAGE → Escape → PAUSED → Escape → STAGE, with zero errors."
+    },
+    {
+      "id": "C-20",
+      "result": "PASS",
+      "evidence": "FPS measured via window.__gameDebug.fps: 79 FPS during stage gameplay (Playwright test). Separate regression test (test-c18-c28.mjs) measured 85 FPS during stage 1-1. Both well above 55 FPS threshold. Title screen FPS: 76 (run-tests.mjs). Validator code runs in setTimeout and does not affect game loop."
+    }
+  ],
+  "regressionResults": {
+    "summary": "All prior sprint regression tests pass. run-tests.mjs: 36/36 PASS (covers sprints 1-12 criteria including stage loading, spawns, exits, bosses, save system, audio, FPS). test-c18-c28.mjs: C-18 PASS (85 FPS gameplay), C-28 PASS (zero JS errors across full game flow).",
+    "pass": 38,
+    "fail": 0,
+    "details": [
+      "Sprint 1-3 (Canvas, Stages, UI): All 13 stages load with valid dimensions, spawn/exit points, boss data",
+      "Sprint 4 (World Map, Save): Node unlock logic, save/load, best-time/coin record management, clear data",
+      "Sprint 5 (Enemies/Bosses): All 13 bosses spawn without errors, correct maxHealth values",
+      "Sprint 10 (Audio): All 11 AudioManager methods exist",
+      "Sprint 12 (Performance): FPS >= 55 on title screen (76 FPS) and during gameplay (85 FPS)",
+      "Game Flow: Full flow TITLE → WORLD_MAP → STAGE → PAUSE → RESUME → WORLD_MAP with zero JS errors"
+    ]
+  },
+  "holistic": {
+    "designQuality": {
+      "score": 8,
+      "notes": "Debug overlay follows design-spec.md precisely: Deep Charcoal background (#1A1A2E at 92%), Muted Gold accents for title and scrollbar, Soft Cream for text, Steel Blue for secondary info, Moss Green/Ember Red for PASS/FAIL badges. Canvas-rendered with 3px text outlines for readability. Alternating row backgrounds using Warm Slate. Professional table layout with column headers, summary line, and scrollbar. Fits the game's dark-themed aesthetic."
+    },
+    "originality": {
+      "score": 7,
+      "notes": "BFS pathfinding validator that accounts for game-specific mechanics (one-way platforms, ladders, bounce pads, moving platforms, chains, wall-jumps). Clean architecture separating tile classification, BFS engine, stage validation, and debug overlay rendering. The approach of simulating player physics in a graph search is well-executed."
+    },
+    "codeQuality": {
+      "score": 8,
+      "notes": "Well-organized ~800-line module with clear section comments. Modular helper functions (isSupport, isPassable, isSolid, findGround). BFS engine handles edge cases: moving platforms, chains, wall-slide-then-jump, ladder grab adjacency. Consistent use of game constants (TILE_*, COLORS.*). Self-contained — no modifications to existing game modules except minimal state machine additions."
+    },
+    "functionality": {
+      "score": 9,
+      "notes": "All 20 contract criteria pass. Validator correctly identifies paths through all 13 stages. API returns structured JSON with per-stage results. Debug overlay fully functional: opens/closes with D/Escape, scrolls with arrows, shows 13 stages with PASS/FAIL badges and details. No console errors. No performance impact on gameplay (79-85 FPS)."
+    },
+    "uxPolish": {
+      "score": 7,
+      "notes": "Animated 'Running...' indicator during validation. Scrollbar with proportional thumb. Alternating row backgrounds for readability. Summary line with PASS/FAIL counts. Footer with keyboard instructions. Truncated detail text with ellipsis for overflow. Failure coordinates shown in red beneath failed stages. The overlay renders over the title screen background, maintaining visual context."
+    }
+  },
+  "primaryScore": 7.8,
+  "timestamp": "2026-03-30T15:30:00Z",
+  "notes": "Sprint 13 is a clean, additive implementation. Only 3 files modified: index.html (+5 lines for script tag and window assignment), src/states.js (+36 lines for DEBUG state and D key handler), and new src/validator.js (800 lines). The BFS pathfinder correctly models player physics including jumps, wall-jumps, ladder climbing, bounce pads, and moving platforms. All 13 stages validate as PASS. The debug overlay adheres to the design system colors. All prior regression tests (38 checks) pass with zero errors and no performance degradation."
+}
