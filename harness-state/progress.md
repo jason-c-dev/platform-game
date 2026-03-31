@@ -143,3 +143,11 @@
 - **Time**: 2026-03-31T02:31:52Z
 - **Merge commit**: 0b174b7875fb601c48e29a65fd99179507acecde
 
+
+## Sprint 16: Enemy & Hazard Rebalancing + Full Validation Pass
+
+- **Status**: PASS
+- **Attempt**: 1
+- **Time**: 2026-03-31T03:20:33Z
+- **Merge commit**: f00ad04953e278450244144a80aa1a30716e7514
+
