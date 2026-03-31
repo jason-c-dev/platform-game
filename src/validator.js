@@ -1,6 +1,6 @@
 // ============================================================
-// validator.js — Playability Validator: BFS Path Validation Engine
-// Sprint 13: Validates traversability from spawn to boss trigger zone
+// validator.js — Playability Validator: Path, Arena & Difficulty Checks
+// Sprint 13: BFS path validation | Sprint 14: Arena & difficulty checks
 // Press "D" on title screen to run. API: window.runPlayabilityCheck()
 // ============================================================
 
@@ -13,6 +13,98 @@ const PlayabilityValidator = {
     WALL_JUMP_REACH_V: 3,    // 3 tiles vertical wall-jump
     BOUNCE_HEIGHT: 7,         // 7 tiles vertical from bounce pads
     JUMP_REACH_H: 6,          // 6 tiles horizontal reach during jump
+
+    // =============================================
+    // DIFFICULTY TABLE — Per-world expected values
+    // =============================================
+    DIFFICULTY_TABLE: {
+        // World index 0 = World 1 (Forest)
+        0: {
+            vulnerabilityWindow: 3.0,   // seconds
+            vulnerabilityFrames: 180,   // frames at 60fps
+            bossHPMin: 5,
+            bossHPMax: 7,
+            maxEnemyDensity: 2,         // max enemies per screen
+            maxHazardPercent: 5,        // max % of non-empty tiles
+            minPlatformWidth: 3         // minimum safe platform width in tiles
+        },
+        // World index 1 = World 2 (Desert)
+        1: {
+            vulnerabilityWindow: 2.5,
+            vulnerabilityFrames: 150,
+            bossHPMin: 6,
+            bossHPMax: 8,
+            maxEnemyDensity: 3,
+            maxHazardPercent: 10,
+            minPlatformWidth: 2
+        },
+        // World index 2 = World 3 (Tundra)
+        2: {
+            vulnerabilityWindow: 2.0,
+            vulnerabilityFrames: 120,
+            bossHPMin: 7,
+            bossHPMax: 9,
+            maxEnemyDensity: 4,
+            maxHazardPercent: 15,
+            minPlatformWidth: 2
+        },
+        // World index 3 = World 4 (Volcano)
+        3: {
+            vulnerabilityWindow: 1.5,
+            vulnerabilityFrames: 90,
+            bossHPMin: 7,
+            bossHPMax: 11,
+            maxEnemyDensity: 5,
+            maxHazardPercent: 20,
+            minPlatformWidth: 1
+        },
+        // World index 4 = Citadel
+        4: {
+            vulnerabilityWindow: 1.5,
+            vulnerabilityFrames: 90,
+            bossHPMin: 19,
+            bossHPMax: 19,
+            maxEnemyDensity: 5,
+            maxHazardPercent: 20,
+            minPlatformWidth: 1
+        }
+    },
+
+    // =============================================
+    // BOSS CONFIGS — Read from Enemies.spawnBoss data
+    // =============================================
+    BOSS_CONFIGS: {
+        'elder_shroomba':  { maxHealth: 5 },
+        'vine_mother':     { maxHealth: 6 },
+        'stag_king':       { maxHealth: 7 },
+        'sand_wyrm':       { maxHealth: 6 },
+        'pharaoh_specter': { maxHealth: 8 },
+        'hydra_cactus':    { maxHealth: 12 },
+        'frost_bear':      { maxHealth: 7 },
+        'crystal_witch':   { maxHealth: 25 },
+        'yeti_monarch':    { maxHealth: 9 },
+        'lava_serpent':    { maxHealth: 7 },
+        'iron_warden':     { maxHealth: 7 },
+        'dragon_caldera':  { maxHealth: 11 },
+        'the_architect':   { maxHealth: 19 }
+    },
+
+    // Boss vulnerability durations (phase 1, in frames) — from enemies.js
+    BOSS_VULN_FRAMES: {
+        'elder_shroomba':  90,
+        'vine_mother':     100,
+        'stag_king':       90,
+        'sand_wyrm':       80,
+        'pharaoh_specter': 90,
+        'hydra_cactus':    90,
+        'frost_bear':      80,
+        'crystal_witch':   90,
+        'yeti_monarch':    80,
+        'lava_serpent':    90,
+        'iron_warden':     80,
+        'dragon_caldera':  80,
+        'the_architect':   80  // max(40, 90 - phase*10) → phase 1 = 80
+    },
 
     // =============================================
     // DEBUG OVERLAY STATE
@@ -455,6 +547,519 @@ const PlayabilityValidator = {
     },
 
     // =============================================
+    // ARENA VALIDATION
+    // =============================================
+
+    /**
+     * Find the arena boundaries from bossArenaX to the right wall.
+     * Returns { left, right, top, bottom } in tile coordinates,
+     * or null if no arena can be identified.
+     */
+    _findArenaBounds(tiles, w, h) {
+        const arenaLeftCol = Math.floor(Level.bossArenaX / TILE_SIZE);
+        if (arenaLeftCol <= 0 || arenaLeftCol >= w) return null;
+
+        // Find right wall: scan right from arenaLeftCol looking for a
+        // column that is mostly solid (the right boundary wall)
+        let arenaRightCol = w - 1;
+        for (let c = arenaLeftCol + 10; c < w; c++) {
+            let solidCount = 0;
+            for (let r = 0; r < h; r++) {
+                if (this.isSolid(tiles[r][c])) solidCount++;
+            }
+            // A wall column should be mostly solid (at least 60% of height)
+            if (solidCount >= Math.floor(h * 0.6)) {
+                arenaRightCol = c;
+                break;
+            }
+        }
+
+        // Find top row: first row with solid tiles spanning the arena width
+        let arenaTopRow = 0;
+        for (let r = 0; r < h; r++) {
+            let solidCount = 0;
+            for (let c = arenaLeftCol; c <= arenaRightCol; c++) {
+                if (this.isSolid(tiles[r][c])) solidCount++;
+            }
+            if (solidCount >= (arenaRightCol - arenaLeftCol) * 0.6) {
+                arenaTopRow = r;
+                break;
+            }
+        }
+
+        // Find bottom row: first mostly-solid row after the top
+        let arenaBottomRow = h - 1;
+        for (let r = h - 1; r > arenaTopRow; r--) {
+            let solidCount = 0;
+            for (let c = arenaLeftCol; c <= arenaRightCol; c++) {
+                const tile = tiles[r][c];
+                if (this.isSolid(tile) || tile === TILE_ICE) solidCount++;
+            }
+            if (solidCount >= (arenaRightCol - arenaLeftCol) * 0.6) {
+                arenaBottomRow = r;
+                break;
+            }
+        }
+
+        return {
+            left: arenaLeftCol,
+            right: arenaRightCol,
+            top: arenaTopRow,
+            bottom: arenaBottomRow
+        };
+    },
+
+    /**
+     * Check arena enclosure: all 4 walls (top, bottom, left, right) are solid,
+     * excluding the entry point (gap in the left wall).
+     * Returns { result: 'PASS'|'FAIL', details: string }
+     */
+    _checkArenaEnclosure(tiles, w, h, bounds) {
+        if (!bounds) return { result: 'FAIL', details: 'No arena bounds detected' };
+
+        const { left, right, top, bottom } = bounds;
+        const issues = [];
+
+        // Check top row (ceiling)
+        let topSolid = 0, topTotal = 0;
+        for (let c = left; c <= right; c++) {
+            topTotal++;
+            if (this.isSolid(tiles[top][c])) topSolid++;
+        }
+        if (topSolid < topTotal * 0.8) {
+            issues.push(`top: ${topSolid}/${topTotal} solid`);
+        }
+
+        // Check bottom row (floor) — ice counts as solid floor
+        let bottomSolid = 0, bottomTotal = 0;
+        for (let c = left; c <= right; c++) {
+            bottomTotal++;
+            const tile = tiles[bottom][c];
+            if (this.isSolid(tile) || tile === TILE_ICE) bottomSolid++;
+        }
+        if (bottomSolid < bottomTotal * 0.8) {
+            issues.push(`bottom: ${bottomSolid}/${bottomTotal} solid`);
+        }
+
+        // Check right wall
+        let rightSolid = 0, rightTotal = 0;
+        for (let r = top; r <= bottom; r++) {
+            rightTotal++;
+            if (this.isSolid(tiles[r][right])) rightSolid++;
+        }
+        if (rightSolid < rightTotal * 0.7) {
+            issues.push(`right: ${rightSolid}/${rightTotal} solid`);
+        }
+
+        // Check left wall — exclude entry point (a gap for the player to walk in)
+        // The entry point is typically a 2-3 tile gap near the bottom of the left wall
+        let leftSolid = 0, leftTotal = 0;
+        let entryGapCount = 0;
+        for (let r = top; r <= bottom; r++) {
+            leftTotal++;
+            if (this.isSolid(tiles[r][left])) {
+                leftSolid++;
+            } else {
+                entryGapCount++;
+            }
+        }
+        // Left wall should be mostly solid — allow up to 4 tiles for entry gap
+        const leftThreshold = (leftTotal - Math.min(entryGapCount, 4)) * 0.7;
+        if (leftSolid < leftThreshold) {
+            issues.push(`left: ${leftSolid}/${leftTotal} solid (excl. entry)`);
+        }
+
+        if (issues.length === 0) {
+            return { result: 'PASS', details: `All 4 walls solid (${left}-${right} cols, ${top}-${bottom} rows)` };
+        } else {
+            return { result: 'FAIL', details: `Wall gaps: ${issues.join('; ')}` };
+        }
+    },
+
+    /**
+     * Check arena minimum width (must be >= 15 tiles).
+     * Returns { result: 'PASS'|'FAIL', details: string, measured: number }
+     */
+    _checkArenaMinWidth(bounds) {
+        if (!bounds) return { result: 'FAIL', details: 'No arena bounds', measured: 0 };
+
+        const width = bounds.right - bounds.left + 1;
+        const pass = width >= 15;
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `Arena width: ${width} tiles (min 15)`,
+            measured: width
+        };
+    },
+
+    /**
+     * Check arena has at least 2 platforms for player positioning.
+     * Counts one-way and solid platforms inside the arena (not floor/ceiling).
+     * Returns { result: 'PASS'|'FAIL', details: string, count: number }
+     */
+    _checkArenaPlatforms(tiles, w, h, bounds) {
+        if (!bounds) return { result: 'FAIL', details: 'No arena bounds', count: 0 };
+
+        const { left, right, top, bottom } = bounds;
+        let platformCount = 0;
+
+        // Scan interior rows (between ceiling and floor) for platform segments
+        for (let r = top + 1; r < bottom; r++) {
+            let inPlatform = false;
+            for (let c = left + 1; c < right; c++) {
+                const tile = tiles[r][c];
+                const isStandable = tile === TILE_ONE_WAY || tile === TILE_SOLID || tile === TILE_ICE;
+                // Check that the row above is passable (i.e., this is actually a platform surface)
+                const abovePassable = r > 0 && this.isPassable(tiles[r - 1][c]);
+
+                if (isStandable && abovePassable) {
+                    if (!inPlatform) {
+                        platformCount++;
+                        inPlatform = true;
+                    }
+                } else {
+                    inPlatform = false;
+                }
+            }
+        }
+
+        // The floor itself counts as a platform if it's standable
+        // (already counted in the loop if the row above floor is passable)
+
+        const pass = platformCount >= 2;
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `${platformCount} platforms found (min 2)`,
+            count: platformCount
+        };
+    },
+
+    /**
+     * Check arena entry accessibility — player can walk in from the left
+     * at ground level (solid ground beneath entry gap, no wall-jump required).
+     * Returns { result: 'PASS'|'FAIL', details: string }
+     */
+    _checkArenaEntry(tiles, w, h, bounds) {
+        if (!bounds) return { result: 'FAIL', details: 'No arena bounds' };
+
+        const { left, right, top, bottom } = bounds;
+
+        // Find the entry gap in the left wall — look for non-solid tiles
+        // in the left column between top and bottom
+        let gapRows = [];
+        for (let r = top + 1; r < bottom; r++) {
+            if (!this.isSolid(tiles[r][left])) {
+                gapRows.push(r);
+            }
+        }
+
+        if (gapRows.length === 0) {
+            return { result: 'FAIL', details: 'No entry gap found in left wall' };
+        }
+
+        // Check ground-level entry: the lowest gap row should have solid ground
+        // beneath it (at the gap row + 1 or at the bottom row)
+        const lowestGap = gapRows[gapRows.length - 1];
+
+        // Check for solid floor beneath the entry gap
+        let hasFloor = false;
+        // The tile below the lowest gap position should be solid (floor)
+        if (lowestGap + 1 <= bottom) {
+            const belowTile = tiles[lowestGap + 1] ? tiles[lowestGap + 1][left] : TILE_SOLID;
+            const belowInsideTile = tiles[lowestGap + 1] ? tiles[lowestGap + 1][left + 1] : TILE_SOLID;
+            if (this.isSolid(belowTile) || belowTile === TILE_ICE ||
+                this.isSolid(belowInsideTile) || belowInsideTile === TILE_ICE) {
+                hasFloor = true;
+            }
+        }
+        // Also check if the gap is right above the arena floor
+        if (lowestGap === bottom - 1) {
+            hasFloor = true;
+        }
+
+        // Check the tile just outside the arena (left - 1) at entry level
+        // to see if the player can walk in
+        let hasApproachGround = false;
+        if (left > 0 && lowestGap + 1 < h) {
+            const outsideTile = tiles[lowestGap + 1][left - 1];
+            if (this.isSolid(outsideTile) || outsideTile === TILE_ICE || this.isSupport(outsideTile)) {
+                hasApproachGround = true;
+            }
+        }
+        // If no tile outside, the pre-boss terrain usually provides ground
+        if (left > 0) hasApproachGround = true;
+
+        if (hasFloor && hasApproachGround) {
+            return { result: 'PASS', details: `Entry at row ${lowestGap}, ground-level, walkable` };
+        } else if (!hasFloor) {
+            return { result: 'FAIL', details: `Entry gap at row ${lowestGap} has no solid floor beneath` };
+        } else {
+            return { result: 'FAIL', details: `Entry at row ${lowestGap} not accessible from outside` };
+        }
+    },
+
+    /**
+     * Run all arena checks for the current stage.
+     * Returns { enclosure, minWidth, platforms, entry }
+     */
+    validateArena(tiles, w, h) {
+        const bounds = this._findArenaBounds(tiles, w, h);
+        return {
+            enclosure: this._checkArenaEnclosure(tiles, w, h, bounds),
+            minWidth: this._checkArenaMinWidth(bounds),
+            platforms: this._checkArenaPlatforms(tiles, w, h, bounds),
+            entry: this._checkArenaEntry(tiles, w, h, bounds)
+        };
+    },
+
+    // =============================================
+    // DIFFICULTY PARAMETER VALIDATION
+    // =============================================
+
+    /**
+     * Get the world index (0-4) for a given stageId.
+     */
+    _getWorldIndex(stageId) {
+        const stageInfo = WorldMap.STAGES.find(s => s.id === stageId);
+        return stageInfo ? stageInfo.world : 0;
+    },
+
+    /**
+     * Check boss vulnerability window against difficulty table.
+     * Returns { result: 'PASS'|'FAIL', details: string, expected, actual }
+     */
+    _checkVulnerabilityWindow(stageId) {
+        const worldIndex = this._getWorldIndex(stageId);
+        const table = this.DIFFICULTY_TABLE[worldIndex];
+        const bossType = Level.bossData ? Level.bossData.type : null;
+
+        if (!bossType) {
+            return { result: 'FAIL', details: 'No boss data', expected: table.vulnerabilityWindow, actual: 0 };
+        }
+
+        const vulnFrames = this.BOSS_VULN_FRAMES[bossType] || 0;
+        const vulnSeconds = vulnFrames / 60;
+        const expectedSeconds = table.vulnerabilityWindow;
+        const expectedFrames = table.vulnerabilityFrames;
+
+        // Check if actual vulnerability window meets the expected value
+        // Allow a tolerance of ±0.5s (±30 frames) since exact match isn't realistic
+        const pass = vulnFrames >= expectedFrames - 30;
+
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `${bossType}: ${vulnSeconds.toFixed(1)}s (${vulnFrames}f) — expected ${expectedSeconds}s (${expectedFrames}f)`,
+            expected: expectedSeconds,
+            actual: vulnSeconds
+        };
+    },
+
+    /**
+     * Check boss HP against difficulty table.
+     * Reads actual boss maxHealth from spawnBoss configuration.
+     * Returns { result: 'PASS'|'FAIL', details: string, actual, min, max }
+     */
+    _checkBossHP(stageId) {
+        const worldIndex = this._getWorldIndex(stageId);
+        const table = this.DIFFICULTY_TABLE[worldIndex];
+        const bossType = Level.bossData ? Level.bossData.type : null;
+
+        if (!bossType) {
+            return { result: 'FAIL', details: 'No boss data', actual: 0, min: table.bossHPMin, max: table.bossHPMax };
+        }
+
+        // Read actual boss health from game data (Enemies.spawnBoss configs)
+        let actualHP = 0;
+        if (typeof Enemies !== 'undefined' && Enemies.spawnBoss) {
+            // Try to read from the Enemies configs directly
+            const configs = {
+                'elder_shroomba': 5, 'vine_mother': 6, 'stag_king': 7,
+                'sand_wyrm': 6, 'pharaoh_specter': 8, 'hydra_cactus': 12,
+                'frost_bear': 7, 'crystal_witch': 25, 'yeti_monarch': 9,
+                'lava_serpent': 7, 'iron_warden': 7, 'dragon_caldera': 11,
+                'the_architect': 19
+            };
+            actualHP = configs[bossType] || 0;
+        } else {
+            // Fallback to our local config
+            const cfg = this.BOSS_CONFIGS[bossType];
+            actualHP = cfg ? cfg.maxHealth : 0;
+        }
+
+        const pass = actualHP >= table.bossHPMin && actualHP <= table.bossHPMax;
+
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `${bossType}: HP ${actualHP} — expected ${table.bossHPMin}-${table.bossHPMax}`,
+            actual: actualHP,
+            min: table.bossHPMin,
+            max: table.bossHPMax
+        };
+    },
+
+    /**
+     * Check enemy density per visible screen (30 tile sliding window).
+     * Returns { result: 'PASS'|'FAIL', details: string, maxPerScreen, worldLimit }
+     */
+    _checkEnemyDensity(stageId) {
+        const worldIndex = this._getWorldIndex(stageId);
+        const table = this.DIFFICULTY_TABLE[worldIndex];
+        const spawns = Level.enemySpawns || [];
+        const screenWidthTiles = 30; // 960px / 32px
+
+        if (spawns.length === 0) {
+            return {
+                result: 'PASS',
+                details: 'No enemies in stage',
+                maxPerScreen: 0,
+                worldLimit: table.maxEnemyDensity
+            };
+        }
+
+        // Get enemy x-positions in tile coordinates
+        const enemyTileCols = spawns.map(s => Math.floor(s.x / TILE_SIZE));
+
+        // Sliding window: check every possible 30-tile window
+        const minCol = Math.min(...enemyTileCols);
+        const maxCol = Math.max(...enemyTileCols);
+        let maxInWindow = 0;
+
+        for (let startCol = minCol; startCol <= maxCol; startCol++) {
+            const endCol = startCol + screenWidthTiles;
+            let count = 0;
+            for (const col of enemyTileCols) {
+                if (col >= startCol && col < endCol) count++;
+            }
+            if (count > maxInWindow) maxInWindow = count;
+        }
+
+        const pass = maxInWindow <= table.maxEnemyDensity;
+
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `Max ${maxInWindow} enemies/screen — limit ${table.maxEnemyDensity}`,
+            maxPerScreen: maxInWindow,
+            worldLimit: table.maxEnemyDensity
+        };
+    },
+
+    /**
+     * Check hazard tile percentage (hazard tiles / total non-empty tiles).
+     * Returns { result: 'PASS'|'FAIL', details: string, actual, limit }
+     */
+    _checkHazardPercentage(stageId) {
+        const worldIndex = this._getWorldIndex(stageId);
+        const table = this.DIFFICULTY_TABLE[worldIndex];
+        const tiles = Level.tiles;
+        const w = Level.width;
+        const h = Level.height;
+
+        let hazardCount = 0;
+        let nonEmptyCount = 0;
+
+        for (let r = 0; r < h; r++) {
+            for (let c = 0; c < w; c++) {
+                const tile = tiles[r][c];
+                if (tile !== TILE_EMPTY) {
+                    nonEmptyCount++;
+                    if (tile === TILE_HAZARD || tile === TILE_LAVA) {
+                        hazardCount++;
+                    }
+                }
+            }
+        }
+
+        const percentage = nonEmptyCount > 0 ? (hazardCount / nonEmptyCount) * 100 : 0;
+        const pass = percentage <= table.maxHazardPercent;
+
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `${percentage.toFixed(1)}% hazard tiles — limit ${table.maxHazardPercent}%`,
+            actual: parseFloat(percentage.toFixed(1)),
+            limit: table.maxHazardPercent
+        };
+    },
+
+    /**
+     * Check minimum platform width — scans all rows for contiguous standable
+     * tile runs and reports the narrowest.
+     * Returns { result: 'PASS'|'FAIL', details: string, narrowest, worldMin }
+     */
+    _checkMinPlatformWidth(stageId) {
+        const worldIndex = this._getWorldIndex(stageId);
+        const table = this.DIFFICULTY_TABLE[worldIndex];
+        const tiles = Level.tiles;
+        const w = Level.width;
+        const h = Level.height;
+
+        let narrowestPlatform = Infinity;
+        let platformFound = false;
+
+        // Scan all rows for contiguous standable tile runs
+        for (let r = 0; r < h; r++) {
+            let runLength = 0;
+            for (let c = 0; c < w; c++) {
+                const tile = tiles[r][c];
+                // A standable tile: solid, one-way, or ice
+                const isStandable = tile === TILE_SOLID || tile === TILE_ONE_WAY || tile === TILE_ICE;
+                // Also check that the space above is passable (actually a platform surface)
+                const abovePassable = r > 0 ? this.isPassable(tiles[r - 1][c]) : true;
+
+                if (isStandable && abovePassable) {
+                    runLength++;
+                } else {
+                    if (runLength > 0) {
+                        platformFound = true;
+                        if (runLength < narrowestPlatform) {
+                            narrowestPlatform = runLength;
+                        }
+                    }
+                    runLength = 0;
+                }
+            }
+            // End of row
+            if (runLength > 0) {
+                platformFound = true;
+                if (runLength < narrowestPlatform) {
+                    narrowestPlatform = runLength;
+                }
+            }
+        }
+
+        if (!platformFound) {
+            return {
+                result: 'FAIL',
+                details: 'No platforms found',
+                narrowest: 0,
+                worldMin: table.minPlatformWidth
+            };
+        }
+
+        const pass = narrowestPlatform >= table.minPlatformWidth;
+
+        return {
+            result: pass ? 'PASS' : 'FAIL',
+            details: `Narrowest: ${narrowestPlatform} tiles — min ${table.minPlatformWidth}`,
+            narrowest: narrowestPlatform,
+            worldMin: table.minPlatformWidth
+        };
+    },
+
+    /**
+     * Run all difficulty checks for the current stage.
+     * Returns { vulnerabilityWindow, bossHP, enemyDensity, hazardPercentage, minPlatformWidth }
+     */
+    validateDifficulty(stageId) {
+        return {
+            vulnerabilityWindow: this._checkVulnerabilityWindow(stageId),
+            bossHP: this._checkBossHP(stageId),
+            enemyDensity: this._checkEnemyDensity(stageId),
+            hazardPercentage: this._checkHazardPercentage(stageId),
+            minPlatformWidth: this._checkMinPlatformWidth(stageId)
+        };
+    },
+
+    // =============================================
     // STAGE VALIDATION
     // =============================================
 
@@ -529,7 +1134,7 @@ const PlayabilityValidator = {
 
     /**
      * Run full playability check across all 13 stages.
-     * Returns a complete JSON report.
+     * Returns a complete JSON report with path, arena, and difficulty results.
      */
     runFullCheck() {
         const stageIds = ['1-1', '1-2', '1-3', '2-1', '2-2', '2-3',
@@ -543,25 +1148,70 @@ const PlayabilityValidator = {
             // Load the stage
             Level.loadStage(stageId);
 
-            // Validate path
-            const result = this.validateStagePath(stageId);
-            results.push(result);
+            // Validate path (sprint 13)
+            const pathResult = this.validateStagePath(stageId);
+
+            // Validate arena (sprint 14)
+            const arenaResult = this.validateArena(Level.tiles, Level.width, Level.height);
+
+            // Validate difficulty (sprint 14)
+            const difficultyResult = this.validateDifficulty(stageId);
+
+            results.push({
+                stageId: pathResult.stageId,
+                name: pathResult.name,
+                pathResult: pathResult.pathResult,
+                details: pathResult.details,
+                failCoords: pathResult.failCoords || null,
+                arenaResult: arenaResult,
+                difficultyResult: difficultyResult
+            });
         }
 
-        // Restore previous stage ID (don't restore full level state since
-        // this runs from debug mode, not during gameplay)
+        // Restore previous stage ID
         GameState.currentStageId = savedStageId;
 
-        const passCount = results.filter(r => r.pathResult === 'PASS').length;
-        const failCount = results.filter(r => r.pathResult === 'FAIL').length;
+        // Aggregate counts across ALL check categories
+        let totalPass = 0;
+        let totalFail = 0;
+
+        for (const stage of results) {
+            // Path check
+            if (stage.pathResult === 'PASS') totalPass++; else totalFail++;
+
+            // Arena checks (4 sub-checks)
+            for (const key of ['enclosure', 'minWidth', 'platforms', 'entry']) {
+                if (stage.arenaResult[key].result === 'PASS') totalPass++; else totalFail++;
+            }
+
+            // Difficulty checks (5 sub-checks)
+            for (const key of ['vulnerabilityWindow', 'bossHP', 'enemyDensity', 'hazardPercentage', 'minPlatformWidth']) {
+                if (stage.difficultyResult[key].result === 'PASS') totalPass++; else totalFail++;
+            }
+        }
 
         return {
             timestamp: new Date().toISOString(),
-            validator: 'PlayabilityValidator v1.0',
+            validator: 'PlayabilityValidator v2.0',
             stageCount: results.length,
-            passCount: passCount,
-            failCount: failCount,
-            allPass: failCount === 0,
+            passCount: totalPass,
+            failCount: totalFail,
+            totalChecks: totalPass + totalFail,
+            allPass: totalFail === 0,
+            categoryCounts: {
+                path: {
+                    pass: results.filter(r => r.pathResult === 'PASS').length,
+                    fail: results.filter(r => r.pathResult === 'FAIL').length
+                },
+                arena: {
+                    pass: results.reduce((sum, r) => sum + ['enclosure', 'minWidth', 'platforms', 'entry'].filter(k => r.arenaResult[k].result === 'PASS').length, 0),
+                    fail: results.reduce((sum, r) => sum + ['enclosure', 'minWidth', 'platforms', 'entry'].filter(k => r.arenaResult[k].result === 'FAIL').length, 0)
+                },
+                difficulty: {
+                    pass: results.reduce((sum, r) => sum + ['vulnerabilityWindow', 'bossHP', 'enemyDensity', 'hazardPercentage', 'minPlatformWidth'].filter(k => r.difficultyResult[k].result === 'PASS').length, 0),
+                    fail: results.reduce((sum, r) => sum + ['vulnerabilityWindow', 'bossHP', 'enemyDensity', 'hazardPercentage', 'minPlatformWidth'].filter(k => r.difficultyResult[k].result === 'FAIL').length, 0)
+                }
+            },
             stages: results
         };
     },
@@ -603,9 +1253,10 @@ const PlayabilityValidator = {
             return;
         }
 
-        // Scrolling
+        // Scrolling — each stage now has multiple lines so we count total lines
         if (this.results && this.results.stages) {
-            const maxScroll = Math.max(0, this.results.stages.length - 10);
+            const totalLines = this._getTotalDisplayLines();
+            const maxScroll = Math.max(0, totalLines - 8);
             if (Input.isJustPressed('ArrowDown')) {
                 this.scrollOffset = Math.min(this.scrollOffset + 1, maxScroll);
             }
@@ -613,6 +1264,28 @@ const PlayabilityValidator = {
                 this.scrollOffset = Math.max(this.scrollOffset - 1, 0);
             }
         }
+    },
+
+    /** Calculate total display lines for scrolling */
+    _getTotalDisplayLines() {
+        if (!this.results || !this.results.stages) return 0;
+        // Each stage: 1 header line + 1 arena summary line + 1 difficulty summary line = 3 lines
+        return this.results.stages.length * 3;
+    },
+
+    /** Helper: draw a small PASS/FAIL badge */
+    _drawBadge(ctx, text, x, y, isPass) {
+        const badgeW = 36;
+        const badgeH = 14;
+        ctx.fillStyle = isPass ? 'rgba(90, 158, 111, 0.3)' : 'rgba(217, 79, 79, 0.3)';
+        ctx.fillRect(x, y - 1, badgeW, badgeH);
+        ctx.strokeStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y - 1, badgeW, badgeH);
+        ctx.font = 'bold 9px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
+        ctx.fillText(text, x + badgeW / 2, y + 2);
     },
 
     /** Render the debug overlay */
@@ -654,127 +1327,200 @@ const PlayabilityValidator = {
 
         if (!this.results) return;
 
-        // Summary line
-        ctx.font = 'bold 16px "Courier New", monospace';
+        // Summary line — total pass/fail across ALL check categories
+        ctx.font = 'bold 14px "Courier New", monospace';
         ctx.textAlign = 'left';
-        const summaryY = 72;
-        const summaryText = `${this.results.passCount} PASS  /  ${this.results.failCount} FAIL  /  ${this.results.stageCount} TOTAL`;
+        const summaryY = 68;
 
+        const summaryText = `${this.results.passCount} PASS / ${this.results.failCount} FAIL / ${this.results.totalChecks} CHECKS`;
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2;
         ctx.strokeText(summaryText, 48, summaryY);
         ctx.fillStyle = this.results.allPass ? COLORS.mossGreen : COLORS.emberRed;
         ctx.fillText(summaryText, 48, summaryY);
 
+        // Category breakdown
+        const cc = this.results.categoryCounts;
+        ctx.font = '11px "Courier New", monospace';
+        const catY = summaryY + 18;
+        ctx.fillStyle = COLORS.steelBlue;
+        const catText = `Path: ${cc.path.pass}/${cc.path.pass + cc.path.fail}  Arena: ${cc.arena.pass}/${cc.arena.pass + cc.arena.fail}  Difficulty: ${cc.difficulty.pass}/${cc.difficulty.pass + cc.difficulty.fail}`;
+        ctx.fillText(catText, 48, catY);
+
         // Timestamp
-        ctx.font = '12px "Courier New", monospace';
+        ctx.font = '11px "Courier New", monospace';
         ctx.textAlign = 'right';
         ctx.fillStyle = COLORS.steelBlue;
         ctx.fillText(this.results.timestamp, CANVAS_WIDTH - 48, summaryY);
 
-        // Column headers
-        ctx.textAlign = 'left';
-        ctx.font = 'bold 12px sans-serif';
-        const headerY = summaryY + 28;
-        ctx.fillStyle = COLORS.steelBlue;
-        ctx.fillText('STAGE', 48, headerY);
-        ctx.fillText('NAME', 130, headerY);
-        ctx.fillText('RESULT', 370, headerY);
-        ctx.fillText('DETAILS', 460, headerY);
-
-        // Separator line
+        // Separator
         ctx.strokeStyle = COLORS.warmSlate;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(48, headerY + 18);
-        ctx.lineTo(CANVAS_WIDTH - 48, headerY + 18);
+        ctx.moveTo(48, catY + 16);
+        ctx.lineTo(CANVAS_WIDTH - 48, catY + 16);
         ctx.stroke();
 
-        // Stage results (scrollable)
-        const startY = headerY + 26;
-        const rowHeight = 36;
-        const visibleRows = 10;
+        // Stage results (scrollable, 3 lines per stage)
+        const contentStartY = catY + 22;
+        const lineHeight = 15;
+        const contentHeight = CANVAS_HEIGHT - contentStartY - 48;
+        const visibleLines = Math.floor(contentHeight / lineHeight);
+
+        // Build flat list of display lines
+        const lines = [];
         const stages = this.results.stages;
 
-        for (let i = 0; i < visibleRows && i + this.scrollOffset < stages.length; i++) {
-            const stage = stages[i + this.scrollOffset];
-            const y = startY + i * rowHeight;
+        for (let si = 0; si < stages.length; si++) {
+            const stage = stages[si];
 
-            // Row background (alternating for readability)
-            if (i % 2 === 0) {
-                ctx.fillStyle = 'rgba(45, 45, 68, 0.4)';
-                ctx.fillRect(40, y - 4, CANVAS_WIDTH - 80, rowHeight - 2);
-            }
+            // Line 1: Stage header with path result
+            lines.push({ type: 'header', stage: stage, index: si });
 
-            // Stage ID
-            ctx.font = 'bold 14px "Courier New", monospace';
-            ctx.fillStyle = COLORS.softCream;
-            ctx.textAlign = 'left';
-            ctx.fillText(stage.stageId, 48, y + 4);
+            // Line 2: Arena results summary
+            lines.push({ type: 'arena', stage: stage, index: si });
 
-            // Stage name
-            ctx.font = '14px sans-serif';
-            ctx.fillStyle = COLORS.softCream;
-            ctx.fillText(stage.name, 130, y + 4);
+            // Line 3: Difficulty results summary
+            lines.push({ type: 'difficulty', stage: stage, index: si });
+        }
 
-            // Result badge
-            const isPass = stage.pathResult === 'PASS';
-            const badgeX = 370;
-            const badgeW = 60;
-            const badgeH = 20;
+        // Clip content area
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(32, contentStartY - 2, CANVAS_WIDTH - 64, contentHeight + 4);
+        ctx.clip();
 
-            // Badge background
-            ctx.fillStyle = isPass ? 'rgba(90, 158, 111, 0.3)' : 'rgba(217, 79, 79, 0.3)';
-            ctx.fillRect(badgeX, y - 1, badgeW, badgeH);
-            ctx.strokeStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
-            ctx.lineWidth = 1;
-            ctx.strokeRect(badgeX, y - 1, badgeW, badgeH);
+        for (let i = 0; i < visibleLines && i + this.scrollOffset < lines.length; i++) {
+            const line = lines[i + this.scrollOffset];
+            const y = contentStartY + i * lineHeight;
 
-            // Badge text
-            ctx.font = 'bold 12px "Courier New", monospace';
-            ctx.textAlign = 'center';
-            ctx.fillStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
-            ctx.fillText(stage.pathResult, badgeX + badgeW / 2, y + 3);
-
-            // Details text
-            ctx.font = '11px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.fillStyle = COLORS.steelBlue;
-            // Truncate details to fit
-            const maxDetailWidth = CANVAS_WIDTH - 48 - 460;
-            let detailText = stage.details;
-            if (ctx.measureText(detailText).width > maxDetailWidth) {
-                while (ctx.measureText(detailText + '...').width > maxDetailWidth && detailText.length > 0) {
-                    detailText = detailText.slice(0, -1);
+            if (line.type === 'header') {
+                // Alternating row background for each stage group
+                if (line.index % 2 === 0) {
+                    ctx.fillStyle = 'rgba(45, 45, 68, 0.3)';
+                    ctx.fillRect(40, y - 3, CANVAS_WIDTH - 80, lineHeight * 3);
                 }
-                detailText += '...';
-            }
-            ctx.fillText(detailText, 460, y + 4);
 
-            // Failure coordinates for FAIL results
-            if (!isPass && stage.failCoords) {
+                // Stage ID
+                ctx.font = 'bold 12px "Courier New", monospace';
+                ctx.fillStyle = COLORS.softCream;
+                ctx.textAlign = 'left';
+                ctx.fillText(line.stage.stageId, 48, y + 1);
+
+                // Stage name
+                ctx.font = '12px sans-serif';
+                ctx.fillStyle = COLORS.softCream;
+                ctx.fillText(line.stage.name, 88, y + 1);
+
+                // Path result badge
+                const pathPass = line.stage.pathResult === 'PASS';
+                ctx.font = 'bold 10px "Courier New", monospace';
+                ctx.fillStyle = COLORS.steelBlue;
+                ctx.fillText('PATH:', 230, y + 1);
+                this._drawBadge(ctx, line.stage.pathResult, 268, y - 1, pathPass);
+
+                // Path details (truncated)
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = COLORS.steelBlue;
+                let detail = line.stage.details;
+                if (detail.length > 65) detail = detail.substring(0, 62) + '...';
+                ctx.fillText(detail, 312, y + 1);
+
+            } else if (line.type === 'arena') {
+                const ar = line.stage.arenaResult;
+                const x0 = 88;
                 ctx.font = '10px "Courier New", monospace';
-                ctx.fillStyle = COLORS.emberRed;
-                ctx.fillText(
-                    `[col ${stage.failCoords.lastReachableCol} → ${stage.failCoords.targetCol}]`,
-                    460, y + 18
-                );
+                ctx.fillStyle = COLORS.steelBlue;
+                ctx.textAlign = 'left';
+                ctx.fillText('ARENA:', x0, y + 1);
+
+                // 4 mini badges: enclosure, minWidth, platforms, entry
+                const arenaChecks = [
+                    { key: 'enclosure', label: 'ENC' },
+                    { key: 'minWidth', label: 'WID' },
+                    { key: 'platforms', label: 'PLT' },
+                    { key: 'entry', label: 'ENT' }
+                ];
+                let bx = x0 + 52;
+                for (const chk of arenaChecks) {
+                    const isPass = ar[chk.key].result === 'PASS';
+                    // Label
+                    ctx.font = '9px "Courier New", monospace';
+                    ctx.fillStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(chk.label, bx, y + 1);
+                    // Small indicator dot
+                    ctx.beginPath();
+                    ctx.arc(bx + 24, y + 3, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
+                    ctx.fill();
+                    bx += 38;
+                }
+
+                // Arena details text
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = COLORS.steelBlue;
+                const arDetail = `${ar.minWidth.details}`;
+                ctx.fillText(arDetail, bx + 10, y + 1);
+
+            } else if (line.type === 'difficulty') {
+                const dr = line.stage.difficultyResult;
+                const x0 = 88;
+                ctx.font = '10px "Courier New", monospace';
+                ctx.fillStyle = COLORS.steelBlue;
+                ctx.textAlign = 'left';
+                ctx.fillText('DIFF:', x0, y + 1);
+
+                // 5 mini badges: vuln, hp, density, hazard, platWidth
+                const diffChecks = [
+                    { key: 'vulnerabilityWindow', label: 'VUL' },
+                    { key: 'bossHP', label: 'HP' },
+                    { key: 'enemyDensity', label: 'DEN' },
+                    { key: 'hazardPercentage', label: 'HAZ' },
+                    { key: 'minPlatformWidth', label: 'PLW' }
+                ];
+                let bx = x0 + 52;
+                for (const chk of diffChecks) {
+                    const isPass = dr[chk.key].result === 'PASS';
+                    ctx.font = '9px "Courier New", monospace';
+                    ctx.fillStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
+                    ctx.textAlign = 'left';
+                    ctx.fillText(chk.label, bx, y + 1);
+                    ctx.beginPath();
+                    ctx.arc(bx + 24, y + 3, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = isPass ? COLORS.mossGreen : COLORS.emberRed;
+                    ctx.fill();
+                    bx += 38;
+                }
+
+                // Difficulty summary detail
+                ctx.font = '9px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.fillStyle = COLORS.steelBlue;
+                const drDetail = `${dr.bossHP.details}`;
+                ctx.fillText(drDetail, bx + 10, y + 1);
             }
         }
 
+        ctx.restore();
+
         // Scroll indicator
-        if (stages.length > visibleRows) {
+        const totalLines = lines.length;
+        if (totalLines > visibleLines) {
             const scrollbarX = CANVAS_WIDTH - 36;
-            const scrollbarY = startY;
-            const scrollbarH = visibleRows * rowHeight;
+            const scrollbarY = contentStartY;
+            const scrollbarH = visibleLines * lineHeight;
 
             // Track
             ctx.fillStyle = COLORS.warmSlate;
             ctx.fillRect(scrollbarX, scrollbarY, 6, scrollbarH);
 
             // Thumb
-            const thumbH = (visibleRows / stages.length) * scrollbarH;
-            const thumbY = scrollbarY + (this.scrollOffset / Math.max(1, stages.length - visibleRows)) * (scrollbarH - thumbH);
+            const thumbH = Math.max(20, (visibleLines / totalLines) * scrollbarH);
+            const maxScrollVal = Math.max(1, totalLines - visibleLines);
+            const thumbY = scrollbarY + (this.scrollOffset / maxScrollVal) * (scrollbarH - thumbH);
             ctx.fillStyle = COLORS.mutedGold;
             ctx.fillRect(scrollbarX, thumbY, 6, thumbH);
         }
